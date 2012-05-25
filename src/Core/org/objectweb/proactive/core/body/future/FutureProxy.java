@@ -48,8 +48,15 @@ import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.ProActiveRuntimeException;
 import org.objectweb.proactive.core.ProActiveTimeoutException;
 import org.objectweb.proactive.core.UniqueID;
+import org.objectweb.proactive.core.body.Context;
 import org.objectweb.proactive.core.body.LocalBodyStore;
 import org.objectweb.proactive.core.body.UniversalBody;
+import org.objectweb.proactive.core.body.future.Future;
+import org.objectweb.proactive.core.body.future.FutureID;
+import org.objectweb.proactive.core.body.future.FutureMonitoring;
+import org.objectweb.proactive.core.body.future.FuturePool;
+import org.objectweb.proactive.core.body.future.LocalFutureUpdateCallbacks;
+import org.objectweb.proactive.core.body.future.MethodCallResult;
 import org.objectweb.proactive.core.body.proxy.AbstractProxy;
 import org.objectweb.proactive.core.exceptions.ExceptionHandler;
 import org.objectweb.proactive.core.exceptions.ExceptionMaskLevel;
@@ -68,6 +75,7 @@ import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.core.util.profiling.Profiling;
 import org.objectweb.proactive.core.util.profiling.TimerWarehouse;
+import org.objectweb.proactive.multiactivity.execution.FutureWaiter;
 import org.objectweb.proactive.utils.TimeoutAccounter;
 
 
@@ -137,10 +145,6 @@ public class FutureProxy implements Future, Proxy, java.io.Serializable {
 
     // returns future update info used during dynamic dispatch for groups
     private transient DispatchMonitor dispatchMonitor;
-
-    //
-    // -- CONSTRUCTORS -----------------------------------------------
-    //
 
     /**
      * As this proxy does not create a reified object (as opposed to
@@ -227,8 +231,12 @@ public class FutureProxy implements Future, Proxy, java.io.Serializable {
             this.callbacks.run();
             this.callbacks = null;
         }
-
-        this.notifyAll();
+        
+        if (toNotify!=null) {
+            toNotify.futureArrived(this);
+        } else {        
+            this.notifyAll();
+        }
     }
 
     /**
@@ -236,7 +244,7 @@ public class FutureProxy implements Future, Proxy, java.io.Serializable {
      * or null if the result is not an exception. The method blocks until the result is available.
      * @return the exception raised once available or null if no exception.
      */
-    public synchronized Throwable getRaisedException() {
+    public /*synchronized*/ Throwable getRaisedException() {
         waitFor();
         return target.getException();
     }
@@ -244,7 +252,7 @@ public class FutureProxy implements Future, Proxy, java.io.Serializable {
     /**
      * @return true iff the future has arrived.
      */
-    public boolean isAvailable() {
+    public synchronized boolean isAvailable() {
         return target != null;
     }
 
@@ -253,7 +261,7 @@ public class FutureProxy implements Future, Proxy, java.io.Serializable {
      * The method blocks until the future is available
      * @return the result of this future object once available.
      */
-    public synchronized MethodCallResult getMethodCallResult() {
+    public /*synchronized*/ MethodCallResult getMethodCallResult() {
         waitFor();
         return target;
     }
@@ -262,7 +270,7 @@ public class FutureProxy implements Future, Proxy, java.io.Serializable {
      * Returns the result this future is for. The method blocks until the future is available
      * @return the result of this future object once available.
      */
-    public synchronized Object getResult() {
+    public /*synchronized*/ Object getResult() {
         waitFor();
         return target.getResult();
     }
@@ -272,7 +280,7 @@ public class FutureProxy implements Future, Proxy, java.io.Serializable {
      * @return the result of this future object once available.
      * @throws ProActiveException if the timeout expires
      */
-    public synchronized Object getResult(long timeout) throws ProActiveTimeoutException {
+    public /*synchronized*/ Object getResult(long timeout) throws ProActiveTimeoutException {
         waitFor(timeout);
         return target.getResult();
     }
@@ -285,10 +293,12 @@ public class FutureProxy implements Future, Proxy, java.io.Serializable {
         return !isAvailable();
     }
 
+    private FutureWaiter toNotify;
+
     /**
      * Blocks the calling thread until the future object is available.
      */
-    public synchronized void waitFor() {
+    public void waitFor() {
         try {
             waitFor(0);
         } catch (ProActiveTimeoutException e) {
@@ -301,7 +311,16 @@ public class FutureProxy implements Future, Proxy, java.io.Serializable {
      * @param timeout
      * @throws ProActiveException if the timeout expires
      */
-    public synchronized void waitFor(long timeout) throws ProActiveTimeoutException {
+    public void waitFor(long timeout) throws ProActiveTimeoutException {
+        Context context = PAActiveObject.getContext();
+        if (context.getFutureListener()==null) {
+            waitForInternal(timeout);
+        } else {
+            waitForDelegated(timeout, context.getFutureListener());
+        }
+    }
+    
+    private synchronized void waitForInternal(long timeout) throws ProActiveTimeoutException {
         if (isAvailable()) {
             return;
         }
@@ -333,6 +352,7 @@ public class FutureProxy implements Future, Proxy, java.io.Serializable {
             if (time.isTimeoutElapsed()) {
                 throw new ProActiveTimeoutException("Timeout expired while waiting for the future update");
             }
+            toNotify = null;
             try {
                 this.wait(time.getRemainingTimeout());
             } catch (InterruptedException e) {
@@ -352,6 +372,56 @@ public class FutureProxy implements Future, Proxy, java.io.Serializable {
                     .stopTimer(PAActiveObject.getBodyOnThis().getID(), TimerWarehouse.WAIT_BY_NECESSITY);
         }
     }
+    
+    private void waitForDelegated(long timeout, FutureWaiter waiter) throws ProActiveTimeoutException {
+        // JMX Notification    
+        BodyWrapperMBean mbean = null;
+        UniqueID bodyId = PAActiveObject.getBodyOnThis().getID();
+        Body body = LocalBodyStore.getInstance().getLocalBody(bodyId);
+
+        synchronized (this) {
+
+            if (isAvailable()) {
+                return;
+            }
+
+            if (Profiling.TIMERS_COMPILED) {
+                TimerWarehouse.startTimer(PAActiveObject.getBodyOnThis().getID(),
+                        TimerWarehouse.WAIT_BY_NECESSITY);
+            }
+
+            FutureMonitoring.monitorFutureProxy(this);
+
+            // Send notification only if ActiveObject, not for HalfBodies
+            if (body != null) {
+                mbean = body.getMBean();
+                if (mbean != null) {
+                    mbean.sendNotification(NotificationType.waitByNecessity, new FutureNotificationData(
+                        bodyId, getCreatorID()));
+                }
+            }
+            
+            //delegate waiting to the service of the body
+            toNotify = waiter;
+        }
+
+        // END JMX Notification
+        TimeoutAccounter time = TimeoutAccounter.getAccounter(timeout);
+
+        waiter.waitForFuture(this);
+
+        // JMX Notification
+        if (mbean != null) {
+            mbean.sendNotification(NotificationType.receivedFutureResult, new FutureNotificationData(bodyId,
+                getCreatorID()));
+        }
+
+        // END JMX Notification
+        if (Profiling.TIMERS_COMPILED) {
+            TimerWarehouse
+                    .stopTimer(PAActiveObject.getBodyOnThis().getID(), TimerWarehouse.WAIT_BY_NECESSITY);
+        }
+    }  
 
     public long getID() {
         return id.getID();

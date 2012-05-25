@@ -1,3 +1,39 @@
+/*
+ * ################################################################
+ *
+ * ProActive Parallel Suite(TM): The Java(TM) library for
+ *    Parallel, Distributed, Multi-Core Computing for
+ *    Enterprise Grids & Clouds
+ *
+ * Copyright (C) 1997-2012 INRIA/University of
+ *                 Nice-Sophia Antipolis/ActiveEon
+ * Contact: proactive@ow2.org or contact@activeeon.com
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License
+ * as published by the Free Software Foundation; version 3 of
+ * the License.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ * USA
+ *
+ * If needed, contact us to obtain a release under GPL Version 2 or 3
+ * or a different license than the AGPL.
+ *
+ *  Initial developer(s):               The ProActive Team
+ *                        http://proactive.inria.fr/team_members.htm
+ *  Contributor(s):
+ *
+ * ################################################################
+ * $$PROACTIVE_INITIAL_DEV$$
+ */
 package functionalTests.multiactivities.scc2;
 
 import java.io.BufferedReader;
@@ -24,19 +60,12 @@ import org.objectweb.proactive.core.util.wrapper.BooleanWrapper;
 import org.objectweb.proactive.core.util.wrapper.IntWrapper;
 import org.objectweb.proactive.multiactivity.MultiActiveService;
 
-@DefineGroups( 
-        { 
-        @Group(name = "Forward", selfCompatible = true, parameter = "java.lang.Integer"),
-        @Group(name = "Backward", selfCompatible = true, parameter = "java.lang.Integer"), 
+
+@DefineGroups( { @Group(name = "Forward", selfCompatible = true, parameter = "java.lang.Integer"),
+        @Group(name = "Backward", selfCompatible = true, parameter = "java.lang.Integer"),
         @Group(name = "Info", selfCompatible = true),
-        @Group(name = "Transaction", selfCompatible = true, parameter = "java.lang.Integer") 
-        }
-)
-@DefineRules( 
-        { 
-        @Compatible( value={ "Backward", "Info", "Forward", "Transaction" }, condition="equals") 
-        }
-)
+        @Group(name = "Transaction", selfCompatible = true, parameter = "java.lang.Integer") })
+@DefineRules( { @Compatible(value = { "Backward", "Info", "Forward", "Transaction" }, condition = "equals") })
 public class GraphWorker implements RunActive {
 
     private String name;
@@ -193,66 +222,66 @@ public class GraphWorker implements RunActive {
     // ##############################################################################
 
     private Set<Integer> mark(Integer transaction, Set<Integer> id,
-			HashMap<Integer, HashSet<Integer>> normal,
-			HashMap<Integer, HashSet<Integer>> border, boolean forward) {
-		// synchronize access on visited!
-		Set<Integer> visited = checkGetTransaction(transaction, forward);
-		LinkedList<Set<Integer>> results = new LinkedList<Set<Integer>>();
-		Set<Integer> visitedNow = new HashSet<Integer>();
-		HashMap<Integer, Set<Integer>> toVisit = new HashMap<Integer, Set<Integer>>();
+            HashMap<Integer, HashSet<Integer>> normal, HashMap<Integer, HashSet<Integer>> border,
+            boolean forward) {
+        // synchronize access on visited!
+        Set<Integer> visited = checkGetTransaction(transaction, forward);
+        LinkedList<Set<Integer>> results = new LinkedList<Set<Integer>>();
+        Set<Integer> visitedNow = new HashSet<Integer>();
+        HashMap<Integer, Set<Integer>> toVisit = new HashMap<Integer, Set<Integer>>();
 
-		//synchronized (visited) {
-    		LinkedList<Integer> q = new LinkedList<Integer>();
-    		id.removeAll(visited);
-    		if (id.size()==0) {
-    		    return new LinkedHashSet<Integer>();
-    		}
-    		q.addAll(id);
-    		Integer current;
-    		while (q.size() > 0) {
-    			current = q.removeFirst();
-    
-    				if (!visited.contains(current)) {
-    					visited.add(current);
-    					visitedNow.add(current);
-    				} else {
-    					continue;
-    				}
-    
-    			// add locals
-    			if (normal.get(current) != null) {
-    				q.addAll(normal.get(current));
-    			}
-    
-    			// follow external links, save ref for further collection;
-    			if (border.get(current) != null) {
-    				for (Integer out : border.get(current)) {
-    					int loc = hashLocation(out);
-    					if (!toVisit.containsKey(loc)) {
-    					    toVisit.put(loc, new LinkedHashSet<Integer>());
-    					}
-    					toVisit.get(loc).add(out);
-    				}
-    			}
-    
-    		}
-		//}
-		
-		for (Integer loc : toVisit.keySet()) {
-		    results.add(propagateMark(transaction, loc, toVisit.get(loc), forward));
-		}
-		// collect result
-		for (Set<Integer> res : results) {
-			Set<Integer> copy = res;
-			try {
-				visitedNow.addAll(copy);
-			} catch (NullPointerException npe) {
-				// oops
-			}
-		}
+        //synchronized (visited) {
+        LinkedList<Integer> q = new LinkedList<Integer>();
+        id.removeAll(visited);
+        if (id.size() == 0) {
+            return new LinkedHashSet<Integer>();
+        }
+        q.addAll(id);
+        Integer current;
+        while (q.size() > 0) {
+            current = q.removeFirst();
 
-		return visitedNow;
-	}
+            if (!visited.contains(current)) {
+                visited.add(current);
+                visitedNow.add(current);
+            } else {
+                continue;
+            }
+
+            // add locals
+            if (normal.get(current) != null) {
+                q.addAll(normal.get(current));
+            }
+
+            // follow external links, save ref for further collection;
+            if (border.get(current) != null) {
+                for (Integer out : border.get(current)) {
+                    int loc = hashLocation(out);
+                    if (!toVisit.containsKey(loc)) {
+                        toVisit.put(loc, new LinkedHashSet<Integer>());
+                    }
+                    toVisit.get(loc).add(out);
+                }
+            }
+
+        }
+        //}
+
+        for (Integer loc : toVisit.keySet()) {
+            results.add(propagateMark(transaction, loc, toVisit.get(loc), forward));
+        }
+        // collect result
+        for (Set<Integer> res : results) {
+            Set<Integer> copy = res;
+            try {
+                visitedNow.addAll(copy);
+            } catch (NullPointerException npe) {
+                // oops
+            }
+        }
+
+        return visitedNow;
+    }
 
     private Set<Integer> propagateMark(Integer transaction, Integer node, Set<Integer> what, boolean forward) {
         GraphWorker other = (workers[node]);
@@ -272,10 +301,10 @@ public class GraphWorker implements RunActive {
         HashMap<Integer, HashSet<Integer>> visitedGlobal = forward ? visitedF : visitedB;
         HashSet<Integer> visited;
         //synchronized (visitedGlobal) {
-            if (!visitedGlobal.containsKey(transaction)) {
-                visitedGlobal.put(transaction, new HashSet<Integer>());
-            }
-            visited = visitedGlobal.get(transaction);
+        if (!visitedGlobal.containsKey(transaction)) {
+            visitedGlobal.put(transaction, new HashSet<Integer>());
+        }
+        visited = visitedGlobal.get(transaction);
         //}
         return visited;
     }
@@ -297,50 +326,50 @@ public class GraphWorker implements RunActive {
         HashSet<Integer> setNewB;
 
         //synchronized (visitedF) {
-            //synchronized (visitedB) {
-                Set<Integer> setOldF = visitedF.get(parent);
-                Set<Integer> setOldB = visitedB.get(parent);
-                if (parent != transaction) {
-                    setNewF = new HashSet<Integer>();
-                    setNewB = new HashSet<Integer>();
-                    if (mode.equals(0)) {
-                        if (setOldF != null)
-                            setNewF.addAll(setOldF);
-                        if (setOldB != null)
-                            setNewF.addAll(setOldB);
+        //synchronized (visitedB) {
+        Set<Integer> setOldF = visitedF.get(parent);
+        Set<Integer> setOldB = visitedB.get(parent);
+        if (parent != transaction) {
+            setNewF = new HashSet<Integer>();
+            setNewB = new HashSet<Integer>();
+            if (mode.equals(0)) {
+                if (setOldF != null)
+                    setNewF.addAll(setOldF);
+                if (setOldB != null)
+                    setNewF.addAll(setOldB);
 
-                        if (setOldF != null)
-                            setNewB.addAll(setOldF);
-                        if (setOldB != null)
-                            setNewB.addAll(setOldB);
-                    } else if (mode > 0) {
-                        if (setOldB != null)
-                            setNewF.addAll(setOldB);
+                if (setOldF != null)
+                    setNewB.addAll(setOldF);
+                if (setOldB != null)
+                    setNewB.addAll(setOldB);
+            } else if (mode > 0) {
+                if (setOldB != null)
+                    setNewF.addAll(setOldB);
 
-                        if (setOldB != null)
-                            setNewB.addAll(setOldB);
-                    } else if (mode < 0) {
-                        if (setOldF != null)
-                            setNewF.addAll(setOldF);
+                if (setOldB != null)
+                    setNewB.addAll(setOldB);
+            } else if (mode < 0) {
+                if (setOldF != null)
+                    setNewF.addAll(setOldF);
 
-                        if (setOldF != null)
-                            setNewB.addAll(setOldF);
-                    }
+                if (setOldF != null)
+                    setNewB.addAll(setOldF);
+            }
 
-                    visitedF.put(transaction, setNewF);
-                    visitedB.put(transaction, setNewB);
-                } else {
-                    if (setOldB != null && setOldF != null) {
-                        setOldF.addAll(setOldB);
-                        setOldB.addAll(setOldF);
-                    } else {
-                        visitedF.put(parent, new HashSet<Integer>());
-                        visitedB.put(parent, new HashSet<Integer>());
-                    }
-                }
+            visitedF.put(transaction, setNewF);
+            visitedB.put(transaction, setNewB);
+        } else {
+            if (setOldB != null && setOldF != null) {
+                setOldF.addAll(setOldB);
+                setOldB.addAll(setOldF);
+            } else {
+                visitedF.put(parent, new HashSet<Integer>());
+                visitedB.put(parent, new HashSet<Integer>());
+            }
+        }
 
-                //System.out.println("TX created " + transaction + "@" + name + " p=" + parent + " m=" + mode + " v=" + setNew);
-            //}
+        //System.out.println("TX created " + transaction + "@" + name + " p=" + parent + " m=" + mode + " v=" + setNew);
+        //}
         //}
         return transaction;
     }
@@ -352,14 +381,14 @@ public class GraphWorker implements RunActive {
      */
     private Integer checkRemoveTransaction(Integer transaction) {
         //synchronized (visitedF) {
-            //synchronized (visitedB) {
-                if (visitedF.containsKey(transaction)) {
-                    visitedF.remove(transaction);
-                }
-                if (visitedB.containsKey(transaction)) {
-                    visitedB.remove(transaction);
-                }
-            //}
+        //synchronized (visitedB) {
+        if (visitedF.containsKey(transaction)) {
+            visitedF.remove(transaction);
+        }
+        if (visitedB.containsKey(transaction)) {
+            visitedB.remove(transaction);
+        }
+        //}
         //}
         return transaction;
     }
@@ -435,7 +464,7 @@ public class GraphWorker implements RunActive {
 
     @Override
     public void runActivity(Body body) {
-        if (threadCount>0) {
+        if (threadCount > 0) {
             service = (new MultiActiveService(body));
             service.multiActiveServing(threadCount, hardLimited, hardLimited);
         } else {
@@ -443,13 +472,13 @@ public class GraphWorker implements RunActive {
             service.multiActiveServing();
         }
     }
-    
+
     public List<Integer> getActiveServeCount() {
-        return (service!=null) ? service.serveHistory : null;
+        return (service != null) ? service.serveHistory : null;
     }
-    
+
     public List<Integer> getActiveServeTsts() {
-        return (service!=null) ? service.serveTsts : null;
+        return (service != null) ? service.serveTsts : null;
     }
 
 }

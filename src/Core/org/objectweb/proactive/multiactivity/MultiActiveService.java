@@ -1,3 +1,39 @@
+/*
+ * ################################################################
+ *
+ * ProActive Parallel Suite(TM): The Java(TM) library for
+ *    Parallel, Distributed, Multi-Core Computing for
+ *    Enterprise Grids & Clouds
+ *
+ * Copyright (C) 1997-2012 INRIA/University of
+ *                 Nice-Sophia Antipolis/ActiveEon
+ * Contact: proactive@ow2.org or contact@activeeon.com
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License
+ * as published by the Free Software Foundation; version 3 of
+ * the License.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ * USA
+ *
+ * If needed, contact us to obtain a release under GPL Version 2 or 3
+ * or a different license than the AGPL.
+ *
+ *  Initial developer(s):               The ProActive Team
+ *                        http://proactive.inria.fr/team_members.htm
+ *  Contributor(s):
+ *
+ * ################################################################
+ * $$PROACTIVE_INITIAL_DEV$$
+ */
 package org.objectweb.proactive.multiactivity;
 
 import java.util.LinkedList;
@@ -14,7 +50,7 @@ import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
  * This class extends the  {@link Service}  class and adds the capability of serving more methods in parallel. 
  * <br> The decision of which methods can run in parallel is made based on annotations set by the user. 
  * These annotations are to be found in the <i> org.objectweb.proactive.annotation.multiactivity</i> package.
- * @author  Zsolt Istvan
+ * @author  The ProActive Team
  */
 public class MultiActiveService extends Service {
 
@@ -22,7 +58,7 @@ public class MultiActiveService extends Service {
     public static final boolean LIMIT_ACTIVE_THREADS = false;
     public static final boolean REENTRANT_SAME_THREAD = true;
     public static final boolean REENTRANT_SEPARATE_THREAD = false;
-    
+
     public int activeServes = 0;
     public LinkedList<Integer> serveHistory = new LinkedList<Integer>();
     public LinkedList<Integer> serveTsts = new LinkedList<Integer>();
@@ -39,17 +75,19 @@ public class MultiActiveService extends Service {
      */
     public MultiActiveService(Body body) {
         super(body);
-        
+
         //not doing the initialization here because after creating the request executor
         //we are not compatible with 'fifoServing' any more.
-        
+
     }
-    
+
     //initializing the compatibility info and the executor
-    private void init(){
-    	if (executor!=null) return;
-    	
-    	compatibility = new CompatibilityTracker(new AnnotationProcessor(body.getReifiedObject().getClass()), requestQueue);
+    private void init() {
+        if (executor != null)
+            return;
+
+        compatibility = new CompatibilityTracker(new AnnotationProcessor(body.getReifiedObject().getClass()),
+            requestQueue);
         executor = new RequestExecutor(body, compatibility);
     }
 
@@ -60,72 +98,73 @@ public class MultiActiveService extends Service {
      * @param hostReentrant true if re-entrant calls should be hosted on the issuer's thread
      */
     public void multiActiveServing(int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
-    	init();
+        init();
         executor.configure(maxActiveThreads, hardLimit, hostReentrant);
         executor.execute();
     }
-    
+
     /**
      * Service that relies on the default parallel policy to extract requests from the queue. Threads are soft-limited and re-entrance on the same thread is disabled.
      * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
      */
-    public void multiActiveServing(int maxActiveThreads){
-    	init();
+    public void multiActiveServing(int maxActiveThreads) {
+        init();
         executor.configure(maxActiveThreads, false, false);
         executor.execute();
-        
+
     }
-    
+
     /**
      * Service that relies on the default parallel policy to extract requests from the queue. Threads are not limited and re-entrance on the same thread is disabled.
      * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
      */
     public void multiActiveServing() {
-    	init();
+        init();
         executor.configure(Integer.MAX_VALUE, false, false);
         executor.execute();
     }
-    
+
     /**
      * Service that relies on a user-defined policy to extract requests from the queue.
      * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
      * @param hardLimit false if the above limit is applicable only to active (running) threads, but not the waiting ones
      * @param hostReentrant true if re-entrant calls should be hosted on the issuer's thread
      */
-    public void policyServing(ServingPolicy policy, int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
-    	init();
+    public void policyServing(ServingPolicy policy, int maxActiveThreads, boolean hardLimit,
+            boolean hostReentrant) {
+        init();
         executor.configure(maxActiveThreads, hardLimit, hostReentrant);
         executor.execute(policy);
     }
-    
+
     /**
      * Service that relies on a user-defined policy to extract requests from the queue. Threads are soft-limited and re-entrance on the same thread is disabled.
      * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
      */
     public void policyServing(ServingPolicy policy, int maxActiveThreads) {
-    	init();
+        init();
         executor.configure(maxActiveThreads, false, false);
         executor.execute(policy);
     }
-    
+
     /**
      * Service that relies on a user-defined policy to extract requests from the queue. Threads are not limited and re-entrance on the same thread is disabled.
      * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
      */
     public void policyServing(ServingPolicy policy) {
-    	init();
+        init();
         executor.configure(Integer.MAX_VALUE, false, false);
         executor.execute(policy);
     }
-    
+
     /**
      * Returns the object through which the service's properties can be modified at run-time.
      * @return
      */
     public ServingController getServingController() {
-    	//this init runs only once even if invoked many times
-    	init(); 
-    	
+        //this init runs only once even if invoked many times
+        init();
+
         return executor;
     }
 }

@@ -62,7 +62,7 @@ public class Context implements Serializable {
 
     /** The currently served request */
     private final Request currentRequest;
-    
+
     private final FutureWaiter futureListener;
 
     /**
@@ -75,14 +75,14 @@ public class Context implements Serializable {
         this.currentRequest = currentRequest;
         this.futureListener = null;
     }
-    
+
     public Context(Body owner, Request currentRequest, FutureWaiter fl) {
         this.body = owner;
         this.currentRequest = currentRequest;
         this.futureListener = fl;
     }
-    
-    public FutureWaiter getFutureListener(){
+
+    public FutureWaiter getFutureListener() {
         return futureListener;
     }
 

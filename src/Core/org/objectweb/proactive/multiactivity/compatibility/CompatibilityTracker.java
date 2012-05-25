@@ -1,15 +1,50 @@
+/*
+ * ################################################################
+ *
+ * ProActive Parallel Suite(TM): The Java(TM) library for
+ *    Parallel, Distributed, Multi-Core Computing for
+ *    Enterprise Grids & Clouds
+ *
+ * Copyright (C) 1997-2012 INRIA/University of
+ *                 Nice-Sophia Antipolis/ActiveEon
+ * Contact: proactive@ow2.org or contact@activeeon.com
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License
+ * as published by the Free Software Foundation; version 3 of
+ * the License.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ * USA
+ *
+ * If needed, contact us to obtain a release under GPL Version 2 or 3
+ * or a different license than the AGPL.
+ *
+ *  Initial developer(s):               The ProActive Team
+ *                        http://proactive.inria.fr/team_members.htm
+ *  Contributor(s):
+ *
+ * ################################################################
+ * $$PROACTIVE_INITIAL_DEV$$
+ */
 package org.objectweb.proactive.multiactivity.compatibility;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.objectweb.proactive.core.body.request.BlockingRequestQueue;
 import org.objectweb.proactive.core.body.request.Request;
+
 
 /**
  * This is an implementation of the {@link StatefulCompatibilityMap} abstract class.
@@ -18,7 +53,7 @@ import org.objectweb.proactive.core.body.request.Request;
  * <br>
  * Data about currently executing requests is kept inside the class, and not read from an external source. The
  * reason for this is that compatibility checking can be sped up if we cache some data in this class.
- * @author  Zsolt Istvan
+ * @author  The ProActive Team
  */
 public class CompatibilityTracker extends StatefulCompatibilityMap {
 
@@ -35,7 +70,7 @@ public class CompatibilityTracker extends StatefulCompatibilityMap {
         }
         //methods without a group
         runningGroups.put(null, new HashSet<Request>());
-        
+
         this.queue = queue;
     }
 
@@ -61,32 +96,32 @@ public class CompatibilityTracker extends StatefulCompatibilityMap {
 
     @Override
     public boolean isCompatibleWithExecuting(Request r) {
-      if (runningCount == 0)
-          return true;
+        if (runningCount == 0)
+            return true;
 
-      MethodGroup reqGroup = getGroupOf(r);
-      if (reqGroup==null) {
-          return false;
-      }
-      
-      for (MethodGroup otherGroup : runningGroups.keySet()) {
-          if (runningGroups.get(otherGroup).size()>0) {
-              
-              if (reqGroup.isComparatorDefinedFor(otherGroup)) {
-                  
-                  for (Request other : runningGroups.get(otherGroup)) {
-                      if (!reqGroup.isCompatible(r, otherGroup, other)) {
-                          return false;
-                      }
-                  }
-                      
-              } else if (!reqGroup.isCompatibleWith(otherGroup)) { 
-                  return false;
-              }
-          }
-      }
-          
-      return true;
+        MethodGroup reqGroup = getGroupOf(r);
+        if (reqGroup == null) {
+            return false;
+        }
+
+        for (MethodGroup otherGroup : runningGroups.keySet()) {
+            if (runningGroups.get(otherGroup).size() > 0) {
+
+                if (reqGroup.isComparatorDefinedFor(otherGroup)) {
+
+                    for (Request other : runningGroups.get(otherGroup)) {
+                        if (!reqGroup.isCompatible(r, otherGroup, other)) {
+                            return false;
+                        }
+                    }
+
+                } else if (!reqGroup.isCompatibleWith(otherGroup)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     @Override

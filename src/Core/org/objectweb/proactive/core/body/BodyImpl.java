@@ -573,7 +573,9 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
             }
 
             // push the new context
-            LocalBodyStore.getInstance().pushContext(new Context(BodyImpl.this, request, FutureWaiterRegistry.getForBody(BodyImpl.this.getID())));
+            LocalBodyStore.getInstance().pushContext(
+                    new Context(BodyImpl.this, request, FutureWaiterRegistry
+                            .getForBody(BodyImpl.this.getID())));
 
             try {
                 serveInternal(request);

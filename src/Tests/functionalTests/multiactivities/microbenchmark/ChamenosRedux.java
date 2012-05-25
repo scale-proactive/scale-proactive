@@ -1,8 +1,6 @@
 package functionalTests.multiactivities.microbenchmark;
 
-import java.awt.Color;
 import java.io.Serializable;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,12 +23,12 @@ import org.objectweb.proactive.multiactivity.MultiActiveService;
  * 
  * http://cedric.cnam.fr/PUBLIS/RC474.pdf
  * 
- * @author Jan Schäfer
+ * @author Jan Schï¿½fer
  *
  */
 public class ChamenosRedux {
     static final boolean DEBUG = false;
-    
+
     public static Mall mall;
 
     public static void main(String[] args) {
@@ -74,9 +72,9 @@ public class ChamenosRedux {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }*/
-            
+
             mall = new Mall(meetCount);
-            
+
             try {
                 creatures = createCreatures(mall, colors);
             } catch (Exception e) {
@@ -100,7 +98,8 @@ public class ChamenosRedux {
         }
     }
 
-    public static Creature[] createCreatures(Mall mall, Color... colors) throws ActiveObjectCreationException, NodeException {
+    public static Creature[] createCreatures(Mall mall, Color... colors)
+            throws ActiveObjectCreationException, NodeException {
         Creature[] result = new Creature[colors.length];
         int i = 0;
         for (Color c : colors) {
@@ -142,7 +141,7 @@ public class ChamenosRedux {
     }
 
     //@CoBox
-    @DefineGroups({@Group(name = "defgr", selfCompatible = true)})
+    @DefineGroups( { @Group(name = "defgr", selfCompatible = true) })
     public static class Creature implements RunActive, Serializable {
         private Color color;
         //private Mall mall;
@@ -193,7 +192,7 @@ public class ChamenosRedux {
                 finished.notifyAll();
             }
         }
-        
+
         @Override
         public void runActivity(Body body) {
             //new Service(body).fifoServing();
@@ -208,7 +207,7 @@ public class ChamenosRedux {
         public Mall() {
             // TODO Auto-generated constructor stub
         }
-        
+
         public Mall(Integer meetCount) {
             meetCounter = meetCount;
         }

@@ -1,12 +1,9 @@
 package functionalTests.multiactivities.microbenchmark;
 
-import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
 
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.RunActive;
-import org.objectweb.proactive.Service;
 import org.objectweb.proactive.annotation.multiactivity.DefineGroups;
 import org.objectweb.proactive.annotation.multiactivity.Group;
 import org.objectweb.proactive.annotation.multiactivity.MemberOf;
@@ -63,7 +60,7 @@ public class BigPingPong {
     public static final boolean STATS = false;
 
     public static final AtomicInteger msgSend = new AtomicInteger();
-    
+
     public static Counter counter;
 
     public static void main(String args[]) throws Exception {
@@ -87,20 +84,20 @@ public class BigPingPong {
         for (BigCoBox b : coboxes) {
             b.setOthers(coboxes);
         }
-        
+
         long startTime = System.currentTimeMillis();
-        
+
         for (BigCoBox b : coboxes) {
             b.start();
         }
 
         if (DEBUG)
             System.out.println("All CoBoxes started, waiting...");
-        
+
         counter.waitUntilZero();
         long endtime = System.currentTimeMillis();
         System.out.println(endtime - startTime);
-        
+
         if (STATS) {
             System.out.println("sent " + msgSend.get() + " msgs");
             System.out.println(msgSend.get() / ncoboxes + " msgs/cobox");
@@ -144,13 +141,13 @@ public class BigPingPong {
                 }
         }
 
-      /*  @Override
-        public void runActivity(Body body) {
-            new Service(body).fifoServing();
-        }*/
+        /*  @Override
+          public void runActivity(Body body) {
+              new Service(body).fifoServing();
+          }*/
     }
 
-    @DefineGroups(value = { @Group(name = "default", selfCompatible = true) } )
+    @DefineGroups(value = { @Group(name = "default", selfCompatible = true) })
     public static class BigCoBox implements RunActive {
         private AtomicInteger nrecvd = new AtomicInteger(0);
         private int nexpected;
@@ -192,7 +189,7 @@ public class BigPingPong {
 
             nrecvd.incrementAndGet();
             if (DEBUG)
-                System.out.println("CoBox " + id + " ping " + (nexpected-nrecvd.get()) + " left");
+                System.out.println("CoBox " + id + " ping " + (nexpected - nrecvd.get()) + " left");
             if (nrecvd.get() == nexpected) {
                 counter.dec();
             }

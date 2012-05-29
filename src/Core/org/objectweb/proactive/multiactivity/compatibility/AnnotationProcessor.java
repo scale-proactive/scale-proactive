@@ -186,127 +186,75 @@ public class AnnotationProcessor {
     }
 
     /*
-     * Reads and processes the following method-level annotations:
-     * <ul>
-     *  <li>{@link Reads} -- the variables that are just read by the method</li>
-     *  <li>{@link Modifies} -- the variables that are written by the method</li>
-     * </ul>
+     * Reads and processes the following method-level annotations: <ul> <li>{@link Reads} -- the
+     * variables that are just read by the method</li> <li>{@link Modifies} -- the variables that
+     * are written by the method</li> </ul>
      */
-    /*protected void processReadModify() {
-    	//map method names to variables
-    	HashMap<String, HashSet<String>> reads = new HashMap<String, HashSet<String>>();
-    	HashMap<String, HashSet<String>> modifs = new HashMap<String, HashSet<String>>();
-    	
-    	//map variables to referencing method names
-    	HashMap<String, HashSet<String>> readVars = new HashMap<String, HashSet<String>>();
-    	HashMap<String, HashSet<String>> modifVars = new HashMap<String, HashSet<String>>();
-    	
-    	//extract all variable-related info
-    	for (Method method : processedClass.getMethods()) {
-    		boolean selfCompatible = true;
-    		String methodName = method.getName();
-    		
-    		//first the reads
-    		Reads read = method.getAnnotation(Reads.class);
-    		if (read!=null && read.value().length>0) {
-    			for (String var : read.value()) {
-    				
-    				if (!classHasVariable(var)) {
-    					addError(LOC_METHOD, methodName, REF_VARIABLE, var);
-    				}
-    				
-    				if (reads.get(methodName)==null) {
-    					reads.put(methodName, new HashSet<String>());
-    				}
-    				reads.get(methodName).add(var);
-    				
-    				if (readVars.get(var)==null) {
-    					readVars.put(var, new HashSet<String>());
-    				}
-    				readVars.get(var).add(methodName);
-    			}
-    		}
-    		
-    		//read the modifies annotations
-    		Modifies modify = method.getAnnotation(Modifies.class);
-    		if (modify!=null && modify.value().length>0) {
-    			//if the method modifies something it is not selfCompatible; 
-    			//[!] unless defined otherwise with compatibleWith annotation
-    			selfCompatible = false;
-    			
-    			for (String var : modify.value()) {
-    				if (!classHasVariable(var)) {
-    					addError(LOC_METHOD, methodName, REF_VARIABLE, var);
-    				}
-    				
-    				if (modifs.get(methodName)==null) {
-    					modifs.put(methodName, new HashSet<String>());
-    				}
-    				modifs.get(methodName).add(var);
-    				
-    				if (modifVars.get(var)==null) {
-    					modifVars.put(var, new HashSet<String>());
-    				}
-    				modifVars.get(var).add(methodName);
-    			}
-    			
-    		}
-    		
-    		// if no annotations, get out!
-    		if (read==null && modify==null) {
-    			break;
-    		}
-    		
-    		//create a group for the method if needed, or extend the already existing one
-    		MethodGroup newGroup;
-    		if (methods.containsKey(methodName) && methods.get(methodName).name.startsWith(AD_HOC_GROUP)){
-    			//if the method already has an "explicit" group, modify it
-    			newGroup = methods.get(methodName);
-    		} else {
-    			newGroup = new MethodGroup(groups.get(method), AD_HOC_GROUP+methodName, selfCompatible);
-    			methods.put(methodName, newGroup);
-    			groups.put(newGroup.name, newGroup);
-    		}
-    		
-    	}
-    	
-    	//go through the annotated methods
-    	HashSet<String> anntMethods = new HashSet<String>();
-    	anntMethods.addAll(modifs.keySet());
-    	anntMethods.addAll(reads.keySet());
-    	
-    	for (String method : anntMethods) {
-    		for (String other : anntMethods) {
-    			//flag for compatibility.
-    			//A is compatible with B if
-    			// - A does not modify what B modifies
-    			// - B does not read what A modifies 
-    			// - A does not read what B modifies 
-    			boolean areOk = true;
-    			if (modifs.containsKey(method)) {
-    				for (String mVar : modifs.get(method)) {
-    					if ((modifVars.containsKey(mVar) && modifVars.get(mVar).contains(other)) 
-    							|| (readVars.containsKey(mVar) && readVars.get(mVar).contains(other))) {
-    						areOk=false;
-    						break;
-    					}
-    				}
-    			}
-    			if (areOk && reads.containsKey(method)) {
-    				for (String rVar : reads.get(method)) {
-    					if (modifVars.containsKey(rVar) && modifVars.get(rVar).contains(other)) {
-    						areOk=false;
-    						break;
-    					}
-    				}
-    			}
-    			
-    			if (areOk) {
-    				methods.get(method).addCompatibleWith(methods.get(other));
-    			}
-    		}
-    	}
-    }*/
+    /*
+     * protected void processReadModify() { //map method names to variables HashMap<String,
+     * HashSet<String>> reads = new HashMap<String, HashSet<String>>(); HashMap<String,
+     * HashSet<String>> modifs = new HashMap<String, HashSet<String>>();
+     * 
+     * //map variables to referencing method names HashMap<String, HashSet<String>> readVars = new
+     * HashMap<String, HashSet<String>>(); HashMap<String, HashSet<String>> modifVars = new
+     * HashMap<String, HashSet<String>>();
+     * 
+     * //extract all variable-related info for (Method method : processedClass.getMethods()) {
+     * boolean selfCompatible = true; String methodName = method.getName();
+     * 
+     * //first the reads Reads read = method.getAnnotation(Reads.class); if (read!=null &&
+     * read.value().length>0) { for (String var : read.value()) {
+     * 
+     * if (!classHasVariable(var)) { addError(LOC_METHOD, methodName, REF_VARIABLE, var); }
+     * 
+     * if (reads.get(methodName)==null) { reads.put(methodName, new HashSet<String>()); }
+     * reads.get(methodName).add(var);
+     * 
+     * if (readVars.get(var)==null) { readVars.put(var, new HashSet<String>()); }
+     * readVars.get(var).add(methodName); } }
+     * 
+     * //read the modifies annotations Modifies modify = method.getAnnotation(Modifies.class); if
+     * (modify!=null && modify.value().length>0) { //if the method modifies something it is not
+     * selfCompatible; //[!] unless defined otherwise with compatibleWith annotation selfCompatible
+     * = false;
+     * 
+     * for (String var : modify.value()) { if (!classHasVariable(var)) { addError(LOC_METHOD,
+     * methodName, REF_VARIABLE, var); }
+     * 
+     * if (modifs.get(methodName)==null) { modifs.put(methodName, new HashSet<String>()); }
+     * modifs.get(methodName).add(var);
+     * 
+     * if (modifVars.get(var)==null) { modifVars.put(var, new HashSet<String>()); }
+     * modifVars.get(var).add(methodName); }
+     * 
+     * }
+     * 
+     * // if no annotations, get out! if (read==null && modify==null) { break; }
+     * 
+     * //create a group for the method if needed, or extend the already existing one MethodGroup
+     * newGroup; if (methods.containsKey(methodName) &&
+     * methods.get(methodName).name.startsWith(AD_HOC_GROUP)){ //if the method already has an
+     * "explicit" group, modify it newGroup = methods.get(methodName); } else { newGroup = new
+     * MethodGroup(groups.get(method), AD_HOC_GROUP+methodName, selfCompatible);
+     * methods.put(methodName, newGroup); groups.put(newGroup.name, newGroup); }
+     * 
+     * }
+     * 
+     * //go through the annotated methods HashSet<String> anntMethods = new HashSet<String>();
+     * anntMethods.addAll(modifs.keySet()); anntMethods.addAll(reads.keySet());
+     * 
+     * for (String method : anntMethods) { for (String other : anntMethods) { //flag for
+     * compatibility. //A is compatible with B if // - A does not modify what B modifies // - B does
+     * not read what A modifies // - A does not read what B modifies boolean areOk = true; if
+     * (modifs.containsKey(method)) { for (String mVar : modifs.get(method)) { if
+     * ((modifVars.containsKey(mVar) && modifVars.get(mVar).contains(other)) ||
+     * (readVars.containsKey(mVar) && readVars.get(mVar).contains(other))) { areOk=false; break; } }
+     * } if (areOk && reads.containsKey(method)) { for (String rVar : reads.get(method)) { if
+     * (modifVars.containsKey(rVar) && modifVars.get(rVar).contains(other)) { areOk=false; break; }
+     * } }
+     * 
+     * if (areOk) { methods.get(method).addCompatibleWith(methods.get(other)); } } } }
+     */
 
     /**
      * Reads and processes the following method-level annotations:
@@ -325,54 +273,42 @@ public class AnnotationProcessor {
             MemberOf group = method.getAnnotation(MemberOf.class);
             if (group != null) {
                 MethodGroup mg = groups.get(group.value());
-                methods.put(method.toString(), mg);
+                String methodSignature = method.toString();
+                methods.put(methodSignature.substring(methodSignature.indexOf(method.getName())), mg);
 
                 if (mg == null) {
                     addError(LOC_METHOD, method.toString(), UNDEF_GROUP, group.value());
                 }
             }
 
-            /*//other compatible declarations -- put them into a map
-            Compatible comp = method.getAnnotation(Compatible.class);
-            if (comp!=null) {
-            	HashSet<String> comps = new HashSet<String>();
-            	for (String other : comp.value()) {
-            		comps.add(other);
-            		
-            		if (!classHasMethod(other)) {
-            			addError(LOC_METHOD, method.toString(), UNDEF_GROUP, other);
-            		}
-            	}
-            	compMap.put(method.toString(), comps);
-            }*/
+            /*
+             * //other compatible declarations -- put them into a map Compatible comp =
+             * method.getAnnotation(Compatible.class); if (comp!=null) { HashSet<String> comps = new
+             * HashSet<String>(); for (String other : comp.value()) { comps.add(other);
+             * 
+             * if (!classHasMethod(other)) { addError(LOC_METHOD, method.toString(), UNDEF_GROUP,
+             * other); } } compMap.put(method.toString(), comps); }
+             */
         }
 
-        /*		//go through methods that declared compatibilities
-         for (String method : compMap.keySet()) {
-         boolean selfCompatible = compMap.get(method).contains(method) || (groups.get(method)!=null ? groups.get(method).isSelfCompatible() : false);
-        
-         //create a group for this method -- maybe extend its already existing group
-         MethodGroup newGroup;
-         if (methods.containsKey(method) && methods.get(method).name.startsWith(AD_HOC_GROUP)){
-         newGroup = methods.get(method);
-         } else {
-         newGroup = new MethodGroup(groups.get(method), AD_HOC_GROUP+method, selfCompatible);
-         methods.put(method, newGroup);
-         groups.put(newGroup.name, newGroup);
-         }
-         }
-        
-         //set compatibilities based on the method-level compatible annotations
-         for (String method : compMap.keySet()) {
-         for (String other : compMap.get(method)) {
-         if (compMap.containsKey(other) && compMap.get(other).contains(method)) {
-         methods.get(method).addCompatibleWith(methods.get(other));
-         methods.get(other).addCompatibleWith(methods.get(method));
-         } else {
-         addError(LOC_METHOD, method, UNDEF_METHOD, other);
-         }
-         }
-         }*/
+        /*
+         * //go through methods that declared compatibilities for (String method : compMap.keySet())
+         * { boolean selfCompatible = compMap.get(method).contains(method) ||
+         * (groups.get(method)!=null ? groups.get(method).isSelfCompatible() : false);
+         * 
+         * //create a group for this method -- maybe extend its already existing group MethodGroup
+         * newGroup; if (methods.containsKey(method) &&
+         * methods.get(method).name.startsWith(AD_HOC_GROUP)){ newGroup = methods.get(method); }
+         * else { newGroup = new MethodGroup(groups.get(method), AD_HOC_GROUP+method,
+         * selfCompatible); methods.put(method, newGroup); groups.put(newGroup.name, newGroup); } }
+         * 
+         * //set compatibilities based on the method-level compatible annotations for (String method
+         * : compMap.keySet()) { for (String other : compMap.get(method)) { if
+         * (compMap.containsKey(other) && compMap.get(other).contains(method)) {
+         * methods.get(method).addCompatibleWith(methods.get(other));
+         * methods.get(other).addCompatibleWith(methods.get(method)); } else { addError(LOC_METHOD,
+         * method, UNDEF_METHOD, other); } } }
+         */
     }
 
     /**
@@ -432,19 +368,17 @@ public class AnnotationProcessor {
 
     /*
      * Returns true if the processed class has a variable named like the parameter.
+     * 
      * @param ref variable name
+     * 
      * @return
      */
-    /*private boolean classHasVariable(String what) {
-    	if (classVariables==null) {
-    		classVariables = new HashSet<String>();
-    		Field[] vars = processedClass.getDeclaredFields();
-    		for (int i=0; i<vars.length; i++) {
-    			classVariables.add(vars[i].getName());
-    		}
-    	}
-    	return classVariables.contains(what); 
-    }*/
+    /*
+     * private boolean classHasVariable(String what) { if (classVariables==null) { classVariables =
+     * new HashSet<String>(); Field[] vars = processedClass.getDeclaredFields(); for (int i=0;
+     * i<vars.length; i++) { classVariables.add(vars[i].getName()); } } return
+     * classVariables.contains(what); }
+     */
 
     private boolean classHasMethod(String what) {
         if (classMethods == null) {

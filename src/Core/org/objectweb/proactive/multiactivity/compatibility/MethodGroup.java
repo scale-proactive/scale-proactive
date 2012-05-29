@@ -126,28 +126,24 @@ public class MethodGroup {
     }
 
     /*
-     * Constructor which inherits all information 
+     * Constructor which inherits all information
+     * 
      * @param from
+     * 
      * @param name
+     * 
      * @param selfCompatible
      *//*
-            	public MethodGroup(MethodGroup from, String name, boolean selfCompatible) {
-            		this.selfCompatible = selfCompatible;
-            		this.name = name;
-            		this.hashCode = name.hashCode();
-            		
-            		if (selfCompatible) {
-            			this.compatibleWith.add(this);
-            		}
-            		
-            		if (from!=null) {
-            			this.addCompatibleWith(from.compatibleWith);
-            			if (from.selfCompatible) {
-            				from.addCompatibleWith(this);
-            			}
-            		}
-            		
-            	}*/
+     * public MethodGroup(MethodGroup from, String name, boolean selfCompatible) {
+     * this.selfCompatible = selfCompatible; this.name = name; this.hashCode = name.hashCode();
+     * 
+     * if (selfCompatible) { this.compatibleWith.add(this); }
+     * 
+     * if (from!=null) { this.addCompatibleWith(from.compatibleWith); if (from.selfCompatible) {
+     * from.addCompatibleWith(this); } }
+     * 
+     * }
+     */
 
     /**
      * Set the set of compatible groups with this group
@@ -587,7 +583,8 @@ public class MethodGroup {
      * @return
      */
     public static String getNameOf(Request r) {
-        return r.getMethodCall().getReifiedMethod().toString();
+        String methodSignature = r.getMethodCall().getReifiedMethod().toString();
+        return methodSignature.substring(methodSignature.indexOf(r.getMethodName()));
     }
 
 }

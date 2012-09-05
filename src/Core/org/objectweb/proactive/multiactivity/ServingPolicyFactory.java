@@ -42,99 +42,166 @@ import java.util.List;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
 
-
 /**
  * A factory with examples of serving policies.
+ * 
  * @author The ProActive Team
- *
+ * 
  */
 @Deprecated
 public class ServingPolicyFactory {
 
-    public static ServingPolicy getSingleActivityPolicy() {
-        return new ServingPolicy() {
+	public static ServingPolicy getSingleActivityPolicy() {
+		return new ServingPolicy() {
 
-            @Override
-            public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
-                List<Request> ret = new LinkedList<Request>();
+			@Override
+			public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
+				List<Request> ret = new LinkedList<Request>();
 
-                if (compatibility.getNumberOfExecutingRequests() == 0 &&
-                    compatibility.getQueueContents().size() > 0) {
-                    ret.add(compatibility.getOldestInTheQueue());
-                }
+				if (compatibility.getNumberOfExecutingRequests() == 0
+						&& compatibility.getQueueContents().size() > 0) {
+					ret.add(compatibility.getOldestInTheQueue());
+				}
 
-                return ret;
-            }
-        };
-    }
+				return ret;
+			}
+		};
+	}
 
-    public static ServingPolicy getMultiActivityPolicy() {
-        return new ServingPolicy() {
+	public static ServingPolicy getMultiActivityPolicy() {
+		return new ServingPolicy() {
 
-            @Override
-            public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
-                List<Request> ret = new LinkedList<Request>();
-                Request oldest = compatibility.getOldestInTheQueue();
+			@Override
+			public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
+				List<Request> ret = new LinkedList<Request>();
+				Request current = compatibility.getOldestInTheQueue();
 
-                if (oldest == null)
-                    return ret;
+				if (current == null) {
+					return ret;
+				}
+				int execSize = compatibility.getExecutingRequests().size();
+				if (execSize == 0) {
+					ret.add(current);
+				} else {
+					List<Request> queue = compatibility.getQueueContents();
+					for (int i = 0; i < queue.size(); i++) {
+						current = queue.get(i);
+						if (i < execSize) {
+							if (compatibility
+									.getIndexOfLastCompatibleWith(current, queue) >= i) {
+								if (compatibility.isCompatibleWithExecuting(current)) {
+									ret.add(current);
+								}
+							}
+						} else {
+							if (compatibility.isCompatibleWithExecuting(current)) {
+								if (compatibility.getIndexOfLastCompatibleWith(current,
+										queue) >= i) {
+									ret.add(current);
+								}
+							}
+						}
+					}
+				}
 
-                if (compatibility.getExecutingRequests().size() == 0) {
-                    ret.add(oldest);
-                } else {
-                    if (compatibility.isCompatibleWithRequests(oldest, compatibility.getExecutingRequests())) {
-                        ret.add(oldest);
-                    } else if (compatibility.getQueueContents().size() > 1) {
-                        Request secondOldest = compatibility.getQueueContents().get(1);
-                        if (secondOldest != null &&
-                            compatibility.areCompatible(oldest, secondOldest) &&
-                            compatibility.isCompatibleWithRequests(secondOldest, compatibility
-                                    .getExecutingRequests())) {
-                            ret.add(secondOldest);
-                        }
-                    }
-                }
+				return ret;
+			}
+		};
+	}
 
-                return ret;
-            }
-        };
-    }
+	public static ServingPolicy getMultiactivePriorityPolicy(
+			final String prioritizedMethod) {
+		return new ServingPolicy() {
 
-    public static ServingPolicy getMaxThreadMultiActivityPolicy(final int maxThreads) {
-        return new ServingPolicy() {
+			@Override
+			public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
+				List<Request> ret = new LinkedList<Request>();
+				List<Request> queue = compatibility.getQueueContents();
+				for (Request r : queue) {
+					if (compatibility.isCompatibleWithExecuting(r)
+							&& r.getMethodName().equals(prioritizedMethod)) {
+						if (ret.size() > 0
+								&& compatibility.getGroupOf(r).isSelfCompatible()) {
+							break;
+						}
+						ret.add(r);
+						return ret;
+					}
+				}
 
-            @Override
-            public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
+				Request current = compatibility.getOldestInTheQueue();
+				if (current == null) {
+					return ret;
+				}
+				int execSize = compatibility.getExecutingRequests().size();
+				if (execSize == 0) {
+					ret.add(current);
+				} else {
+					for (int i = 0; i < queue.size(); i++) {
+						current = queue.get(i);
+						if (i < execSize + ret.size()) {
+							if (compatibility
+									.getIndexOfLastCompatibleWith(current, queue) >= i) {
+								if (compatibility.isCompatibleWithRequests(current, ret)
+										&& compatibility
+												.isCompatibleWithExecuting(current)) {
+									ret.add(current);
+									return ret;
+								}
+							}
+						} else {
+							if (compatibility.isCompatibleWithRequests(current, ret)
+									&& compatibility.isCompatibleWithExecuting(current)) {
+								if (compatibility.getIndexOfLastCompatibleWith(current,
+										queue) >= i) {
+									ret.add(current);
+									return ret;
+								}
+							}
+						}
+					}
+				}
 
-                if (compatibility.getExecutingRequests().size() < maxThreads) {
-                    ServingPolicy maPolicy = getMultiActivityPolicy();
-                    return maPolicy.runPolicy(compatibility);
-                }
+				return ret;
+			}
+		};
+	}
 
-                return null;
-            }
-        };
-    }
+	public static ServingPolicy getMaxThreadMultiActivityPolicy(final int maxThreads) {
+		return new ServingPolicy() {
 
-    public static ServingPolicy getGreedyMultiActivityPolicy() {
-        return new ServingPolicy() {
+			@Override
+			public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
 
-            @Override
-            public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
+				if (compatibility.getExecutingRequests().size() < maxThreads) {
+					ServingPolicy maPolicy = getMultiActivityPolicy();
+					return maPolicy.runPolicy(compatibility);
+				}
 
-                List<Request> ret = new LinkedList<Request>();
-                List<Request> queue = compatibility.getQueueContents();
+				return null;
+			}
+		};
+	}
 
-                for (int i = 0; i < queue.size(); i++) {
-                    if (compatibility.isCompatibleWithRequests(queue.get(i), compatibility
-                            .getExecutingRequests())) {
-                        ret.add(queue.get(i));
-                        return ret;
-                    }
-                }
+	public static ServingPolicy getGreedyMultiActivityPolicy() {
+		return new ServingPolicy() {
 
-                return ret;
-            }
-        };
-    }
+			@Override
+			public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
+
+				List<Request> ret = new LinkedList<Request>();
+				List<Request> queue = compatibility.getQueueContents();
+
+				for (int i = 0; i < queue.size(); i++) {
+					if (compatibility.isCompatibleWithRequests(queue.get(i),
+							compatibility.getExecutingRequests())) {
+						ret.add(queue.get(i));
+						return ret;
+					}
+				}
+
+				return ret;
+			}
+		};
+	}
 }

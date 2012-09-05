@@ -81,7 +81,6 @@
 	<classpathentry kind="lib" path="lib/shellplugin.jar"/>
 	<classpathentry kind="lib" path="lib/shelltui-1.4.2.jar"/>
 	<classpathentry kind="lib" path="lib/simple.jar"/>
-	<classpathentry kind="lib" path="lib/slf4j-log4j12-1.5.3.jar"/>
 	<classpathentry kind="lib" path="lib/soap.jar"/>
 	<classpathentry kind="lib" path="lib/ssj.jar"/>
 	<classpathentry kind="lib" path="lib/sunxacml.jar"/>

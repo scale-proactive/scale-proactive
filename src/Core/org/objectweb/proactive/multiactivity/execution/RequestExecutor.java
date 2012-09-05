@@ -46,6 +46,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.Body;
@@ -144,6 +145,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     protected HashSet<Request> invalid = new HashSet<Request>();
 
     protected HashMap<Request, Set<Request>> invalidates = new HashMap<Request, Set<Request>>();
+    
+    // TODO patch to be removed
+    private AtomicInteger extraActiveRequestCount = new AtomicInteger(0);
 
     /**
      * Default constructor. 
@@ -296,7 +300,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                         }
 
                         //if anything can be done, let the other thread know
-                        if (active.size() < THREAD_LIMIT) {
+                        if (countActive() < THREAD_LIMIT) {
                             this.notify();
                         }
                     }
@@ -331,6 +335,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 rc = policy.runPolicy(compatibility);
 
                 if (rc.size() >= 0) {
+					for (int i = 0; i < rc.size(); i++) {
+						compatibility.addRunning(rc.get(i));
+					}
                     synchronized (this) {
                         //add them to the ready set
                         for (int i = 0; i < rc.size(); i++) {
@@ -338,7 +345,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                         }
 
                         //if anything can be done, let the other thread know
-                        if (active.size() < THREAD_LIMIT) {
+                        if (countActive() < THREAD_LIMIT) {
                             this.notify();
                         }
                     }
@@ -500,7 +507,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * @return
      */
     private boolean canServeOneHosted() {
-        return ready.size() > 0 && requestTags.size() > 0 && active.size() < THREAD_LIMIT;
+        return ready.size() > 0 && requestTags.size() > 0 && countActive() < THREAD_LIMIT;
     }
 
     /**
@@ -509,7 +516,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      */
     private boolean canResumeOne() {
         return LIMIT_TOTAL_THREADS ? (waiting.size() > 0 && hasArrived.size() > 0) : (waiting.size() > 0 &&
-            hasArrived.size() > 0 && active.size() < THREAD_LIMIT);
+            hasArrived.size() > 0);// && countActive() < THREAD_LIMIT);
     }
 
     /**
@@ -517,9 +524,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * @return
      */
     private boolean canServeOne() {
-        return LIMIT_TOTAL_THREADS ? (ready.size() > 0 && threadUsage.keySet().size() < THREAD_LIMIT && active
-                .size() < THREAD_LIMIT)
-                : (ready.size() > 0 && active.size() < THREAD_LIMIT);
+        return LIMIT_TOTAL_THREADS ? (ready.size() > 0 && threadUsage.keySet().size() < THREAD_LIMIT && countActive() < THREAD_LIMIT)
+                : (ready.size() > 0 && countActive() < THREAD_LIMIT);
     }
 
     /**
@@ -822,5 +828,18 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 this.notify();
             }
         }
+    }
+    
+    private int countActive(){
+//    	System.out.println("active = " + active.size() + ", counter = " + extraActiveRequestCount.get());
+    	return active.size() - extraActiveRequestCount.get();
+    }
+    
+    public void incrementExtraActiveRequestCount(int i){
+    	extraActiveRequestCount.addAndGet(i);
+    }
+    
+    public void decrementExtraActiveRequestCount(int i){
+    	extraActiveRequestCount.addAndGet(i*(-1));
     }
 }

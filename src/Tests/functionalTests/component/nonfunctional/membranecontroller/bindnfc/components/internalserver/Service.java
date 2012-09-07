@@ -27,40 +27,17 @@
  * If needed, contact us to obtain a release under GPL Version 2 or 3
  * or a different license than the AGPL.
  *
- *  Initial developer(s):               The ActiveEon Team
- *                        http://www.activeeon.com/
+ *  Initial developer(s):               The ProActive Team
+ *                        http://proactive.inria.fr/team_members.htm
  *  Contributor(s):
  *
  * ################################################################
- * $$ACTIVEEON_INITIAL_DEV$$
+ * $$PROACTIVE_INITIAL_DEV$$
  */
-package org.objectweb.proactive.extensions.amqp.remoteobject;
+package functionalTests.component.nonfunctional.membranecontroller.bindnfc.components.internalserver;
 
-import org.apache.log4j.Logger;
-import org.objectweb.proactive.core.util.log.ProActiveLogger;
-import org.objectweb.proactive.extensions.amqp.AMQPConfig;
+public interface Service {
 
-import com.rabbitmq.client.ShutdownListener;
-import com.rabbitmq.client.ShutdownSignalException;
-
-
-/**
- * 
- * @since 5.2.0
- */
-public class AMQPShutDownListener implements ShutdownListener {
-
-    final static private Logger logger = ProActiveLogger.getLogger(AMQPConfig.Loggers.AMQP_CHANNEL_FACTORY);
-
-    private final String name;
-
-    public AMQPShutDownListener(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public void shutdownCompleted(ShutdownSignalException e) {
-        logger.warn(String.format("connection %s is shutted down, reason follows ", name), e);
-    }
+    public String notify(String message);
 
 }

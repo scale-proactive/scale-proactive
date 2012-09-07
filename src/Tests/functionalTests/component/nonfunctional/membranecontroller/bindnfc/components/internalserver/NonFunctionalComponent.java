@@ -27,20 +27,26 @@
  * If needed, contact us to obtain a release under GPL Version 2 or 3
  * or a different license than the AGPL.
  *
- *  Initial developer(s):               The ActiveEon Team
- *                        http://www.activeeon.com/
+ *  Initial developer(s):               The ProActive Team
+ *                        http://proactive.inria.fr/team_members.htm
  *  Contributor(s):
  *
  * ################################################################
- * $$ACTIVEEON_INITIAL_DEV$$
+ * $$PROACTIVE_INITIAL_DEV$$
  */
-package org.objectweb.proactive.extensions.amqp.remoteobject;
+package functionalTests.component.nonfunctional.membranecontroller.bindnfc.components.internalserver;
 
-/**
- * AMQP Exception 
- * @since ProActive 5.2.0
- */
+public class NonFunctionalComponent implements Service {
 
-public class AMQPException extends Exception {
+    public static final String NON_FUNCTIONAL_ITF_NAME = "non-functional-itf";
+
+    public NonFunctionalComponent() {
+
+    }
+
+    @Override
+    public String notify(String message) {
+        return "NonFunctionalComponent>" + message;
+    }
 
 }

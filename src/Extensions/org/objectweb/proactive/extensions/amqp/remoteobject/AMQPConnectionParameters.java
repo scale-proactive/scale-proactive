@@ -36,31 +36,51 @@
  */
 package org.objectweb.proactive.extensions.amqp.remoteobject;
 
-import org.apache.log4j.Logger;
-import org.objectweb.proactive.core.util.log.ProActiveLogger;
-import org.objectweb.proactive.extensions.amqp.AMQPConfig;
+public class AMQPConnectionParameters {
 
-import com.rabbitmq.client.ShutdownListener;
-import com.rabbitmq.client.ShutdownSignalException;
+    private final String host;
 
+    private final int port;
 
-/**
- * 
- * @since 5.2.0
- */
-public class AMQPShutDownListener implements ShutdownListener {
+    private final String username;
 
-    final static private Logger logger = ProActiveLogger.getLogger(AMQPConfig.Loggers.AMQP_CHANNEL_FACTORY);
+    private final String password;
 
-    private final String name;
+    private final String vhost;
 
-    public AMQPShutDownListener(String name) {
-        this.name = name;
+    private final String key;
+
+    public AMQPConnectionParameters(String host, int port, String username, String password, String vhost) {
+        this.host = host;
+        this.port = port;
+        this.username = username;
+        this.password = password;
+        this.vhost = vhost;
+        this.key = host + port + username + password + vhost;
     }
 
-    @Override
-    public void shutdownCompleted(ShutdownSignalException e) {
-        logger.warn(String.format("connection %s is shutted down, reason follows ", name), e);
+    public String getHost() {
+        return host;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getVhost() {
+        return vhost;
+    }
+
+    public String getKey() {
+        return key;
     }
 
 }

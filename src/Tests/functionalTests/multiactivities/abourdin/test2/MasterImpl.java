@@ -17,75 +17,71 @@ import org.objectweb.proactive.annotation.multiactivity.MemberOf;
 import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.multiactivity.MultiActiveService;
 
-@DefineGroups({
-	@Group(name = "parallel", selfCompatible = true),
-	@Group(name = "runtime", selfCompatible = true),
-	@Group(name = "mutex", selfCompatible = false)
-})
-@DefineRules({
-	@Compatible(value = { "mutex", "parallel" })
-})
+
+@DefineGroups( { @Group(name = "parallel", selfCompatible = true),
+        @Group(name = "runtime", selfCompatible = true), @Group(name = "mutex", selfCompatible = false) })
+@DefineRules( { @Compatible(value = { "mutex", "parallel" }) })
 public class MasterImpl implements RunActive, Runner, BindingController {
-	public static String ITF_CLIENT = "i1";
-	private Itf1 i1;
-	private Boolean multiActive = true;
+    public static String ITF_CLIENT = "i1";
+    private Itf1 i1;
+    private Boolean multiActive = true;
 
-	public MasterImpl() {
-		// for PA
-	}
+    public MasterImpl() {
+        // for PA
+    }
 
-	@MemberOf("parallel")
-	public void run(List<String> arg) {
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		String str = "\n" + PAActiveObject.getBodyOnThis().getNodeURL() + " Master: " + this + "\n";
-		System.out.println(str + "-> call delegated to slave");
-		i1.call(arg);
-	}
+    @MemberOf("parallel")
+    public void run(List<String> arg) {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        String str = "\n" + PAActiveObject.getBodyOnThis().getNodeURL() + " Master: " + this + "\n";
+        System.out.println(str + "-> call delegated to slave");
+        i1.call(arg);
+    }
 
-	@MemberOf("runtime")
-	public void bindFc(String clientItfName, Object serverItf) throws NoSuchInterfaceException,
-			IllegalBindingException, IllegalLifeCycleException {
-		if (ITF_CLIENT.equals(clientItfName)) {
-			i1 = (Itf1) serverItf;
-		} else {
-			throw new NoSuchInterfaceException(clientItfName);
-		}
-	}
+    @MemberOf("runtime")
+    public void bindFc(String clientItfName, Object serverItf) throws NoSuchInterfaceException,
+            IllegalBindingException, IllegalLifeCycleException {
+        if (ITF_CLIENT.equals(clientItfName)) {
+            i1 = (Itf1) serverItf;
+        } else {
+            throw new NoSuchInterfaceException(clientItfName);
+        }
+    }
 
-	@MemberOf("runtime")
-	public String[] listFc() {
-		return new String[] { ITF_CLIENT };
-	}
+    @MemberOf("runtime")
+    public String[] listFc() {
+        return new String[] { ITF_CLIENT };
+    }
 
-	@MemberOf("runtime")
-	public Object lookupFc(String clientItfName) throws NoSuchInterfaceException {
-		if (ITF_CLIENT.equals(clientItfName)) {
-			return i1;
-		} else {
-			throw new NoSuchInterfaceException(clientItfName);
-		}
-	}
+    @MemberOf("runtime")
+    public Object lookupFc(String clientItfName) throws NoSuchInterfaceException {
+        if (ITF_CLIENT.equals(clientItfName)) {
+            return i1;
+        } else {
+            throw new NoSuchInterfaceException(clientItfName);
+        }
+    }
 
-	@MemberOf("runtime")
-	public void unbindFc(String clientItfName) throws NoSuchInterfaceException, IllegalBindingException,
-			IllegalLifeCycleException {
-		if (ITF_CLIENT.equals(clientItfName)) {
-			i1 = null;
-		} else {
-			throw new NoSuchInterfaceException(clientItfName);
-		}
-	}
+    @MemberOf("runtime")
+    public void unbindFc(String clientItfName) throws NoSuchInterfaceException, IllegalBindingException,
+            IllegalLifeCycleException {
+        if (ITF_CLIENT.equals(clientItfName)) {
+            i1 = null;
+        } else {
+            throw new NoSuchInterfaceException(clientItfName);
+        }
+    }
 
-	@Override
-	public void runActivity(Body body) {
-		if (this.multiActive) {
-			(new MultiActiveService(body)).multiActiveServing(3, true, true);
-		} else {
-			(new Service(body)).fifoServing();
-		}
-	}
+    @Override
+    public void runActivity(Body body) {
+        if (this.multiActive) {
+            (new MultiActiveService(body)).multiActiveServing(3, true, true);
+        } else {
+            (new Service(body)).fifoServing();
+        }
+    }
 }

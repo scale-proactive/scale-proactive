@@ -190,7 +190,6 @@ public class ComponentRequestImpl extends RequestImpl implements ComponentReques
         } catch (NoSuchInterfaceException nsie) {
             throw new ServeException("cannot serve request : problem accessing a component controller", nsie);
         } catch (MethodCallExecutionFailedException e) {
-        	System.out.println("ComponentRequestImpl.serveInternal() THROW");
             throw new ServeException("serve method " + methodCall.getReifiedMethod().toString() + " failed",
                 e);
         } catch (java.lang.reflect.InvocationTargetException e) {

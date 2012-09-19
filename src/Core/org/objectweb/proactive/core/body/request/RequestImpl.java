@@ -196,8 +196,8 @@ public class RequestImpl extends MessageImpl implements Request, java.io.Seriali
         try {
             result = serveInternal(targetBody);
         } catch (ServeException e) {
-			/* Non Functional Exception */
-			result = new MethodCallResult(null, new ProActiveRuntimeException(e));
+            /* Non Functional Exception */
+            result = new MethodCallResult(null, new ProActiveRuntimeException(e));
         }
         if (logger.isDebugEnabled()) {
             logger.debug("result: " + result);
@@ -250,7 +250,7 @@ public class RequestImpl extends MessageImpl implements Request, java.io.Seriali
         Object result = null;
         Throwable exception = null;
         try {
-            result = this.methodCall.execute(targetBody.getReifiedObject());            
+            result = this.methodCall.execute(targetBody.getReifiedObject());
         } catch (MethodCallExecutionFailedException e) {
             throw new ServeException("Error while serving", e);
         } catch (java.lang.reflect.InvocationTargetException e) {

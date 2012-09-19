@@ -17,6 +17,7 @@ import org.objectweb.proactive.annotation.multiactivity.MemberOf;
 import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.multiactivity.MultiActiveService;
 
+
 //@DefineGroups( {
 //	@Group(name="parallel", selfCompatible=true),
 //	@Group(name="runtime", selfCompatible=true),
@@ -25,60 +26,63 @@ import org.objectweb.proactive.multiactivity.MultiActiveService;
 //@DefineRules({
 //	@Compatible(value={"mutex", "parallel"})
 //})
-@DefineGroups( {
-	@Group(name="subscriptionsRead", selfCompatible=true),
-	@Group(name="subscriptionsWrite", selfCompatible=false),
-	@Group(name="listenersRead", selfCompatible=true),
-	@Group(name="listenersWrite", selfCompatible=false),
-	@Group(name="solutionsRead", selfCompatible=true),
-	@Group(name="solutionsWrite", selfCompatible=false),
-	@Group(name="eventIdsReceivedRead", selfCompatible=true),
-	@Group(name="eventIdsReceivedWrite", selfCompatible=false),
-	@Group(name="runtime", selfCompatible=true)
-})
-@DefineRules({
-	@Compatible(value={"runtime", "subscriptionsRead", "listenersRead", "solutionsRead", "eventIdsReceivedRead"}),
-	@Compatible(value={"runtime","subscriptionsWrite", "listenersWrite", "solutionsWrite", "eventIdsReceivedWrite"}),
-	@Compatible(value={"subscriptionsRead", "listenersWrite", "solutionsWrite", "eventIdsReceivedWrite"}),
-	@Compatible(value={"subscriptionsWrite", "listenersRead", "solutionsWrite", "eventIdsReceivedWrite"}),
-	@Compatible(value={"subscriptionsWrite", "listenersWrite", "solutionsRead", "eventIdsReceivedWrite"}),
-	@Compatible(value={"subscriptionsWrite", "listenersWrite", "solutionsWrite", "eventIdsReceivedRead"}),
-})
+@DefineGroups( { @Group(name = "subscriptionsRead", selfCompatible = true),
+        @Group(name = "subscriptionsWrite", selfCompatible = false),
+        @Group(name = "listenersRead", selfCompatible = true),
+        @Group(name = "listenersWrite", selfCompatible = false),
+        @Group(name = "solutionsRead", selfCompatible = true),
+        @Group(name = "solutionsWrite", selfCompatible = false),
+        @Group(name = "eventIdsReceivedRead", selfCompatible = true),
+        @Group(name = "eventIdsReceivedWrite", selfCompatible = false),
+        @Group(name = "runtime", selfCompatible = true) })
+@DefineRules( {
+        @Compatible(value = { "runtime", "subscriptionsRead", "listenersRead", "solutionsRead",
+                "eventIdsReceivedRead" }),
+        @Compatible(value = { "runtime", "subscriptionsWrite", "listenersWrite", "solutionsWrite",
+                "eventIdsReceivedWrite" }),
+        @Compatible(value = { "subscriptionsRead", "listenersWrite", "solutionsWrite",
+                "eventIdsReceivedWrite" }),
+        @Compatible(value = { "subscriptionsWrite", "listenersRead", "solutionsWrite",
+                "eventIdsReceivedWrite" }),
+        @Compatible(value = { "subscriptionsWrite", "listenersWrite", "solutionsRead",
+                "eventIdsReceivedWrite" }),
+        @Compatible(value = { "subscriptionsWrite", "listenersWrite", "solutionsWrite",
+                "eventIdsReceivedRead" }), })
 public class MasterImpl implements RunActive, Runner, BindingController {
     public static String ITF_CLIENT = "i1";
     private Itf1 i1;
     private Boolean multiActive = true;
-    
-	public MasterImpl(){
-		// for PA
-	}
 
-//    @MemberOf("parallel")
+    public MasterImpl() {
+        // for PA
+    }
+
+    //    @MemberOf("parallel")
     @MemberOf("runtime")
     public void run(List<String> arg) {
-//    	try {
-//			Thread.sleep(2000);
-//		} catch (InterruptedException e) {
-//			e.printStackTrace();
-//		}
-//		String str = "\n" + PAActiveObject.getBodyOnThis().getNodeURL() + " Master: " + this + "\n";
-//    	System.out.println(str + " call delegated to slave");
-//        i1.call(arg);
-    	run2(arg);
+        //    	try {
+        //			Thread.sleep(2000);
+        //		} catch (InterruptedException e) {
+        //			e.printStackTrace();
+        //		}
+        //		String str = "\n" + PAActiveObject.getBodyOnThis().getNodeURL() + " Master: " + this + "\n";
+        //    	System.out.println(str + " call delegated to slave");
+        //        i1.call(arg);
+        run2(arg);
     }
-	
-//  @MemberOf("parallel")
+
+    //  @MemberOf("parallel")
     @MemberOf("listenersWrite, subscriptionsWrite")
-	public void run2(List<String> arg) {
-		try {
-			Thread.sleep(2000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		String str = "\n" + PAActiveObject.getBodyOnThis().getNodeURL() + " Master: " + this + "\n";
-		System.out.println(str + " call delegated to slave");
-		i1.call(arg);
-	}
+    public void run2(List<String> arg) {
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        String str = "\n" + PAActiveObject.getBodyOnThis().getNodeURL() + " Master: " + this + "\n";
+        System.out.println(str + " call delegated to slave");
+        i1.call(arg);
+    }
 
     public void bindFc(String clientItfName, Object serverItf) throws NoSuchInterfaceException,
             IllegalBindingException, IllegalLifeCycleException {
@@ -109,13 +113,13 @@ public class MasterImpl implements RunActive, Runner, BindingController {
             throw new NoSuchInterfaceException(clientItfName);
         }
     }
-    
-	@Override
-	public void runActivity(Body body) {
-    	if (this.multiActive) {
-    		(new MultiActiveService(body)).multiActiveServing(3, true, true);
-    	} else {
-    		(new Service(body)).fifoServing();
-    	}
-	}
+
+    @Override
+    public void runActivity(Body body) {
+        if (this.multiActive) {
+            (new MultiActiveService(body)).multiActiveServing(3, true, true);
+        } else {
+            (new Service(body)).fifoServing();
+        }
+    }
 }

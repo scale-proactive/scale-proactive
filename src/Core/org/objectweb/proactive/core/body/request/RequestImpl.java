@@ -247,7 +247,6 @@ public class RequestImpl extends MessageImpl implements Request, java.io.Seriali
     // -- PROTECTED METHODS -----------------------------------------------
     //
     protected MethodCallResult serveInternal(Body targetBody) throws ServeException {
-    	System.out.println("RequestImpl.serveInternal()");
         Object result = null;
         Throwable exception = null;
         try {

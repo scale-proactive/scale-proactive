@@ -65,11 +65,12 @@ import org.objectweb.proactive.multiactivity.ServingController;
 import org.objectweb.proactive.multiactivity.ServingPolicy;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 
-
 /**
- * The request executor that constitutes the multi-active service.
- * It contains two management threads: one listens to the queue and applies the schedulign policy, while the other manages the execution of requests on threads.
- * @author  The ProActive Team
+ * The request executor that constitutes the multi-active service. It contains
+ * two management threads: one listens to the queue and applies the schedulign
+ * policy, while the other manages the execution of requests on threads.
+ * 
+ * @author The ProActive Team
  */
 public class RequestExecutor implements FutureWaiter, ServingController {
 
@@ -78,13 +79,14 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      */
     protected int THREAD_LIMIT = Integer.MAX_VALUE;
     /**
-     * If set to true, then the THREAD_LIMIT refers to the total number of serves. 
-     * If false then it refers to actively executing serves, not the waiting by necessity ones.
+     * If set to true, then the THREAD_LIMIT refers to the total number of
+     * serves. If false then it refers to actively executing serves, not the
+     * waiting by necessity ones.
      */
     protected boolean LIMIT_TOTAL_THREADS = false;
     /**
-     * If true re-entrant calls will be hosted on the same thread as their source.
-     * If false than all serves will be served on separate threads.
+     * If true re-entrant calls will be hosted on the same thread as their
+     * source. If false than all serves will be served on separate threads.
      */
     protected boolean SAME_THREAD_REENTRANT = false;
 
@@ -118,14 +120,14 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     protected HashSet<FutureID> hasArrived;
 
     /**
-     * Associates with each thread a list of requests which represents the
-     * stack of execution inside the thread. Only the top level request can be
-     * active.
+     * Associates with each thread a list of requests which represents the stack
+     * of execution inside the thread. Only the top level request can be active.
      */
     protected HashMap<Long, List<RunnableRequest>> threadUsage;
 
     /**
-     * Associates a session-tag with a set of requests -- the ones which are part of the same execution path.
+     * Associates a session-tag with a set of requests -- the ones which are
+     * part of the same execution path.
      */
     protected HashMap<String, Set<RunnableRequest>> requestTags;
 
@@ -136,23 +138,27 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
     /**
      * Pairs of requests meaning which is hosting which inside it. Hosting means
-     * that when a wait by necessity occurs the first request will perform a serving of
-     * the second request instead of waiting for the future. It will 'resume' the waiting when
-     * the second request finishes execution
+     * that when a wait by necessity occurs the first request will perform a
+     * serving of the second request instead of waiting for the future. It will
+     * 'resume' the waiting when the second request finishes execution
      */
     protected ConcurrentHashMap<RunnableRequest, RunnableRequest> hostMap;
 
     protected HashSet<Request> invalid = new HashSet<Request>();
 
-    protected HashMap<Request, Set<Request>> invalidates = new HashMap<Request, Set<Request>>();
-    
+    protected HashMap<Request, Set<Request>> invalidates =
+            new HashMap<Request, Set<Request>>();
+
     // TODO patch to be removed
     private AtomicInteger extraActiveRequestCount = new AtomicInteger(0);
 
     /**
-     * Default constructor. 
-     * @param body Body of the active object.
-     * @param compatibility Compatibility information of the active object's class
+     * Default constructor.
+     * 
+     * @param body
+     *            Body of the active object.
+     * @param compatibility
+     *            Compatibility information of the active object's class
      */
     public RequestExecutor(Body body, CompatibilityTracker compatibility) {
         this.compatibility = compatibility;
@@ -174,14 +180,22 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
     /**
      * Constructor with all options.
-     * @param body Body of the active object
-     * @param compatibility Compatibility information of the active object's class
-     * @param activeLimit thread limit
-     * @param hardLimit hard or soft limit (limiting total nb of threads, or only those which are active) 
-     * @param hostReentrant whether to serve re-entrant calls on the same thread as their source
+     * 
+     * @param body
+     *            Body of the active object
+     * @param compatibility
+     *            Compatibility information of the active object's class
+     * @param activeLimit
+     *            thread limit
+     * @param hardLimit
+     *            hard or soft limit (limiting total nb of threads, or only
+     *            those which are active)
+     * @param hostReentrant
+     *            whether to serve re-entrant calls on the same thread as their
+     *            source
      */
-    public RequestExecutor(Body body, CompatibilityTracker compatibility, int activeLimit, boolean hardLimit,
-            boolean hostReentrant) {
+    public RequestExecutor(Body body, CompatibilityTracker compatibility,
+            int activeLimit, boolean hardLimit, boolean hostReentrant) {
         this(body, compatibility);
 
         THREAD_LIMIT = activeLimit;
@@ -196,11 +210,18 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
     /**
      * Method for changing the limits inside the executor during runtime.
-     * @param activeLimit thread limit
-     * @param hardLimit hard or soft limit (limiting total nb of threads, or only those which are active) 
-     * @param hostReentrant whether to serve re-entrant calls on the same thread as their source
+     * 
+     * @param activeLimit
+     *            thread limit
+     * @param hardLimit
+     *            hard or soft limit (limiting total nb of threads, or only
+     *            those which are active)
+     * @param hostReentrant
+     *            whether to serve re-entrant calls on the same thread as their
+     *            source
      */
-    public void configure(int activeLimit, boolean hardLimit, boolean hostReentrant) {
+    public void configure(int activeLimit, boolean hardLimit,
+                          boolean hostReentrant) {
         synchronized (this) {
 
             THREAD_LIMIT = activeLimit;
@@ -208,15 +229,19 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
             if (SAME_THREAD_REENTRANT != hostReentrant) {
                 if (hostReentrant == true) {
-                    //must check if the tagging mechanism is activated in PA. if it has not been started, we are enable to do same thread re-entrance
+                    // must check if the tagging mechanism is activated in PA.
+                    // if it has not been started, we are enable to do same
+                    // thread re-entrance
                     if (CentralPAPropertyRepository.PA_TAG_DSF.isTrue()) {
                         SAME_THREAD_REENTRANT = hostReentrant;
-                        //'create the map and populate it with tags
-                        requestTags = new HashMap<String, Set<RunnableRequest>>();
+                        // 'create the map and populate it with tags
+                        requestTags =
+                                new HashMap<String, Set<RunnableRequest>>();
                         for (RunnableRequest r : waiting) {
                             if (isNotAHost(r)) {
                                 if (!requestTags.containsKey(r.getSessionTag())) {
-                                    requestTags.put(r.getSessionTag(),
+                                    requestTags.put(
+                                            r.getSessionTag(),
                                             new HashSet<RequestExecutor.RunnableRequest>());
                                 }
                                 requestTags.get(r.getSessionTag()).add(r);
@@ -224,13 +249,12 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                         }
                     } else {
                         requestTags = null;
-                        Logger
-                                .getLogger(Loggers.MAO)
+                        Logger.getLogger(Loggers.MAO)
                                 .error(
                                         "Same thread re-entrance was requested, but property 'PA_TAG_DSF' is set to false");
                     }
                 } else {
-                    //clean up
+                    // clean up
                     requestTags = null;
                 }
             }
@@ -240,8 +264,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     }
 
     /**
-     * This is the heart of the executor. It is an internal scheduling thread that coordinates wake-ups, and waits and future value arrivals.
-     * Before doing that it also starts a thread for the queue handler.
+     * This is the heart of the executor. It is an internal scheduling thread
+     * that coordinates wake-ups, and waits and future value arrivals. Before
+     * doing that it also starts a thread for the queue handler.
      */
     public void execute() {
 
@@ -258,8 +283,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     }
 
     /**
-     * This is the heart of the executor. It is an internal scheduling thread that coordinates wake-ups, and waits and future value arrivals.
-     * Before doing that it also starts a thread for the queue handler that uses a custom policy for scheduling.
+     * This is the heart of the executor. It is an internal scheduling thread
+     * that coordinates wake-ups, and waits and future value arrivals. Before
+     * doing that it also starts a thread for the queue handler that uses a
+     * custom policy for scheduling.
+     * 
      * @param policy
      */
     public void execute(final ServingPolicy policy) {
@@ -282,24 +310,24 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      */
     private void requestQueueHandler() {
 
-        //register thread, so we can look up the Body if needed
+        // register thread, so we can look up the Body if needed
         LocalBodyStore.getInstance().pushContext(new Context(body, null));
 
         synchronized (requestQueue) {
             while (body.isActive()) {
 
-                //get compatible ones from the queue
+                // get compatible ones from the queue
                 List<Request> rc;
                 rc = runDefaultPolicy();
 
                 if (rc.size() >= 0) {
                     synchronized (this) {
-                        //add them to the ready set
+                        // add them to the ready set
                         for (int i = 0; i < rc.size(); i++) {
                             ready.add(wrapRequest(rc.get(i)));
                         }
 
-                        //if anything can be done, let the other thread know
+                        // if anything can be done, let the other thread know
                         if (countActive() < THREAD_LIMIT) {
                             this.notify();
                         }
@@ -318,33 +346,34 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     }
 
     /**
-     * Method that retrieves the compatible requests from the queue 
-     * based on a custom policy.
+     * Method that retrieves the compatible requests from the queue based on a
+     * custom policy.
+     * 
      * @param policy
      */
     private void requestQueueHandler(ServingPolicy policy) {
 
-        //register thread, so we can look up the Body if needed
+        // register thread, so we can look up the Body if needed
         LocalBodyStore.getInstance().pushContext(new Context(body, null));
 
         synchronized (requestQueue) {
             while (body.isActive()) {
 
-                //get compatible ones from the queue using the policy
+                // get compatible ones from the queue
                 List<Request> rc;
                 rc = policy.runPolicy(compatibility);
 
                 if (rc.size() >= 0) {
-					for (int i = 0; i < rc.size(); i++) {
-						compatibility.addRunning(rc.get(i));
-					}
+                    for (int i = 0; i < rc.size(); i++) {
+                        compatibility.addRunning(rc.get(i));
+                    }
                     synchronized (this) {
-                        //add them to the ready set
+                        // add them to the ready set
                         for (int i = 0; i < rc.size(); i++) {
                             ready.add(wrapRequest(rc.get(i)));
                         }
 
-                        //if anything can be done, let the other thread know
+                        // if anything can be done, let the other thread know
                         if (countActive() < THREAD_LIMIT) {
                             this.notify();
                         }
@@ -357,14 +386,19 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
+
             }
         }
     }
 
     /**
      * Default scheduling policy. <br>
-     * It will take a request from the queue if it is compatible with all executing ones and also with everyone before it in the queue.
-     * If a request can not be taken out from the queue, the requests it is invalid with are marked accordingly so that they are not retried until this one is finally served.
+     * It will take a request from the queue if it is compatible with all
+     * executing ones and also with everyone before it in the queue. If a
+     * request can not be taken out from the queue, the requests it is invalid
+     * with are marked accordingly so that they are not retried until this one
+     * is finally served.
+     * 
      * @return
      */
     private List<Request> runDefaultPolicy() {
@@ -375,9 +409,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         int i, lastIndex;
         for (i = 0; i < reqs.size(); i++) {
             lastIndex = -2;
-            if (!invalid.contains(reqs.get(i)) &&
-                compatibility.isCompatibleWithExecuting(reqs.get(i)) &&
-                (lastIndex = compatibility.getIndexOfLastCompatibleWith(reqs.get(i), reqs.subList(0, i))) == i - 1) {
+            if (!invalid.contains(reqs.get(i))
+                    && compatibility.isCompatibleWithExecuting(reqs.get(i))
+                    && (lastIndex =
+                            compatibility.getIndexOfLastCompatibleWith(
+                                    reqs.get(i), reqs.subList(0, i))) == i - 1) {
                 Request r = reqs.get(i);
                 ret.add(r);
 
@@ -421,7 +457,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 if (SAME_THREAD_REENTRANT) {
 
                     i = ready.iterator();
-                    //see if we can serve a request on the thread of an other one
+                    // see if we can serve a request on the thread of an other
+                    // one
                     while (canServeOneHosted() && i.hasNext()) {
                         RunnableRequest parasite = i.next();
                         String tag = parasite.getSessionTag();
@@ -446,19 +483,23 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
                 }
 
-                //WAKE any waiting thread that could resume execution and there are free resources for it
-                //i = waiting.iterator();
-                Iterator<List<RunnableRequest>> it = threadUsage.values().iterator();
+                // WAKE any waiting thread that could resume execution and there
+                // are free resources for it
+                // i = waiting.iterator();
+                Iterator<List<RunnableRequest>> it =
+                        threadUsage.values().iterator();
 
                 while (canResumeOne() && it.hasNext()) {
 
                     List<RunnableRequest> list = it.next();
                     RunnableRequest cont = list.get(0);
-                    // check if the future has arrived + the request is not already engaged in a hosted serving
-                    if (hasArrived.contains(cont.getWaitingOn()) && isNotAHost(cont)) {
+                    // check if the future has arrived + the request is not
+                    // already engaged in a hosted serving
+                    if (hasArrived.contains(cont.getWaitingOn())
+                            && isNotAHost(cont)) {
 
                         synchronized (cont) {
-                            //i.remove();
+                            // i.remove();
                             waiting.remove(cont);
                             resumeServing(cont, cont.getWaitingOn());
                             cont.notify();
@@ -466,7 +507,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                     }
                 }
 
-                //SERVE anyone who is ready and there are resources available
+                // SERVE anyone who is ready and there are resources available
                 i = ready.iterator();
 
                 while (canServeOne() && i.hasNext()) {
@@ -477,10 +518,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                     executorService.execute(next);
                 }
 
-                //System.out.println("r" + ready.size());
+                // System.out.println("r" + ready.size());
 
-                //SLEEP if nothing else to do
-                //      will wake up on 1) new submit, 2) finish of a request, 3) arrival of a future, 4) wait of a request
+                // SLEEP if nothing else to do
+                // will wake up on 1) new submit, 2) finish of a request, 3)
+                // arrival of a future, 4) wait of a request
                 try {
                     this.wait();
                 } catch (InterruptedException e) {
@@ -494,44 +536,61 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
     /**
      * Returns true if the request is not hosting any other serve in its thread.
+     * 
      * @param r
      * @return
      */
     private boolean isNotAHost(RunnableRequest r) {
-        return !hostMap.keySet().contains(r) ||
-            (!active.contains(hostMap.get(r)) && !waiting.contains(hostMap.get(r)));
+        return !hostMap.keySet().contains(r)
+                || (!active.contains(hostMap.get(r)) && !waiting.contains(hostMap.get(r)));
     }
 
     /**
-     * Returns true if it may be possible to find a request to be hosted inside an other
+     * Returns true if it may be possible to find a request to be hosted inside
+     * an other
+     * 
      * @return
      */
     private boolean canServeOneHosted() {
-        return ready.size() > 0 && requestTags.size() > 0 && countActive() < THREAD_LIMIT;
+        return ready.size() > 0 && requestTags.size() > 0
+                && countActive() < THREAD_LIMIT;
     }
 
     /**
      * Returns true if it may be possible to resume a previously blocked request
+     * 
      * @return
      */
     private boolean canResumeOne() {
-        return LIMIT_TOTAL_THREADS ? (waiting.size() > 0 && hasArrived.size() > 0) : (waiting.size() > 0 &&
-            hasArrived.size() > 0);// && countActive() < THREAD_LIMIT);
+        return LIMIT_TOTAL_THREADS
+                ? (waiting.size() > 0 && hasArrived.size() > 0)
+                : (waiting.size() > 0 && hasArrived.size() > 0);// &&
+                                                                // countActive()
+                                                                // <
+                                                                // THREAD_LIMIT);
     }
 
     /**
-     * Returns true if there are ready requests and free resources that permit the serving of at least one additional one.
+     * Returns true if there are ready requests and free resources that permit
+     * the serving of at least one additional one.
+     * 
      * @return
      */
     private boolean canServeOne() {
-        return LIMIT_TOTAL_THREADS ? (ready.size() > 0 && threadUsage.keySet().size() < THREAD_LIMIT && countActive() < THREAD_LIMIT)
+        return LIMIT_TOTAL_THREADS
+                ? (ready.size() > 0
+                        && threadUsage.keySet().size() < THREAD_LIMIT && countActive() < THREAD_LIMIT)
                 : (ready.size() > 0 && countActive() < THREAD_LIMIT);
     }
 
     /**
-     * Called from the {@link #waitForFuture(Future)} method to signal the blocking of a request.
-     * @param r wrapper of the request that starts waiting
-     * @param f the future for whose value the wait occured
+     * Called from the {@link #waitForFuture(Future)} method to signal the
+     * blocking of a request.
+     * 
+     * @param r
+     *            wrapper of the request that starts waiting
+     * @param f
+     *            the future for whose value the wait occured
      */
     private void signalWaitFor(RunnableRequest r, FutureID fId) {
         synchronized (this) {
@@ -544,7 +603,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
             if (SAME_THREAD_REENTRANT) {
                 if (!requestTags.containsKey(r.getSessionTag())) {
-                    requestTags.put(r.getSessionTag(), new HashSet<RequestExecutor.RunnableRequest>());
+                    requestTags.put(
+                            r.getSessionTag(),
+                            new HashSet<RequestExecutor.RunnableRequest>());
                 }
                 requestTags.get(r.getSessionTag()).add(r);
             }
@@ -556,9 +617,13 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     }
 
     /**
-     * Called from the executor's thread to signal a waiting request that it can resume execution.
-     * @param r the request's wrapper
-     * @param fId the future it was waiting for
+     * Called from the executor's thread to signal a waiting request that it can
+     * resume execution.
+     * 
+     * @param r
+     *            the request's wrapper
+     * @param fId
+     *            the future it was waiting for
      */
     private void resumeServing(RunnableRequest r, FutureID fId) {
         synchronized (this) {
@@ -588,8 +653,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     }
 
     /**
-     * Tell the executor about the creation of a new thread, of the current usage of
-     * an already existing thread.
+     * Tell the executor about the creation of a new thread, of the current
+     * usage of an already existing thread.
+     * 
      * @param r
      */
     private void serveStarted(RunnableRequest r) {
@@ -603,7 +669,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     }
 
     /**
-     * Tell the executor about the termination, or updated usage stack of a thread.
+     * Tell the executor about the termination, or updated usage stack of a
+     * thread.
+     * 
      * @param r
      */
     private void serveStopped(RunnableRequest r) {
@@ -621,8 +689,10 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
             if (SAME_THREAD_REENTRANT) {
                 if (r.getHostedOn() != null) {
-                    if (!requestTags.containsKey(r.getHostedOn().getSessionTag())) {
-                        requestTags.put(r.getHostedOn().getSessionTag(),
+                    if (!requestTags.containsKey(r.getHostedOn()
+                            .getSessionTag())) {
+                        requestTags.put(
+                                r.getHostedOn().getSessionTag(),
                                 new HashSet<RequestExecutor.RunnableRequest>());
                     }
                     requestTags.get(r.getSessionTag()).add(r.getHostedOn());
@@ -634,7 +704,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
     @Override
     public void waitForFuture(Future future) {
-        RunnableRequest thisRequest = threadUsage.get(Thread.currentThread().getId()).get(0);
+        RunnableRequest thisRequest =
+                threadUsage.get(Thread.currentThread().getId()).get(0);
         synchronized (thisRequest) {
             synchronized (future) {
                 if (((FutureProxy) future).isAvailable()) {
@@ -649,10 +720,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 try {
                     thisRequest.wait();
                 } catch (InterruptedException e) {
-                    //  TODO Auto-generated catch block
+                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
-                if (hostMap.containsKey(thisRequest) && hostMap.get(thisRequest) != null) {
+                if (hostMap.containsKey(thisRequest)
+                        && hostMap.get(thisRequest) != null) {
                     hostMap.get(thisRequest).run();
                 }
 
@@ -670,7 +742,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     }
 
     /**
-     * Makes a request runnable on a separate thread, by wrapping it in an instance of {@link RunnableRequest}.
+     * Makes a request runnable on a separate thread, by wrapping it in an
+     * instance of {@link RunnableRequest}.
+     * 
      * @param request
      * @return
      */
@@ -679,8 +753,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     }
 
     /**
-     * Wrapper class for a request. Apart from the actual serving it also performs calls for thread registering and unregistering inside the executor and callback after termination in the wrapping service. 
-     * @author  The ProActive Team
+     * Wrapper class for a request. Apart from the actual serving it also
+     * performs calls for thread registering and unregistering inside the
+     * executor and callback after termination in the wrapping service.
+     * 
+     * @author The ProActive Team
      */
     protected class RunnableRequest implements Runnable {
         private Request r;
@@ -714,8 +791,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         }
 
         /**
-         * Tell this request that is can carry on executing, because the event it has been
-         * waiting for has arrived.
+         * Tell this request that is can carry on executing, because the event
+         * it has been waiting for has arrived.
+         * 
          * @param canRun
          */
         public void setCanRun(boolean canRun) {
@@ -724,6 +802,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
         /**
          * Check whether the inner request can carry on the execution.
+         * 
          * @return
          */
         public boolean canRun() {
@@ -731,8 +810,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         }
 
         /**
-         * Tell the outer world on what future's value is this request performing
-         * a wait-by-necessity.
+         * Tell the outer world on what future's value is this request
+         * performing a wait-by-necessity.
+         * 
          * @param waitingOn
          */
         public void setWaitingOn(FutureID waitingOn) {
@@ -740,8 +820,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         }
 
         /**
-         * Find out on what future's value is this request performing
-         * a wait-by-necessity.
+         * Find out on what future's value is this request performing a
+         * wait-by-necessity.
+         * 
          * @return
          */
         public FutureID getWaitingOn() {
@@ -790,7 +871,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         synchronized (this) {
             if (cnt > 0) {
 
-                THREAD_LIMIT = (THREAD_LIMIT > cnt) ? THREAD_LIMIT - cnt : THREAD_LIMIT;
+                THREAD_LIMIT = (THREAD_LIMIT > cnt)
+                        ? THREAD_LIMIT - cnt : THREAD_LIMIT;
                 return THREAD_LIMIT;
             } else {
                 return THREAD_LIMIT;
@@ -829,17 +911,20 @@ public class RequestExecutor implements FutureWaiter, ServingController {
             }
         }
     }
-    
-    private int countActive(){
-//    	System.out.println("active = " + active.size() + ", counter = " + extraActiveRequestCount.get());
-    	return active.size() - extraActiveRequestCount.get();
+
+    public int countActive() {
+        return active.size() - extraActiveRequestCount.get();
     }
-    
-    public void incrementExtraActiveRequestCount(int i){
-    	extraActiveRequestCount.addAndGet(i);
+
+    public void incrementExtraActiveRequestCount(int i) {
+        extraActiveRequestCount.addAndGet(i);
     }
-    
-    public void decrementExtraActiveRequestCount(int i){
-    	extraActiveRequestCount.addAndGet(i*(-1));
+
+    public void decrementExtraActiveRequestCount(int i) {
+        extraActiveRequestCount.addAndGet(i * (-1));
+    }
+
+    public int getExtraActiveRequestCount() {
+        return extraActiveRequestCount.get();
     }
 }

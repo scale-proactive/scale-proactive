@@ -222,7 +222,7 @@ public class MethodGroup {
             return params[parameterPosition.get(name)];
         } else {
             for (int i = 0; i < params.length; i++) {
-                if (params[i].getClass().equals(parameter)) {
+                if (parameter.isAssignableFrom(params[i].getClass())) {
                     parameterPosition.put(name, i);
                     return params[i];
                 }
@@ -445,7 +445,7 @@ public class MethodGroup {
      * @throws IllegalAccessException
      * @throws InvocationTargetException
      */
-    private Object invokeMethod(Class clazz, String method, Object param1, Object param2, Object target,
+    private Object invokeMethod(Class<?> clazz, String method, Object param1, Object param2, Object target,
             boolean enablePrivate) throws IllegalArgumentException, IllegalAccessException,
             InvocationTargetException {
         Object p1 = param1 != null && param2 != null &&

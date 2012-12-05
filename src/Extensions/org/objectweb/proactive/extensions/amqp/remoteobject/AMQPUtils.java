@@ -39,6 +39,9 @@ package org.objectweb.proactive.extensions.amqp.remoteobject;
 import java.io.IOException;
 import java.net.URI;
 
+import javax.net.SocketFactory;
+
+import org.objectweb.proactive.core.ssh.SshTunnelSocketFactory;
 import org.objectweb.proactive.core.util.URIBuilder;
 import org.objectweb.proactive.extensions.amqp.AMQPConfig;
 
@@ -50,33 +53,36 @@ import org.objectweb.proactive.extensions.amqp.AMQPConfig;
  */
 public class AMQPUtils {
 
-    /**
-     *
-     * @param remoteObjectURL
-     * @return
-     */
-    public static String computeQueueNameFromUrl(String remoteObjectURL) {
-        String name = URIBuilder.getNameFromURI(remoteObjectURL);
-        return computeQueueNameFromName(name);
+    private static final ConnectionAndChannelFactory connectionFactory;
+
+    static {
+        SocketFactory socketFactory;
+        if (AMQPConfig.PA_AMQP_SOCKET_FACTORY.isSet() &&
+            "ssh".equals(AMQPConfig.PA_AMQP_SOCKET_FACTORY.getValue())) {
+            socketFactory = new SshTunnelSocketFactory(AMQPConfig.PA_AMQP_SSH_KEY_DIR,
+                AMQPConfig.PA_AMQP_SSH_KNOWN_HOSTS, AMQPConfig.PA_AMQP_SSH_REMOTE_PORT,
+                AMQPConfig.PA_AMQP_SSH_REMOTE_USERNAME);
+        } else {
+            socketFactory = null;
+        }
+        connectionFactory = new ConnectionAndChannelFactory(socketFactory);
     }
+
+    private static final String QUEUE_PREFIX = "proactive.remoteobject.";
 
     /**
-     * build an AMQP queue name from the name used in Programming
+     * build an AMQP queue name from the remote object's name used in Programming
      */
-    public static String computeQueueNameFromName(String name) {
-        return AMQPConfig.PA_AMQP_QUEUE_PREFIX.getValue() + name;
+    public static String computeQueueNameFromURI(URI uri) {
+        return QUEUE_PREFIX + URIBuilder.getNameFromURI(uri);
     }
 
-    public static ReusableChannel getChannel(URI uri) throws IOException {
-        return ConnectionAndChannelFactory.getInstance().getChannel(getConnectionParameters(uri));
+    static ReusableChannel getChannel(URI uri) throws IOException {
+        return connectionFactory.getChannel(getConnectionParameters(uri));
     }
 
-    public static RpcReusableChannel getRpcChannel(URI uri) throws IOException {
-        return ConnectionAndChannelFactory.getInstance().getRpcChannel(getConnectionParameters(uri));
-    }
-
-    public static void returnChannel(ReusableChannel channel) {
-        ConnectionAndChannelFactory.getInstance().returnChannel(channel);
+    static RpcReusableChannel getRpcChannel(URI uri) throws IOException {
+        return connectionFactory.getRpcChannel(getConnectionParameters(uri));
     }
 
     private static AMQPConnectionParameters getConnectionParameters(URI uri) {

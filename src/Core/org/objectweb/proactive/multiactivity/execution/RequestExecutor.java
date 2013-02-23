@@ -37,6 +37,7 @@
 package org.objectweb.proactive.multiactivity.execution;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -57,22 +58,27 @@ import org.objectweb.proactive.core.body.future.FutureID;
 import org.objectweb.proactive.core.body.future.FutureProxy;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.body.request.RequestQueue;
-import org.objectweb.proactive.core.body.tags.Tag;
-import org.objectweb.proactive.core.body.tags.tag.DsiTag;
 import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.util.log.Loggers;
+import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.ServingController;
 import org.objectweb.proactive.multiactivity.ServingPolicy;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
+import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
+import org.objectweb.proactive.multiactivity.priority.PriorityConstraints;
+import org.objectweb.proactive.multiactivity.priority.PriorityGroup;
 
 
 /**
- * The request executor that constitutes the multi-active service. It contains two management threads: one listens to
- * the queue and applies the schedulign policy, while the other manages the execution of requests on threads.
+ * The request executor that constitutes the multi-active service. It contains
+ * two management threads: one listens to the queue and applies the schedulign
+ * policy, while the other manages the execution of requests on threads.
  * 
  * @author The ProActive Team
  */
 public class RequestExecutor implements FutureWaiter, ServingController {
+
+    public static Logger log = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
     /**
      * Number of concurrent threads allowed
@@ -102,7 +108,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     /**
      * Requests submitted but not started yet
      */
-    protected HashSet<RunnableRequest> ready;
+    protected Set<RunnableRequest> ready;
 
     /**
      * Requests currently being executed.
@@ -148,19 +154,32 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
     protected HashMap<Request, Set<Request>> invalidates = new HashMap<Request, Set<Request>>();
 
-    // TODO patch to be removed
+    /*
+     * This counter allows to warn the multiactivity framework that a thread has 
+     * been sent to sleep or awaken from sleep manually such that these state are 
+     * considered in the soft and hard limit of multi active objects.
+     */
     private AtomicInteger extraActiveRequestCount = new AtomicInteger(0);
+
+    private final PriorityConstraints priorityConstraints;
 
     /**
      * Default constructor.
      * 
-     * @param body Body of the active object.
-     * @param compatibility Compatibility information of the active object's class
+     * @param body
+     *            Body of the active object.
+     * @param compatibility
+     *            Compatibility information of the active object's class
+     * @param priorityConstraints
+     *            Priority constraints
      */
-    public RequestExecutor(Body body, CompatibilityTracker compatibility) {
+    public RequestExecutor(Body body, CompatibilityTracker compatibility,
+            List<PriorityConstraint> priorityConstraints) {
         this.compatibility = compatibility;
         this.body = body;
         this.requestQueue = body.getRequestQueue();
+        this.priorityConstraints = priorityConstraints.isEmpty() ? null : new PriorityConstraints(
+            priorityConstraints);
 
         executorService = Executors.newCachedThreadPool();
         ready = new HashSet<RunnableRequest>();
@@ -172,22 +191,30 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         hostMap = new ConcurrentHashMap<RunnableRequest, RunnableRequest>();
 
         FutureWaiterRegistry.putForBody(body.getID(), this);
-
     }
 
     /**
      * Constructor with all options.
      * 
-     * @param body Body of the active object
-     * @param compatibility Compatibility information of the active object's class
-     * @param activeLimit Thread limit
-     * @param hardLimit Hard or soft limit (limiting total nb of threads, or only
+     * @param body
+     *            Body of the active object
+     * @param compatibility
+     *            Compatibility information of the active object's class
+     * @param priorityConstraints
+     *            Priority constraints
+     * @param activeLimit
+     *            Thread limit
+     * @param hardLimit
+     *            Hard or soft limit (limiting total nb of threads, or only
      *            those which are active)
-     * @param hostReentrant Whether to serve re-entrant calls on the same thread as their source
+     * @param hostReentrant
+     *            Whether to serve re-entrant calls on the same thread as their
+     *            source
      */
-    public RequestExecutor(Body body, CompatibilityTracker compatibility, int activeLimit, boolean hardLimit,
+    public RequestExecutor(Body body, CompatibilityTracker compatibility,
+            List<PriorityConstraint> priorityConstraints, int activeLimit, boolean hardLimit,
             boolean hostReentrant) {
-        this(body, compatibility);
+        this(body, compatibility, priorityConstraints);
 
         THREAD_LIMIT = activeLimit;
         LIMIT_TOTAL_THREADS = hardLimit;
@@ -202,9 +229,14 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     /**
      * Method for changing the limits inside the executor during runtime.
      * 
-     * @param activeLimit Thread limit
-     * @param hardLimit Hard or soft limit (limiting total nb of threads, or only those which are active)
-     * @param hostReentrant Whether to serve re-entrant calls on the same thread as their source
+     * @param activeLimit
+     *            Thread limit
+     * @param hardLimit
+     *            Hard or soft limit (limiting total nb of threads, or only
+     *            those which are active)
+     * @param hostReentrant
+     *            Whether to serve re-entrant calls on the same thread as their
+     *            source
      */
     public void configure(int activeLimit, boolean hardLimit, boolean hostReentrant) {
         synchronized (this) {
@@ -224,8 +256,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                         for (RunnableRequest r : waiting) {
                             if (isNotAHost(r)) {
                                 if (!requestTags.containsKey(r.getSessionTag())) {
-                                    requestTags.put(r.getSessionTag(),
-                                            new HashSet<RequestExecutor.RunnableRequest>());
+                                    requestTags.put(r.getSessionTag(), new HashSet<RunnableRequest>());
                                 }
                                 requestTags.get(r.getSessionTag()).add(r);
                             }
@@ -438,24 +469,29 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
                 if (SAME_THREAD_REENTRANT) {
 
+                    Collection<RunnableRequest> readyAccordingToPriorities = filterByPriority(ready);
+
                     i = ready.iterator();
                     // see if we can serve a request on the thread of an other
                     // one
                     while (canServeOneHosted() && i.hasNext()) {
                         RunnableRequest parasite = i.next();
-                        String tag = parasite.getSessionTag();
-                        if (tag != null) {
-                            if (requestTags.containsKey(tag)) {
-                                for (RunnableRequest host : requestTags.get(tag)) {
-                                    if (host != null && isNotAHost(host)) {
-                                        synchronized (host) {
-                                            i.remove();
-                                            active.add(parasite);
-                                            hostMap.put(host, parasite);
-                                            requestTags.get(tag).remove(host);
-                                            parasite.setHostedOn(host);
-                                            host.notify();
-                                            break;
+
+                        if (readyAccordingToPriorities.contains(parasite)) {
+                            String tag = parasite.getSessionTag();
+                            if (tag != null) {
+                                if (requestTags.containsKey(tag)) {
+                                    for (RunnableRequest host : requestTags.get(tag)) {
+                                        if (host != null && isNotAHost(host)) {
+                                            synchronized (host) {
+                                                i.remove();
+                                                active.add(parasite);
+                                                hostMap.put(host, parasite);
+                                                requestTags.get(tag).remove(host);
+                                                parasite.setHostedOn(host);
+                                                host.notify();
+                                                break;
+                                            }
                                         }
                                     }
                                 }
@@ -488,14 +524,18 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 }
 
                 // SERVE anyone who is ready and there are resources available
+                Collection<RunnableRequest> readyAccordingToPriorities = filterByPriority(ready);
+                
                 i = ready.iterator();
 
                 while (canServeOne() && i.hasNext()) {
-
                     RunnableRequest next = i.next();
-                    i.remove();
-                    active.add(next);
-                    executorService.execute(next);
+
+                    if (readyAccordingToPriorities.contains(next)) {
+                        i.remove();
+                        active.add(next);
+                        executorService.execute(next);
+                    }
                 }
 
                 // SLEEP if nothing else to do
@@ -509,7 +549,80 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
             }
         }
+    }
 
+    /**
+     * Filters the requests according to priorities defined at compile time.
+     */
+    private final Collection<RunnableRequest> filterByPriority(Collection<RunnableRequest> runnableRequests) {
+        if (this.priorityConstraints == null) {
+            return runnableRequests;
+        }
+
+        this.priorityConstraints.clearPriorityGroups();
+
+        Iterator<RunnableRequest> it = runnableRequests.iterator();
+
+        while (it.hasNext()) {
+            RunnableRequest request = it.next();
+
+            Collection<PriorityConstraint> possibleConstraintsFulfilled = this.priorityConstraints
+                    .getConstraints(request.getRequest().getMethodName());
+
+            if (possibleConstraintsFulfilled == null) {
+                this.priorityConstraints.addToDefaultPriorityGroup(request);
+                continue;
+            }
+
+            for (PriorityConstraint priorityConstraint : possibleConstraintsFulfilled) {
+                if (PriorityConstraints.satisfies(request.getRequest(), priorityConstraint)) {
+                    this.priorityConstraints.addToPriorityGroup(priorityConstraint.getPriorityLevel(),
+                            request);
+                } else {
+                    this.priorityConstraints.addToDefaultPriorityGroup(request);
+                }
+            }
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("Highest priority is " + this.priorityConstraints.getPriorityGroups().lastKey());
+        }
+
+        // find highest priority group
+        for (PriorityGroup priorityGroup : this.priorityConstraints.getPriorityGroups().descendingMap()
+                .values()) {
+            if (priorityGroup.size() > 0) {
+                if (log.isTraceEnabled()) {
+                    log.trace("Highest selected priority group is " + priorityGroup.getPriorityLevel());
+                    for (RunnableRequest request : priorityGroup.getRequests()) {
+                        log.trace("  " + toString(request.getRequest()));
+                    }
+                }
+
+                return priorityGroup.getRequests();
+            }
+        }
+
+        return runnableRequests;
+    }
+
+    private static String toString(Request request) {
+        StringBuilder result = new StringBuilder();
+
+        result.append("methodCallName=[");
+        result.append(request.getMethodCall().getName());
+        result.append("]");
+        result.append(" ");
+
+        for (int i = 0; i < request.getMethodCall().getNumberOfParameter(); i++) {
+            result.append(request.getMethodCall().getParameter(i).getClass());
+
+            if (i < request.getMethodCall().getNumberOfParameter() - 1) {
+                result.append(" ");
+            }
+        }
+
+        return result.toString();
     }
 
     /**
@@ -540,7 +653,10 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      */
     private boolean canResumeOne() {
         return LIMIT_TOTAL_THREADS ? (waiting.size() > 0 && hasArrived.size() > 0)
-                : (waiting.size() > 0 && hasArrived.size() > 0);// && countActive() < THREAD_LIMIT);
+                : (waiting.size() > 0 && hasArrived.size() > 0);// &&
+        // countActive()
+        // <
+        // THREAD_LIMIT);
     }
 
     /**
@@ -548,7 +664,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * the serving of at least one additional one.
      * 
      * @return True if there are ready requests and free resources that permit
-     * the serving of at least one additional one.
+     *         the serving of at least one additional one.
      */
     private boolean canServeOne() {
         return LIMIT_TOTAL_THREADS ? (ready.size() > 0 && threadUsage.keySet().size() < THREAD_LIMIT && countActive() < THREAD_LIMIT)
@@ -559,8 +675,10 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * Called from the {@link #waitForFuture(Future)} method to signal the
      * blocking of a request.
      * 
-     * @param r Wrapper of the request that starts waiting
-     * @param f The future for whose value the wait occurred
+     * @param r
+     *            Wrapper of the request that starts waiting
+     * @param f
+     *            The future for whose value the wait occurred
      */
     private void signalWaitFor(RunnableRequest r, FutureID fId) {
         synchronized (this) {
@@ -573,7 +691,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
             if (SAME_THREAD_REENTRANT) {
                 if (!requestTags.containsKey(r.getSessionTag())) {
-                    requestTags.put(r.getSessionTag(), new HashSet<RequestExecutor.RunnableRequest>());
+                    requestTags.put(r.getSessionTag(), new HashSet<RunnableRequest>());
                 }
                 requestTags.get(r.getSessionTag()).add(r);
             }
@@ -588,8 +706,10 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * Called from the executor's thread to signal a waiting request that it can
      * resume execution.
      * 
-     * @param r The request's wrapper
-     * @param fId The future it was waiting for
+     * @param r
+     *            The request's wrapper
+     * @param fId
+     *            The future it was waiting for
      */
     private void resumeServing(RunnableRequest r, FutureID fId) {
         synchronized (this) {
@@ -618,13 +738,23 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         }
     }
 
+    public void serve(RunnableRequest runnableRequest) {
+        this.serveStarted(runnableRequest);
+        body.serve(runnableRequest.getRequest());
+        synchronized (this.requestQueue) {
+            serveStopped(runnableRequest);
+            compatibility.removeRunning(runnableRequest.getRequest());
+            requestQueue.notify();
+        }
+    }
+
     /**
      * Tell the executor about the creation of a new thread, of the current
      * usage of an already existing thread.
      * 
      * @param r
      */
-    private void serveStarted(RunnableRequest r) {
+    public void serveStarted(RunnableRequest r) {
         synchronized (this) {
             Long tId = Thread.currentThread().getId();
             if (!threadUsage.containsKey(tId)) {
@@ -656,8 +786,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
             if (SAME_THREAD_REENTRANT) {
                 if (r.getHostedOn() != null) {
                     if (!requestTags.containsKey(r.getHostedOn().getSessionTag())) {
-                        requestTags.put(r.getHostedOn().getSessionTag(),
-                                new HashSet<RequestExecutor.RunnableRequest>());
+                        requestTags.put(r.getHostedOn().getSessionTag(), new HashSet<RunnableRequest>());
                     }
                     requestTags.get(r.getSessionTag()).add(r.getHostedOn());
                 }
@@ -711,114 +840,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * @return
      */
     protected RunnableRequest wrapRequest(Request request) {
-        return new RunnableRequest(request);
-    }
-
-    /**
-     * Wrapper class for a request. Apart from the actual serving it also
-     * performs calls for thread registering and unregistering inside the
-     * executor and callback after termination in the wrapping service.
-     * 
-     * @author The ProActive Team
-     */
-    protected class RunnableRequest implements Runnable {
-        private Request r;
-        private boolean canRun = true;
-        private FutureID waitingOn;
-        private RunnableRequest hostedOn;
-        private String sessionTag;
-
-        public RunnableRequest(Request r) {
-            this.r = r;
-        }
-
-        public Request getRequest() {
-            return r;
-        }
-
-        @Override
-        public void run() {
-            serveStarted(this);
-            body.serve(r);
-            synchronized (requestQueue) {
-                serveStopped(this);
-                compatibility.removeRunning(r);
-                requestQueue.notify();
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "Wrapper for " + r.toString();
-        }
-
-        /**
-         * Tell this request that is can carry on executing, because the event
-         * it has been waiting for has arrived.
-         * 
-         * @param canRun
-         */
-        public void setCanRun(boolean canRun) {
-            this.canRun = canRun;
-        }
-
-        /**
-         * Check whether the inner request can carry on the execution.
-         * 
-         * @return
-         */
-        public boolean canRun() {
-            return canRun;
-        }
-
-        /**
-         * Tell the outer world on what future's value is this request
-         * performing a wait-by-necessity.
-         * 
-         * @param waitingOn
-         */
-        public void setWaitingOn(FutureID waitingOn) {
-            this.waitingOn = waitingOn;
-        }
-
-        /**
-         * Find out on what future's value is this request performing a
-         * wait-by-necessity.
-         * 
-         * @return
-         */
-        public FutureID getWaitingOn() {
-            return waitingOn;
-        }
-
-        private void setSessionTag(String sessionTag) {
-            this.sessionTag = sessionTag;
-        }
-
-        public String getSessionTag() {
-            if (sessionTag != null) {
-                return sessionTag;
-            } else {
-                Tag tag = getRequest().getTags().getTag(DsiTag.IDENTIFIER);
-                if (tag != null) {
-                    Object tagObject = tag.getData();
-                    if (tagObject != null) {
-                        String[] tagData = ((String) (tagObject)).split("::");
-                        setSessionTag(tagData[0] + "::" + tagData[1]);
-                    }
-                }
-                return sessionTag;
-            }
-        }
-
-        public void setHostedOn(RunnableRequest hostedOn) {
-            this.hostedOn = hostedOn;
-        }
-
-        public RunnableRequest getHostedOn() {
-            return hostedOn;
-        }
-
+        return new RunnableRequest(this, request);
     }
 
     @Override
@@ -882,10 +904,15 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     }
 
     public void decrementExtraActiveRequestCount(int i) {
-        extraActiveRequestCount.addAndGet(i * (-1));
+        extraActiveRequestCount.addAndGet(i * -1);
     }
 
     public int getExtraActiveRequestCount() {
         return extraActiveRequestCount.get();
     }
+
+    public PriorityConstraints getPriorityConstraints() {
+        return this.priorityConstraints;
+    }
+
 }

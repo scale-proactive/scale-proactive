@@ -46,10 +46,11 @@ import org.objectweb.proactive.annotation.PublicAPI;
 
 
 /**
- * This annotation is to be used to define the list of compatibility rules ({@link Compatible}) that 
- * apply to the {@link Group}s defined inside the {@link DefineGroups} annotation.
+ * This annotation is to be used to define the list of compatibility rules (
+ * {@link Compatible}) that apply to the {@link Group}s defined inside the
+ * {@link DefineGroups} annotation.
+ * 
  * @author The ProActive Team
- *
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)

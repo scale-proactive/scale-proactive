@@ -46,9 +46,10 @@ import org.objectweb.proactive.annotation.PublicAPI;
 
 
 /**
- * This annotation is used to define a list of {@link Group}s at the header of a class.
+ * This annotation is used to define a list of {@link Group}s at the header of a
+ * class.
+ * 
  * @author The ProActive Team
- *
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)

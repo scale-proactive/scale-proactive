@@ -41,9 +41,12 @@ import java.util.LinkedList;
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.Service;
+import org.objectweb.proactive.core.util.log.Loggers;
+import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.compatibility.AnnotationProcessor;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
+import org.objectweb.proactive.multiactivity.priority.PriorityConstraints;
 
 
 /**
@@ -63,7 +66,7 @@ public class MultiActiveService extends Service {
     public LinkedList<Integer> serveHistory = new LinkedList<Integer>();
     public LinkedList<Integer> serveTsts = new LinkedList<Integer>();
 
-    Logger logger = Logger.getLogger(this.getClass());
+    private static final Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
     CompatibilityTracker compatibility;
     RequestExecutor executor = null;
@@ -86,9 +89,14 @@ public class MultiActiveService extends Service {
         if (executor != null)
             return;
 
-        compatibility = new CompatibilityTracker(new AnnotationProcessor(body.getReifiedObject().getClass()),
-            requestQueue);
-        executor = new RequestExecutor(body, compatibility);
+        AnnotationProcessor annotationProcessor = new AnnotationProcessor(body.getReifiedObject().getClass());
+
+        compatibility = new CompatibilityTracker(annotationProcessor, requestQueue);
+        executor = new RequestExecutor(body, compatibility, annotationProcessor.getPriorityConstraints());
+
+        if (logger.isDebugEnabled()) {
+            logger.debug(executor.getPriorityConstraints());
+        }
     }
 
     /**
@@ -167,4 +175,9 @@ public class MultiActiveService extends Service {
 
         return executor;
     }
+
+    public PriorityConstraints getPriorityConstraints() {
+        return executor.getPriorityConstraints();
+    }
+
 }

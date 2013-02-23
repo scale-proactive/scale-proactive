@@ -172,4 +172,8 @@ public interface Loggers {
 
     // OSProcess builder
     static final public String OSPB = CORE + ".ospb";
+
+    // MultiActivity
+    public static final String MULTIACTIVITY = CORE + ".multiactivity";
+
 }

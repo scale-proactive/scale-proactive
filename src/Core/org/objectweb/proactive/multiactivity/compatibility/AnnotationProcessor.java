@@ -38,6 +38,7 @@ package org.objectweb.proactive.multiactivity.compatibility;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,32 +50,37 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.annotation.multiactivity.Compatible;
 import org.objectweb.proactive.annotation.multiactivity.DefineGroups;
+import org.objectweb.proactive.annotation.multiactivity.DefinePriorities;
 import org.objectweb.proactive.annotation.multiactivity.DefineRules;
 import org.objectweb.proactive.annotation.multiactivity.Group;
 import org.objectweb.proactive.annotation.multiactivity.MemberOf;
+import org.objectweb.proactive.annotation.multiactivity.Priority;
 import org.objectweb.proactive.core.util.log.Loggers;
+import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
 
 
 /**
- * Reads and processes the multi-activity related annotations of a class and produces 
- * two data structures that describe the compatibility of the methods of this class.
- * <br>
+ * Reads and processes the multi-activity related annotations of a class and
+ * produces two data structures that describe the compatibility of the methods
+ * of this class. <br>
  * These data structures are:
  * <ul>
- * 	<li>group map -- this is a map that associates the names of the groups with the actual 
- * {@link MethodGroup}s. It can be retrieved through the {@link #getMethodGroups()} method.</li>
- *  <li>method map -- this is a map that holds the group that each method belongs to. It can be 
- *  accessed through the {@link #getMethodMemberships()} method.</li> 
+ * <li>group map -- this is a map that associates the names of the groups with
+ * the actual {@link MethodGroup}s. It can be retrieved through the
+ * {@link #getMethodGroups()} method.</li>
+ * <li>method map -- this is a map that holds the group that each method belongs
+ * to. It can be accessed through the {@link #getMethodMemberships()} method.</li>
  * </ul>
  * 
  * <br>
- * For information on the multi-active annotations, please refer to the 
+ * For information on the multi-active annotations, please refer to the
  * <code>org.objectweb.proactive.annotations.multiactivity</code> package.
+ * 
  * @author The ProActive Team
- *
+ * 
  */
 public class AnnotationProcessor {
-    //text used to define the place and type of an error in the annotations
+    // text used to define the place and type of an error in the annotations
     protected static final String LOC_CLASS = "at class";
     protected static final String LOC_METHOD = "at method";
     protected static final String UNDEF_GROUP = "undefined group";
@@ -84,36 +90,40 @@ public class AnnotationProcessor {
 
     protected Logger logger = Logger.getLogger(Loggers.MAO);
 
-    //group names -> method groups
+    // group names -> method groups
     private Map<String, MethodGroup> groups = new HashMap<String, MethodGroup>();
-    //method name -> method group in which it is member
+    // method name -> method group in which it is member
     private Map<String, MethodGroup> methods = new HashMap<String, MethodGroup>();
 
-    //class that is processed
+    private List<PriorityConstraint> priorityConstraints = new ArrayList<PriorityConstraint>();
+
+    // class that is processed
     private Class<?> processedClass;
 
-    //set of the method name inside a class -- used for error checking -- populated only on need
+    // set of the method name inside a class -- used for error checking --
+    // populated only on need
     private HashSet<String> classMethods;
 
-    //list of errors
+    // list of errors
     protected List<String> errorMessages = new LinkedList<String>();
 
     public AnnotationProcessor(Class<?> c) {
         processedClass = c;
 
-        //create the inheritance list of the class (in descending order of "age")
-        List<Class> parents = new LinkedList<Class>();
+        // create the inheritance list of the class (in descending order of
+        // "age")
+        List<Class<?>> parents = new LinkedList<Class<?>>();
         parents.add(c);
         Class<?> p;
         while ((p = parents.get(0).getSuperclass()) != null) {
             parents.add(0, p);
         }
 
-        Iterator<Class> i = parents.iterator();
+        Iterator<Class<?>> i = parents.iterator();
 
-        //process group and rule definitions starting from the oldest class.
+        // process group and rule definitions starting from the oldest class.
         while (i.hasNext()) {
-            processGroupsAndRules(i.next());
+            processAnnotationsAtClasses(i.next());
         }
 
         processAnnotationsAtMethods();
@@ -122,29 +132,36 @@ public class AnnotationProcessor {
     /**
      * Reads and processes the following types of class-level annotations:
      * <ul>
-     *  <li>{@link DefineGroups} and {@link Group} -- these define the groups</li>
-     *  <li>{@link DefineRules} and {@link Compatible} -- these define the rules that apply between them</li>
+     * <li>{@link DefineGroups} and {@link Group} -- these define the groups</li>
+     * <li>{@link DefineRules} and {@link Compatible} -- these define the rules
+     * that apply between them</li>
      * </ul>
      */
-    protected void processGroupsAndRules(Class<?> processedClass) {
+    protected void processAnnotationsAtClasses(Class<?> processedClass) {
         Annotation[] declaredAnns = processedClass.getDeclaredAnnotations();
         Annotation groupDefAnn = null;
         Annotation compDefAnn = null;
+        Annotation priorityDefAnn = null;
 
         for (Annotation a : declaredAnns) {
             if (groupDefAnn == null && a.annotationType().equals(DefineGroups.class)) {
                 groupDefAnn = a;
             }
+
             if (compDefAnn == null && a.annotationType().equals(DefineRules.class)) {
                 compDefAnn = a;
             }
 
-            if (compDefAnn != null && groupDefAnn != null) {
+            if (priorityDefAnn == null && a.annotationType().equals(DefinePriorities.class)) {
+                priorityDefAnn = a;
+            }
+
+            if (compDefAnn != null && groupDefAnn != null && priorityDefAnn != null) {
                 break;
             }
         }
 
-        //if there are groups
+        // if there are groups
         if (groupDefAnn != null) {
             for (Group g : ((DefineGroups) groupDefAnn).value()) {
                 if (!groups.containsKey(g.name())) {
@@ -183,6 +200,14 @@ public class AnnotationProcessor {
             }
         }
 
+        // if there are priorities defined
+        if (priorityDefAnn != null) {
+            for (Priority p : ((DefinePriorities) priorityDefAnn).value()) {
+                if (p.level() != 0) {
+                    this.priorityConstraints.add(new PriorityConstraint(p.level(), p.name(), p.parameters()));
+                }
+            }
+        }
     }
 
     /*
@@ -259,20 +284,29 @@ public class AnnotationProcessor {
     /**
      * Reads and processes the following method-level annotations:
      * <ul>
-     *  <li>{@link MemberOf} -- the group the method belongs to</li>
-     *  <li>{@link Compatible} -- the additional methods this method is compatible with</li>
+     * <li>{@link MemberOf} -- the group the method belongs to</li>
+     * <li>{@link Compatible} -- the additional methods this method is
+     * compatible with</li>
      * </ul>
      */
     protected void processAnnotationsAtMethods() {
-        HashMap<String, HashSet<String>> compMap = new HashMap<String, HashSet<String>>();
+        // HashMap<String, HashSet<String>> compMap =
+        // new HashMap<String, HashSet<String>>();
 
-        //go through each public method of a class
+        // go through each public method of a class
         for (Method method : processedClass.getMethods()) {
 
-            //check what group is it part of
+            // check what group is it part of
             MemberOf group = method.getAnnotation(MemberOf.class);
             if (group != null) {
                 MethodGroup mg = groups.get(group.value());
+
+                // priority level specified for a method that belongs
+                // to a group
+                if (group.priority() != 0) {
+                    priorityConstraints.add(new PriorityConstraint(group.priority(), method.getName()));
+                }
+
                 String methodSignature = method.toString();
                 methods.put(methodSignature.substring(methodSignature.indexOf(method.getName())), mg);
 
@@ -313,6 +347,7 @@ public class AnnotationProcessor {
 
     /**
      * Adds an error to the error map (which keep
+     * 
      * @param locationType
      * @param location
      * @param problemType
@@ -335,6 +370,7 @@ public class AnnotationProcessor {
 
     /**
      * Returns the list of error messages thrown while processing annotations.
+     * 
      * @return
      */
     public Collection<String> getErrorMessages() {
@@ -342,8 +378,10 @@ public class AnnotationProcessor {
     }
 
     /**
-     * Returns true if the annotations contain references (group names, method names)
-     * that are not defined in the class, or if some groups were redefined.
+     * Returns true if the annotations contain references (group names, method
+     * names) that are not defined in the class, or if some groups were
+     * redefined.
+     * 
      * @return
      */
     public boolean hasErrors() {
@@ -352,6 +390,7 @@ public class AnnotationProcessor {
 
     /**
      * Returns a map that maps the group names to the method groups.
+     * 
      * @return
      */
     public Map<String, MethodGroup> getMethodGroups() {
@@ -360,10 +399,20 @@ public class AnnotationProcessor {
 
     /**
      * Returns a map that pairs each method name with a method group.
+     * 
      * @return
      */
     public Map<String, MethodGroup> getMethodMemberships() {
         return methods;
+    }
+
+    /**
+     * Returns the priority constraints.
+     * 
+     * @return the priorityConstraints.
+     */
+    public List<PriorityConstraint> getPriorityConstraints() {
+        return this.priorityConstraints;
     }
 
     /*
@@ -380,6 +429,7 @@ public class AnnotationProcessor {
      * classVariables.contains(what); }
      */
 
+    @SuppressWarnings("unused")
     private boolean classHasMethod(String what) {
         if (classMethods == null) {
             classMethods = new HashSet<String>();

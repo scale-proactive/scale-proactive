@@ -47,8 +47,11 @@ import org.objectweb.proactive.multiactivity.compatibility.AnnotationProcessor;
 
 /**
  * This annotation can be used to express parallel compatibility between groups.
- * It is to be used inside a {@link DefineRules} annotation, and defines a set of method groups (identified by name) 
- * which can run in parallel. Optionally, a conditioning function can be defined (see {@link AnnotationProcessor} for details on this function).
+ * It is to be used inside a {@link DefineRules} annotation, and defines a set
+ * of method groups (identified by name) which can run in parallel. Optionally,
+ * a conditioning function can be defined (see {@link AnnotationProcessor} for
+ * details on this function).
+ * 
  * @author The ProActive Team
  */
 @Retention(RetentionPolicy.RUNTIME)
@@ -58,12 +61,14 @@ public @interface Compatible {
 
     /**
      * List of group names that can run in parallel.
+     * 
      * @return
      */
     public String[] value();
 
     /**
      * Conditioning function of the compatibility rule.
+     * 
      * @return
      */
     public String condition() default "";

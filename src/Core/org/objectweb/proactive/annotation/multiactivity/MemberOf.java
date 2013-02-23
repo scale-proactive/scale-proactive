@@ -46,10 +46,10 @@ import org.objectweb.proactive.annotation.PublicAPI;
 
 
 /**
- * This annotation shows to which {@link Group} (defined in a {@link DefineGroup} construct)
- * a method belongs to.
+ * This annotation shows to which {@link Group} (defined in a
+ * {@link DefineGroup} construct) a method belongs to.
+ * 
  * @author The ProActive Team
- *
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
@@ -58,9 +58,12 @@ import org.objectweb.proactive.annotation.PublicAPI;
 public @interface MemberOf {
 
     /**
-     * The name of the group
-     * @return
+     * The name of the group.
+     * 
+     * @return the name of the group.
      */
-    public String value();
+    String value();
+
+    int priority() default 0;
 
 }

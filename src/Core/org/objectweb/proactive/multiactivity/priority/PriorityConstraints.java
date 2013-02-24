@@ -38,6 +38,7 @@ package org.objectweb.proactive.multiactivity.priority;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +49,8 @@ import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
 
 /**
- * Maintain {@link PriorityConstraint}s.
+ * Maintain {@link PriorityConstraint}s and registered requests classified by
+ * priorities.
  * 
  * @author The ProActive Team
  */
@@ -88,29 +90,51 @@ public class PriorityConstraints {
         }
     }
 
-    public void addToDefaultPriorityGroup(RunnableRequest request) {
+    private void addToDefaultPriorityGroup(RunnableRequest request) {
         this.priorityGroups.get(0).add(request);
     }
 
-    public void addToPriorityGroup(int groupLevel, RunnableRequest request) {
+    private void addToPriorityGroup(int groupLevel, RunnableRequest request) {
         this.priorityGroups.get(groupLevel).add(request);
-    }
-
-    public void clearPriorityGroups() {
-        for (PriorityGroup priorityGroup : this.priorityGroups.values()) {
-            priorityGroup.clear();
-        }
-    }
-
-    public List<PriorityConstraint> getConstraints(String methodCallName) {
-        return this.priorityConstraints.get(methodCallName);
     }
 
     public TreeMap<Integer, PriorityGroup> getPriorityGroups() {
         return this.priorityGroups;
     }
 
-    public static boolean satisfies(Request request, PriorityConstraint priorityConstraint) {
+    public void register(RunnableRequest runnableRequest) {
+        Collection<PriorityConstraint> possibleConstraintsFulfilled = this.priorityConstraints
+                .get(runnableRequest.getRequest().getMethodName());
+
+        if (possibleConstraintsFulfilled == null) {
+            this.addToDefaultPriorityGroup(runnableRequest);
+            return;
+        }
+
+        for (PriorityConstraint priorityConstraint : possibleConstraintsFulfilled) {
+            if (PriorityConstraints.satisfies(runnableRequest.getRequest(), priorityConstraint)) {
+                this.addToPriorityGroup(priorityConstraint.getPriorityLevel(), runnableRequest);
+            } else {
+                this.addToDefaultPriorityGroup(runnableRequest);
+            }
+        }
+    }
+
+    public void unregister(RunnableRequest runnableRequest, int priorityLevel) {
+        this.priorityGroups.get(priorityLevel).remove(runnableRequest);
+    }
+
+    public PriorityGroup getHighestNonEmptyPriorityGroup() {
+        for (PriorityGroup priorityGroup : this.priorityGroups.descendingMap().values()) {
+            if (priorityGroup.size() > 0) {
+                return priorityGroup;
+            }
+        }
+
+        return null;
+    }
+
+    private static boolean satisfies(Request request, PriorityConstraint priorityConstraint) {
         boolean sameNames = request.getMethodCall().getName().equals(priorityConstraint.getMethodName());
         boolean sameParameters = true;
 
@@ -137,14 +161,23 @@ public class PriorityConstraints {
     @Override
     public String toString() {
         StringBuilder buf = new StringBuilder();
-        buf.append("PriorityConstraints:\n");
 
-        for (List<PriorityConstraint> priorityConstraints : this.priorityConstraints.values()) {
-            for (PriorityConstraint priorityConstraint : priorityConstraints) {
+        Collection<List<PriorityConstraint>> priorities = this.priorityConstraints.values();
+
+        int i = 0;
+        for (List<PriorityConstraint> priorityConstraints : priorities) {
+            for (int j = 0; j < priorityConstraints.size(); j++) {
+                PriorityConstraint priorityConstraint = priorityConstraints.get(j);
+
                 buf.append("  ");
                 buf.append(priorityConstraint.toString());
-                buf.append("\n");
+
+                if (i < priorities.size() - 1 || j < priorityConstraints.size() - 1) {
+                    buf.append("\n");
+                }
             }
+
+            i++;
         }
 
         return buf.toString();

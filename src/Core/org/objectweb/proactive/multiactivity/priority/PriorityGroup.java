@@ -63,6 +63,10 @@ public class PriorityGroup implements Comparator<PriorityGroup> {
         this.requests.add(request);
     }
 
+    public boolean contains(RunnableRequest request) {
+        return this.requests.contains(request);
+    }
+
     public void clear() {
         this.requests.clear();
     }
@@ -71,8 +75,8 @@ public class PriorityGroup implements Comparator<PriorityGroup> {
         return this.priorityLevel;
     }
 
-    public Set<RunnableRequest> getRequests() {
-        return this.requests;
+    public boolean remove(RunnableRequest request) {
+        return this.requests.remove(request);
     }
 
     public int size() {

@@ -37,7 +37,6 @@
 package org.objectweb.proactive.multiactivity.execution;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -339,7 +338,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                     synchronized (this) {
                         // add them to the ready set
                         for (int i = 0; i < rc.size(); i++) {
-                            ready.add(wrapRequest(rc.get(i)));
+                            RunnableRequest runnableRequest = wrapRequest(rc.get(i));
+                            ready.add(runnableRequest);
+                            if (priorityConstraints != null) {
+                                priorityConstraints.register(runnableRequest);
+                            }
                         }
 
                         // if anything can be done, let the other thread know
@@ -385,7 +388,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                     synchronized (this) {
                         // add them to the ready set
                         for (int i = 0; i < rc.size(); i++) {
-                            ready.add(wrapRequest(rc.get(i)));
+                            RunnableRequest runnableRequest = wrapRequest(rc.get(i));
+                            ready.add(runnableRequest);
+                            if (priorityConstraints != null) {
+                                priorityConstraints.register(runnableRequest);
+                            }
                         }
 
                         // if anything can be done, let the other thread know
@@ -468,23 +475,33 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 Iterator<RunnableRequest> i;
 
                 if (SAME_THREAD_REENTRANT) {
+                    PriorityGroup priorityGroup = null;
 
-                    Collection<RunnableRequest> readyAccordingToPriorities = filterByPriority(ready);
+                    if (this.priorityConstraints != null) {
+                        priorityGroup = this.priorityConstraints.getHighestNonEmptyPriorityGroup();
+                        tracePriorityGroups(priorityGroup);
+                    }
 
                     i = ready.iterator();
+
+                    log.trace("Requests served");
                     // see if we can serve a request on the thread of an other
                     // one
                     while (canServeOneHosted() && i.hasNext()) {
                         RunnableRequest parasite = i.next();
 
-                        if (readyAccordingToPriorities.contains(parasite)) {
+                        if (priorityGroup == null || priorityGroup.contains(parasite)) {
                             String tag = parasite.getSessionTag();
                             if (tag != null) {
                                 if (requestTags.containsKey(tag)) {
                                     for (RunnableRequest host : requestTags.get(tag)) {
                                         if (host != null && isNotAHost(host)) {
                                             synchronized (host) {
+                                                log.trace("  " + toString(parasite.getRequest()));
                                                 i.remove();
+                                                if (priorityGroup != null) {
+                                                    priorityGroup.remove(parasite);
+                                                }
                                                 active.add(parasite);
                                                 hostMap.put(host, parasite);
                                                 requestTags.get(tag).remove(host);
@@ -524,17 +541,27 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 }
 
                 // SERVE anyone who is ready and there are resources available
-                Collection<RunnableRequest> readyAccordingToPriorities = filterByPriority(ready);
-                
+                PriorityGroup selectedPriorityGroup = null;
+
+                if (this.priorityConstraints != null) {
+                    selectedPriorityGroup = this.priorityConstraints.getHighestNonEmptyPriorityGroup();
+                    tracePriorityGroups(selectedPriorityGroup);
+                }
+
                 i = ready.iterator();
 
+                log.trace("Requests served");
                 while (canServeOne() && i.hasNext()) {
-                    RunnableRequest next = i.next();
+                    RunnableRequest current = i.next();
 
-                    if (readyAccordingToPriorities.contains(next)) {
+                    if (selectedPriorityGroup == null || selectedPriorityGroup.contains(current)) {
                         i.remove();
-                        active.add(next);
-                        executorService.execute(next);
+                        if (selectedPriorityGroup != null) {
+                            selectedPriorityGroup.remove(current);
+                        }
+                        active.add(current);
+                        executorService.execute(current);
+                        log.trace("  " + toString(current.getRequest()));
                     }
                 }
 
@@ -551,59 +578,19 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         }
     }
 
-    /**
-     * Filters the requests according to priorities defined at compile time.
-     */
-    private final Collection<RunnableRequest> filterByPriority(Collection<RunnableRequest> runnableRequests) {
-        if (this.priorityConstraints == null) {
-            return runnableRequests;
-        }
-
-        this.priorityConstraints.clearPriorityGroups();
-
-        Iterator<RunnableRequest> it = runnableRequests.iterator();
-
-        while (it.hasNext()) {
-            RunnableRequest request = it.next();
-
-            Collection<PriorityConstraint> possibleConstraintsFulfilled = this.priorityConstraints
-                    .getConstraints(request.getRequest().getMethodName());
-
-            if (possibleConstraintsFulfilled == null) {
-                this.priorityConstraints.addToDefaultPriorityGroup(request);
-                continue;
-            }
-
-            for (PriorityConstraint priorityConstraint : possibleConstraintsFulfilled) {
-                if (PriorityConstraints.satisfies(request.getRequest(), priorityConstraint)) {
-                    this.priorityConstraints.addToPriorityGroup(priorityConstraint.getPriorityLevel(),
-                            request);
-                } else {
-                    this.priorityConstraints.addToDefaultPriorityGroup(request);
-                }
-            }
-        }
-
+    private void tracePriorityGroups(PriorityGroup priorityGroup) {
         if (log.isTraceEnabled()) {
-            log.trace("Highest priority is " + this.priorityConstraints.getPriorityGroups().lastKey());
-        }
+            StringBuilder buf = new StringBuilder();
 
-        // find highest priority group
-        for (PriorityGroup priorityGroup : this.priorityConstraints.getPriorityGroups().descendingMap()
-                .values()) {
-            if (priorityGroup.size() > 0) {
-                if (log.isTraceEnabled()) {
-                    log.trace("Highest selected priority group is " + priorityGroup.getPriorityLevel());
-                    for (RunnableRequest request : priorityGroup.getRequests()) {
-                        log.trace("  " + toString(request.getRequest()));
-                    }
-                }
+            buf.append("Priority groups\n");
 
-                return priorityGroup.getRequests();
+            for (PriorityGroup pg : this.priorityConstraints.getPriorityGroups().values()) {
+                buf.append("  groupLevel=" + pg.getPriorityLevel() + "\t nbRequests=" + pg.size() +
+                    ((pg == priorityGroup) ? "\t [selected]" : "") + "\n");
             }
-        }
 
-        return runnableRequests;
+            log.trace(buf.toString());
+        }
     }
 
     private static String toString(Request request) {

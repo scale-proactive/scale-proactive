@@ -47,7 +47,6 @@ import java.util.TreeMap;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
-
 /**
  * Maintain {@link PriorityConstraint}s and registered requests classified by
  * priorities.
@@ -65,37 +64,50 @@ public class PriorityConstraints {
     }
 
     public PriorityConstraints(List<PriorityConstraint> priorityConstraints) {
-        this.priorityConstraints = new HashMap<String, List<PriorityConstraint>>();
+        this.priorityConstraints =
+                new HashMap<String, List<PriorityConstraint>>();
 
         this.priorityGroups = new TreeMap<Integer, PriorityGroup>();
         // priority group for methods without priority
         this.priorityGroups.put(0, new PriorityGroup(0));
 
         for (PriorityConstraint constraint : priorityConstraints) {
-            List<PriorityConstraint> existingEntries = this.priorityConstraints.get(constraint
-                    .getMethodName());
+            List<PriorityConstraint> existingEntries =
+                    this.priorityConstraints.get(constraint.getMethodName());
 
             if (existingEntries == null) {
                 existingEntries = new ArrayList<PriorityConstraint>(1);
                 existingEntries.add(constraint);
-                this.priorityConstraints.put(constraint.getMethodName(), existingEntries);
+                this.priorityConstraints.put(
+                        constraint.getMethodName(), existingEntries);
             } else {
                 existingEntries.add(constraint);
             }
 
             if (!this.priorityGroups.containsKey(constraint.getPriorityLevel())) {
-                this.priorityGroups.put(constraint.getPriorityLevel(), new PriorityGroup(constraint
-                        .getPriorityLevel()));
+                this.priorityGroups.put(
+                        constraint.getPriorityLevel(), new PriorityGroup(
+                                constraint.getPriorityLevel()));
             }
         }
     }
 
     private void addToDefaultPriorityGroup(RunnableRequest request) {
-        this.priorityGroups.get(0).add(request);
+        this.addToPriorityGroup(0, request);
     }
 
     private void addToPriorityGroup(int groupLevel, RunnableRequest request) {
         this.priorityGroups.get(groupLevel).add(request);
+    }
+
+    public int getNbRequestsRegistered() {
+        int sum = 0;
+
+        for (PriorityGroup pg : this.priorityGroups.values()) {
+            sum += pg.size();
+        }
+
+        return sum;
     }
 
     public TreeMap<Integer, PriorityGroup> getPriorityGroups() {
@@ -103,8 +115,9 @@ public class PriorityConstraints {
     }
 
     public void register(RunnableRequest runnableRequest) {
-        Collection<PriorityConstraint> possibleConstraintsFulfilled = this.priorityConstraints
-                .get(runnableRequest.getRequest().getMethodName());
+        Collection<PriorityConstraint> possibleConstraintsFulfilled =
+                this.priorityConstraints.get(runnableRequest.getRequest()
+                        .getMethodName());
 
         if (possibleConstraintsFulfilled == null) {
             this.addToDefaultPriorityGroup(runnableRequest);
@@ -112,8 +125,10 @@ public class PriorityConstraints {
         }
 
         for (PriorityConstraint priorityConstraint : possibleConstraintsFulfilled) {
-            if (PriorityConstraints.satisfies(runnableRequest.getRequest(), priorityConstraint)) {
-                this.addToPriorityGroup(priorityConstraint.getPriorityLevel(), runnableRequest);
+            if (PriorityConstraints.satisfies(
+                    runnableRequest.getRequest(), priorityConstraint)) {
+                this.addToPriorityGroup(
+                        priorityConstraint.getPriorityLevel(), runnableRequest);
             } else {
                 this.addToDefaultPriorityGroup(runnableRequest);
             }
@@ -124,30 +139,38 @@ public class PriorityConstraints {
         this.priorityGroups.get(priorityLevel).remove(runnableRequest);
     }
 
-    public PriorityGroup getHighestNonEmptyPriorityGroup() {
-        for (PriorityGroup priorityGroup : this.priorityGroups.descendingMap().values()) {
+    public PriorityGroup getHighestPriorityGroup() {
+        for (PriorityGroup priorityGroup : this.priorityGroups.descendingMap()
+                .values()) {
             if (priorityGroup.size() > 0) {
                 return priorityGroup;
             }
         }
 
-        return null;
+        return this.priorityGroups.lastEntry().getValue();
     }
 
-    private static boolean satisfies(Request request, PriorityConstraint priorityConstraint) {
-        boolean sameNames = request.getMethodCall().getName().equals(priorityConstraint.getMethodName());
+    private static boolean satisfies(Request request,
+                                     PriorityConstraint priorityConstraint) {
+        boolean sameNames =
+                request.getMethodCall().getName().equals(
+                        priorityConstraint.getMethodName());
         boolean sameParameters = true;
 
         if (priorityConstraint.getParameterTypes() != null) {
             for (int i = 0; i < priorityConstraint.getParameterTypes().size(); i++) {
-                Class<?> parameterClazz = priorityConstraint.getParameterTypes().get(i);
+                Class<?> parameterClazz =
+                        priorityConstraint.getParameterTypes().get(i);
 
                 if (i >= request.getMethodCall().getNumberOfParameter()) {
                     sameParameters = false;
                     break;
                 } else {
-                    sameParameters &= request.getMethodCall().getParameter(i).getClass().equals(
-                            parameterClazz);
+                    sameParameters &=
+                            request.getMethodCall()
+                                    .getParameter(i)
+                                    .getClass()
+                                    .equals(parameterClazz);
                 }
             }
         }
@@ -162,17 +185,20 @@ public class PriorityConstraints {
     public String toString() {
         StringBuilder buf = new StringBuilder();
 
-        Collection<List<PriorityConstraint>> priorities = this.priorityConstraints.values();
+        Collection<List<PriorityConstraint>> priorities =
+                this.priorityConstraints.values();
 
         int i = 0;
         for (List<PriorityConstraint> priorityConstraints : priorities) {
             for (int j = 0; j < priorityConstraints.size(); j++) {
-                PriorityConstraint priorityConstraint = priorityConstraints.get(j);
+                PriorityConstraint priorityConstraint =
+                        priorityConstraints.get(j);
 
                 buf.append("  ");
                 buf.append(priorityConstraint.toString());
 
-                if (i < priorities.size() - 1 || j < priorityConstraints.size() - 1) {
+                if (i < priorities.size() - 1
+                        || j < priorityConstraints.size() - 1) {
                     buf.append("\n");
                 }
             }

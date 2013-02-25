@@ -41,7 +41,6 @@ import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.body.tags.Tag;
 import org.objectweb.proactive.core.body.tags.tag.DsiTag;
 
-
 /**
  * Wrapper class for a request. Apart from the actual serving it also performs
  * calls for thread registering and unregistering inside the executor and
@@ -90,7 +89,7 @@ public class RunnableRequest implements Runnable {
     /**
      * Check whether the inner request can carry on the execution.
      * 
-     * @return
+     * @return true if the inner request can carry on the execution.
      */
     public boolean canRun() {
         return canRun;
@@ -110,7 +109,8 @@ public class RunnableRequest implements Runnable {
      * Find out on what future's value is this request performing a
      * wait-by-necessity.
      * 
-     * @return
+     * @return on what future's value is this request performing a
+     *         wait-by-necessity.
      */
     public FutureID getWaitingOn() {
         return waitingOn;

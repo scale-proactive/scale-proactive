@@ -41,7 +41,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-
 /**
  * Defines the priority level to apply to the method call with the specified
  * method name and optionally, the given parameter types.
@@ -61,14 +60,22 @@ public class PriorityConstraint implements Comparator<PriorityConstraint> {
         this(priorityLevel, methodName, (List<Class<?>>) null);
     }
 
-    public PriorityConstraint(int priorityLevel, String methodName, Class<?>... parameterTypes) {
-        this(priorityLevel, methodName, (parameterTypes == null || parameterTypes.length == 0) ? null
-                : Collections.unmodifiableList(Arrays.asList(parameterTypes)));
+    public PriorityConstraint(int priorityLevel, String methodName,
+            Class<?>... parameterTypes) {
+        this(
+                priorityLevel,
+                methodName,
+                (parameterTypes == null || parameterTypes.length == 0)
+                        ? null
+                        : Collections.unmodifiableList(Arrays.asList(parameterTypes)));
     }
 
-    public PriorityConstraint(int priorityLevel, String methodName, List<Class<?>> parameterTypes) {
+    public PriorityConstraint(int priorityLevel, String methodName,
+            List<Class<?>> parameterTypes) {
         this.methodName = methodName;
-        this.parameterTypes = (parameterTypes == null || parameterTypes.isEmpty()) ? null : parameterTypes;
+        this.parameterTypes =
+                (parameterTypes == null || parameterTypes.isEmpty())
+                        ? null : parameterTypes;
         this.priorityLevel = priorityLevel;
     }
 
@@ -126,8 +133,10 @@ public class PriorityConstraint implements Comparator<PriorityConstraint> {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((this.methodName == null) ? 0 : this.methodName.hashCode());
-        result = prime * result + ((this.parameterTypes == null) ? 0 : this.parameterTypes.hashCode());
+        result = prime * result + ((this.methodName == null)
+                ? 0 : this.methodName.hashCode());
+        result = prime * result + ((this.parameterTypes == null)
+                ? 0 : this.parameterTypes.hashCode());
         result = prime * result + this.priorityLevel;
         return result;
     }

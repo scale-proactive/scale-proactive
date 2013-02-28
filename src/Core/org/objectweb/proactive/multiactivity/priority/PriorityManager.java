@@ -53,17 +53,21 @@ import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
  * 
  * @author The ProActive Team
  */
-public class PriorityConstraints {
+public class PriorityManager {
 
+    // static constraints defined through annotations
+    // key is methodName, values are priority constraints that are for a same
+    // methodName but different parameter values
     private final Map<String, List<PriorityConstraint>> priorityConstraints;
 
+    // priority groups that contain registered requests classified by priority
     private final TreeMap<Integer, PriorityGroup> priorityGroups;
 
-    public PriorityConstraints(PriorityConstraint... priorityConstraints) {
+    public PriorityManager(PriorityConstraint... priorityConstraints) {
         this(Arrays.asList(priorityConstraints));
     }
 
-    public PriorityConstraints(List<PriorityConstraint> priorityConstraints) {
+    public PriorityManager(List<PriorityConstraint> priorityConstraints) {
         this.priorityConstraints =
                 new HashMap<String, List<PriorityConstraint>>();
 
@@ -125,14 +129,16 @@ public class PriorityConstraints {
         }
 
         for (PriorityConstraint priorityConstraint : possibleConstraintsFulfilled) {
-            if (PriorityConstraints.satisfies(
+            if (PriorityManager.satisfies(
                     runnableRequest.getRequest(), priorityConstraint)) {
+                runnableRequest.setPriorityConstraint(priorityConstraint);
                 this.addToPriorityGroup(
                         priorityConstraint.getPriorityLevel(), runnableRequest);
-            } else {
-                this.addToDefaultPriorityGroup(runnableRequest);
+                return;
             }
         }
+
+        this.addToDefaultPriorityGroup(runnableRequest);
     }
 
     public void unregister(RunnableRequest runnableRequest, int priorityLevel) {
@@ -148,6 +154,53 @@ public class PriorityConstraints {
         }
 
         return this.priorityGroups.lastEntry().getValue();
+    }
+
+    public Map<String, List<PriorityConstraint>> getPriorityConstraints() {
+        return this.priorityConstraints;
+    }
+    
+    /**
+     * Returns the requests that satisfy the following conditions: all the
+     * requests returned belong to the same priority constraint. This priority
+     * constraint has a maxBoostThreads value > 0. Also, this priority
+     * constraint has a activeBoostThreads value < maxBoostThreads. Finally,
+     * this priority constraint has the highest level among others for the
+     * previous conditions.
+     * 
+     * @return the requests that satisfy the following conditions: all the
+     *         requests returned belong to the same priority constraint. This
+     *         priority constraint has a maxBoostThreads value > 0. Also, this
+     *         priority constraint has a activeBoostThreads value <
+     *         maxBoostThreads. Finally, this priority constraint has the
+     *         highest level among others for the previous conditions.
+     */
+    public List<RunnableRequest> getBoostableRequestsFromConstraintWithHighestPriorityLevel() {
+        List<RunnableRequest> result = new ArrayList<RunnableRequest>();
+
+        for (PriorityGroup priorityGroup : this.priorityGroups.descendingMap()
+                .values()) {
+            for (RunnableRequest runnableRequest : priorityGroup) {
+                PriorityConstraint pc = runnableRequest.getPriorityConstraint();
+
+                if (result.size() == 0 && pc != null
+                        && pc.getMaxBoostThreads() > 0
+                        && pc.getActiveBoostThreads() < pc.getMaxBoostThreads()) {
+                    result.add(runnableRequest);
+                } else if (result.size() > 0) {
+                    if (pc != null
+                            && pc.equals(result.get(0).getPriorityConstraint())) {
+                        result.add(runnableRequest);
+                    }
+                }
+            }
+
+            if (result.size() > 0) {
+                return result;
+            }
+        }
+
+        return null;
     }
 
     private static boolean satisfies(Request request,

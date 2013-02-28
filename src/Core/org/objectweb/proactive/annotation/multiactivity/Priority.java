@@ -42,7 +42,6 @@ import java.lang.annotation.RetentionPolicy;
 
 import org.objectweb.proactive.annotation.PublicAPI;
 
-
 /**
  * This annotation defines priority for a method name and optionally the
  * specified concrete type of parameters.
@@ -54,11 +53,13 @@ import org.objectweb.proactive.annotation.PublicAPI;
 @PublicAPI
 public @interface Priority {
 
-    public int level();
+    int level();
 
-    public String name();
+    int boostThreads() default 0;
+
+    String name();
 
     @SuppressWarnings("rawtypes")
-    public Class[] parameters() default {};
+    Class[] parameters() default {};
 
 }

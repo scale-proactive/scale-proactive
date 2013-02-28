@@ -46,7 +46,7 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.compatibility.AnnotationProcessor;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
-import org.objectweb.proactive.multiactivity.priority.PriorityConstraints;
+import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 
 
 /**
@@ -181,7 +181,7 @@ public class MultiActiveService extends Service {
         return executor;
     }
 
-    public PriorityConstraints getPriorityConstraints() {
+    public PriorityManager getPriorityConstraints() {
         return executor.getPriorityConstraints();
     }
 

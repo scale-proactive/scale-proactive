@@ -44,7 +44,6 @@ import java.lang.annotation.Target;
 
 import org.objectweb.proactive.annotation.PublicAPI;
 
-
 /**
  * This annotation is used to define a list of {@link Priority}s at the header
  * of a class.
@@ -57,6 +56,6 @@ import org.objectweb.proactive.annotation.PublicAPI;
 @PublicAPI
 public @interface DefinePriorities {
 
-    public Priority[] value();
+    Priority[] value();
 
 }

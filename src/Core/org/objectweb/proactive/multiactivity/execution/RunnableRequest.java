@@ -40,6 +40,7 @@ import org.objectweb.proactive.core.body.future.FutureID;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.body.tags.Tag;
 import org.objectweb.proactive.core.body.tags.tag.DsiTag;
+import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
 
 /**
  * Wrapper class for a request. Apart from the actual serving it also performs
@@ -51,12 +52,23 @@ import org.objectweb.proactive.core.body.tags.tag.DsiTag;
 public class RunnableRequest implements Runnable {
 
     private final RequestExecutor requestExecutor;
+
     private final Request request;
+
     private boolean canRun = true;
+
     private FutureID waitingOn;
+
     private RunnableRequest hostedOn;
+
     private String sessionTag;
 
+    // the priority constraint associated to this runnable request
+    // not so nice to have this field here but it avoids additional maps
+    private PriorityConstraint priorityConstraint;
+
+    private boolean boosted = false;
+    
     public RunnableRequest(RequestExecutor requestExecutor, Request r) {
         this.requestExecutor = requestExecutor;
         this.request = r;
@@ -144,4 +156,20 @@ public class RunnableRequest implements Runnable {
         return hostedOn;
     }
 
+    public boolean isBoosted() {
+        return this.boosted;
+    }
+    
+    public void setBoosted() {
+        this.boosted = true;
+    }
+    
+    public PriorityConstraint getPriorityConstraint() {
+        return this.priorityConstraint;
+    }
+
+    public void setPriorityConstraint(PriorityConstraint priorityConstraint) {
+        this.priorityConstraint = priorityConstraint;
+    }
+    
 }

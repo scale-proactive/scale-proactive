@@ -56,27 +56,40 @@ public class PriorityConstraint implements Comparator<PriorityConstraint> {
     // priority level for methods without priority is 0
     private final int priorityLevel;
 
-    public PriorityConstraint(int priorityLevel, String methodName) {
-        this(priorityLevel, methodName, (List<Class<?>>) null);
+    // maximum boost threads to use
+    private final int maxBoostThreads;
+
+    private int activeBoostThreads;
+
+    public PriorityConstraint(int priorityLevel, int boostThreads,
+            String methodName) {
+        this(priorityLevel, boostThreads, methodName, (List<Class<?>>) null);
     }
 
-    public PriorityConstraint(int priorityLevel, String methodName,
-            Class<?>... parameterTypes) {
+    public PriorityConstraint(int priorityLevel, int boostThreads,
+            String methodName, Class<?>... parameterTypes) {
         this(
                 priorityLevel,
+                boostThreads,
                 methodName,
                 (parameterTypes == null || parameterTypes.length == 0)
                         ? null
                         : Collections.unmodifiableList(Arrays.asList(parameterTypes)));
     }
 
-    public PriorityConstraint(int priorityLevel, String methodName,
-            List<Class<?>> parameterTypes) {
+    public PriorityConstraint(int priorityLevel, int boostThreads,
+            String methodName, List<Class<?>> parameterTypes) {
+        if (boostThreads < 0) {
+            throw new IllegalArgumentException("Illegal boostThreads value: "
+                    + boostThreads + ". It must be positive.");
+        }
+
         this.methodName = methodName;
         this.parameterTypes =
                 (parameterTypes == null || parameterTypes.isEmpty())
                         ? null : parameterTypes;
         this.priorityLevel = priorityLevel;
+        this.maxBoostThreads = boostThreads;
     }
 
     /**
@@ -90,6 +103,24 @@ public class PriorityConstraint implements Comparator<PriorityConstraint> {
     /**
      * {@inheritDoc}
      */
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + this.activeBoostThreads;
+        result = prime * result + this.maxBoostThreads;
+        result = prime * result + ((this.methodName == null)
+                ? 0 : this.methodName.hashCode());
+        result = prime * result + ((this.parameterTypes == null)
+                ? 0 : this.parameterTypes.hashCode());
+        result = prime * result + this.priorityLevel;
+        return result;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean equals(Object obj) {
         if (this == obj) {
             return true;
@@ -97,12 +128,16 @@ public class PriorityConstraint implements Comparator<PriorityConstraint> {
         if (obj == null) {
             return false;
         }
-
-        if (this.getClass() != obj.getClass()) {
+        if (getClass() != obj.getClass()) {
             return false;
         }
-
         PriorityConstraint other = (PriorityConstraint) obj;
+        if (this.activeBoostThreads != other.activeBoostThreads) {
+            return false;
+        }
+        if (this.maxBoostThreads != other.maxBoostThreads) {
+            return false;
+        }
         if (this.methodName == null) {
             if (other.methodName != null) {
                 return false;
@@ -110,7 +145,6 @@ public class PriorityConstraint implements Comparator<PriorityConstraint> {
         } else if (!this.methodName.equals(other.methodName)) {
             return false;
         }
-
         if (this.parameterTypes == null) {
             if (other.parameterTypes != null) {
                 return false;
@@ -118,27 +152,18 @@ public class PriorityConstraint implements Comparator<PriorityConstraint> {
         } else if (!this.parameterTypes.equals(other.parameterTypes)) {
             return false;
         }
-
         if (this.priorityLevel != other.priorityLevel) {
             return false;
         }
-
         return true;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((this.methodName == null)
-                ? 0 : this.methodName.hashCode());
-        result = prime * result + ((this.parameterTypes == null)
-                ? 0 : this.parameterTypes.hashCode());
-        result = prime * result + this.priorityLevel;
-        return result;
+    public int getActiveBoostThreads() {
+        return this.activeBoostThreads;
+    }
+
+    public int getMaxBoostThreads() {
+        return this.maxBoostThreads;
     }
 
     public String getMethodName() {
@@ -151,6 +176,14 @@ public class PriorityConstraint implements Comparator<PriorityConstraint> {
 
     public int getPriorityLevel() {
         return this.priorityLevel;
+    }
+
+    public void incrementActiveBoostThreads() {
+        this.activeBoostThreads++;
+    }
+
+    public void decrementActiveBoostThreads() {
+        this.activeBoostThreads--;
     }
 
     /**

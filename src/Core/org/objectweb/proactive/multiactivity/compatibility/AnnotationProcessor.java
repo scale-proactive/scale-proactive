@@ -203,9 +203,9 @@ public class AnnotationProcessor {
         // if there are priorities defined
         if (priorityDefAnn != null) {
             for (Priority p : ((DefinePriorities) priorityDefAnn).value()) {
-                if (p.level() != 0) {
-                    this.priorityConstraints.add(new PriorityConstraint(p.level(), p.name(), p.parameters()));
-                }
+                this.priorityConstraints.add(new PriorityConstraint(
+                        p.level(), p.boostThreads(), p.name(),
+                        p.parameters()));
             }
         }
     }
@@ -303,9 +303,9 @@ public class AnnotationProcessor {
 
                 // priority level specified for a method that belongs
                 // to a group
-                if (group.priority() != 0) {
-                    priorityConstraints.add(new PriorityConstraint(group.priority(), method.getName()));
-                }
+                priorityConstraints.add(new PriorityConstraint(
+                        group.priority(), group.boostThreads(),
+                        method.getName()));
 
                 String methodSignature = method.toString();
                 methods.put(methodSignature.substring(methodSignature.indexOf(method.getName())), mg);

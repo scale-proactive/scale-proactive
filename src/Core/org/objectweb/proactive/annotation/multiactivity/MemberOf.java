@@ -66,4 +66,6 @@ public @interface MemberOf {
 
     int priority() default 0;
 
+    int boostThreads() default 0;
+    
 }

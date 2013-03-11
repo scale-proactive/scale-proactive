@@ -64,8 +64,8 @@ import org.objectweb.proactive.multiactivity.ServingController;
 import org.objectweb.proactive.multiactivity.ServingPolicy;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
-import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 import org.objectweb.proactive.multiactivity.priority.PriorityGroup;
+import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 
 /**
  * The request executor that constitutes the multi-active service. It contains
@@ -259,9 +259,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                         }
                     } else {
                         requestTags = null;
-                        Logger.getLogger(Loggers.MAO)
-                                .error(
-                                        "Same thread re-entrance was requested, but property 'PA_TAG_DSF' is set to false");
+                        log.error("Same thread re-entrance was requested, but property 'PA_TAG_DSF' is set to false");
                     }
                 } else {
                     // clean up

@@ -56,6 +56,7 @@ import org.objectweb.proactive.annotation.multiactivity.Group;
 import org.objectweb.proactive.annotation.multiactivity.MemberOf;
 import org.objectweb.proactive.annotation.multiactivity.Priority;
 import org.objectweb.proactive.core.util.log.Loggers;
+import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
 
 
@@ -88,7 +89,7 @@ public class AnnotationProcessor {
     protected static final String UNDEF_METHOD = "unresolvable method name";
     protected static final String AD_HOC_GROUP = "AD_HOC_";
 
-    protected Logger logger = Logger.getLogger(Loggers.MAO);
+    protected Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
     // group names -> method groups
     private Map<String, MethodGroup> groups = new HashMap<String, MethodGroup>();

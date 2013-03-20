@@ -95,9 +95,9 @@ public class MultiActiveService extends Service {
         executor = new RequestExecutor(body, compatibility, annotationProcessor.getPriorityConstraints());
 
         if (logger.isDebugEnabled()) {
-            if (executor.getPriorityConstraints() != null) {
+            if (executor.getPriorityManager().getPriorityConstraints().size() > 0) {
                 logger.debug("Priority constraints for " + body.getReifiedObject().getClass());
-                logger.debug(executor.getPriorityConstraints());
+                logger.debug(executor.getPriorityManager());
             } else {
                 logger.debug("No priority constraint defined for " + body.getReifiedObject().getClass());
             }
@@ -182,7 +182,7 @@ public class MultiActiveService extends Service {
     }
 
     public PriorityManager getPriorityConstraints() {
-        return executor.getPriorityConstraints();
+        return executor.getPriorityManager();
     }
 
 }

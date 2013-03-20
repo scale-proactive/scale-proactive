@@ -43,8 +43,17 @@ import java.lang.annotation.RetentionPolicy;
 import org.objectweb.proactive.annotation.PublicAPI;
 
 /**
- * This annotation defines priority for a method name and optionally the
- * specified concrete type of parameters.
+ * This annotation defines a priority constraint for a method name and
+ * optionally the specified concrete type of parameters. The user can set
+ * priority level higher than normal by using a positive increment. The priority
+ * level can be adjusted over a range of -2<sup>31</sup> (the lowest) to
+ * 2<sup>31</sup>-1 (the higher). Methods that satisfy no priority constraint
+ * are assigned to a default (and implicit priority constraint) with priority
+ * level 0.
+ * <p>
+ * The {@link #name()} parameter is let optional to have the possibility to
+ * override the default priority constraint with a desired value for the
+ * {@link #boostThreads()} attribute.
  * 
  * @author The ProActive Team
  */
@@ -53,12 +62,43 @@ import org.objectweb.proactive.annotation.PublicAPI;
 @PublicAPI
 public @interface Priority {
 
+    /**
+     * The priority level can be adjusted over a range of -2<sup>31</sup> (the
+     * lowest) to 2<sup>31</sup>-1 (the higher). Methods that satisfy no
+     * priority constraint are assigned to a default (and implicit priority
+     * constraint) with priority level 0.
+     */
     int level();
 
+    /**
+     * Defines the number of extra threads that are used to execute requests
+     * that belong to this priority constraint when all available threads are
+     * used to execute requests other than those that belong to this priority
+     * constraint. This attribute value is useful to avoid some starvation
+     * issues.
+     * 
+     * @return the number of extra threads that are used to execute requests
+     *         that belong to this priority constraint when all available
+     *         threads are used to execute requests other than those that belong
+     *         to this priority constraint.
+     */
     int boostThreads() default 0;
 
-    String name();
+    /**
+     * Only method calls with the specified name may be assigned to this
+     * priority constraint.
+     * 
+     * @return the name of the methods that may be assigned to this priority
+     *         constraint.
+     */
+    String name() default "";
 
+    /**
+     * Attribute used to assign to this priority constraint only method calls
+     * whose parameters are of the specified types.
+     * 
+     * @return the type of the parameters used to filter method calls.
+     */
     @SuppressWarnings("rawtypes")
     Class[] parameters() default {};
 

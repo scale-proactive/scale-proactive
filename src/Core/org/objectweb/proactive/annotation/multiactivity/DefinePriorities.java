@@ -43,10 +43,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.objectweb.proactive.annotation.PublicAPI;
+import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 
 /**
  * This annotation is used to define a list of {@link Priority}s at the header
- * of a class.
+ * of a class. When a method call satisfies several priority constraints at the
+ * same time, there is no guarantee about which priority constraint is used to
+ * assign the method call to (see todo in
+ * {@link PriorityManager#register(org.objectweb.proactive.multiactivity.execution.RunnableRequest)}
+ * .
  * 
  * @author The ProActive Team
  */

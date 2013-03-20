@@ -56,7 +56,7 @@ import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 public class PriorityManager {
 
     // static constraints defined through annotations
-    // key is methodName, values are priority constraints that are for a same
+    // key is methodName, values are priority constraints for a same
     // methodName but different parameter values
     private final Map<String, List<PriorityConstraint>> priorityConstraints;
 
@@ -72,10 +72,15 @@ public class PriorityManager {
                 new HashMap<String, List<PriorityConstraint>>();
 
         this.priorityGroups = new TreeMap<Integer, PriorityGroup>();
-        // priority group for methods without priority
-        this.priorityGroups.put(0, new PriorityGroup(0));
+
+        // indicates whether there is an annotation defined for priority group 0
+        boolean defaultPriorityGroupOverriden = false;
 
         for (PriorityConstraint constraint : priorityConstraints) {
+            if (constraint.getPriorityLevel() == 0) {
+                defaultPriorityGroupOverriden = true;
+            }
+
             List<PriorityConstraint> existingEntries =
                     this.priorityConstraints.get(constraint.getMethodName());
 
@@ -94,6 +99,11 @@ public class PriorityManager {
                                 constraint.getPriorityLevel()));
             }
         }
+
+        if (!defaultPriorityGroupOverriden) {
+            // adds priority group for methods without priority
+            this.priorityGroups.put(0, new PriorityGroup(0));
+        }
     }
 
     private void addToDefaultPriorityGroup(RunnableRequest request) {
@@ -102,6 +112,16 @@ public class PriorityManager {
 
     private void addToPriorityGroup(int groupLevel, RunnableRequest request) {
         this.priorityGroups.get(groupLevel).add(request);
+    }
+
+    public boolean hasSomeRequestsRegistered() {
+        boolean result = false;
+
+        for (PriorityGroup pg : this.priorityGroups.values()) {
+            result |= pg.size() > 0;
+        }
+
+        return result;
     }
 
     public int getNbRequestsRegistered() {
@@ -119,16 +139,24 @@ public class PriorityManager {
     }
 
     public void register(RunnableRequest runnableRequest) {
+        // first we filter by method name
         Collection<PriorityConstraint> possibleConstraintsFulfilled =
                 this.priorityConstraints.get(runnableRequest.getRequest()
                         .getMethodName());
 
+        // if no entry found the request belongs to the default priority group
         if (possibleConstraintsFulfilled == null) {
             this.addToDefaultPriorityGroup(runnableRequest);
             return;
         }
 
+        // otherwise we try to find to which priority constraint and thus
+        // priority group is associated the request by checking method
+        // parameters
         for (PriorityConstraint priorityConstraint : possibleConstraintsFulfilled) {
+            // TODO: if a request satisfies several priority constraints keep
+            // the one with highest or lower priority to have a predictable
+            // behavior
             if (PriorityManager.satisfies(
                     runnableRequest.getRequest(), priorityConstraint)) {
                 runnableRequest.setPriorityConstraint(priorityConstraint);
@@ -159,7 +187,7 @@ public class PriorityManager {
     public Map<String, List<PriorityConstraint>> getPriorityConstraints() {
         return this.priorityConstraints;
     }
-    
+
     /**
      * Returns the requests that satisfy the following conditions: all the
      * requests returned belong to the same priority constraint. This priority
@@ -203,11 +231,24 @@ public class PriorityManager {
         return null;
     }
 
+    public List<RunnableRequest> getRequestsSatisfying(PriorityConstraint priorityConstraint) {
+        List<RunnableRequest> result = new ArrayList<RunnableRequest>();
+
+        for (RunnableRequest r : this.priorityGroups.get(priorityConstraint.getPriorityLevel())) {
+            if (r.getPriorityConstraint() == priorityConstraint) {
+                result.add(r);
+            }
+        }
+
+        return result;
+    }
+
     private static boolean satisfies(Request request,
                                      PriorityConstraint priorityConstraint) {
         boolean sameNames =
-                request.getMethodCall().getName().equals(
-                        priorityConstraint.getMethodName());
+                priorityConstraint.getMethodName() == null
+                        ? true : request.getMethodCall().getName().equals(
+                                priorityConstraint.getMethodName());
         boolean sameParameters = true;
 
         if (priorityConstraint.getParameterTypes() != null) {

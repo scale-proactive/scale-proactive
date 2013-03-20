@@ -61,6 +61,10 @@ public class PriorityConstraint implements Comparator<PriorityConstraint> {
 
     private int activeBoostThreads;
 
+    public PriorityConstraint(int priorityLevel, int boostThreads) {
+        this(priorityLevel, boostThreads, null);
+    }
+
     public PriorityConstraint(int priorityLevel, int boostThreads,
             String methodName) {
         this(priorityLevel, boostThreads, methodName, (List<Class<?>>) null);
@@ -186,6 +190,10 @@ public class PriorityConstraint implements Comparator<PriorityConstraint> {
         this.activeBoostThreads--;
     }
 
+    public boolean hasFreeBoostThreads() {
+        return this.activeBoostThreads < this.maxBoostThreads;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -195,10 +203,15 @@ public class PriorityConstraint implements Comparator<PriorityConstraint> {
         buf.append("priority=");
         buf.append(this.priorityLevel);
         buf.append(", method=");
-        buf.append(this.methodName);
-        buf.append('(');
+
+        if (this.methodName != null) {
+            buf.append(this.methodName);
+        } else {
+            buf.append('*');
+        }
 
         if (this.parameterTypes != null) {
+            buf.append('(');
             for (int i = 0; i < this.parameterTypes.size(); i++) {
                 Class<?> clazz = this.parameterTypes.get(i);
 
@@ -208,9 +221,13 @@ public class PriorityConstraint implements Comparator<PriorityConstraint> {
                 }
 
             }
+            buf.append(')');
         }
 
-        buf.append(')');
+        buf.append(", boost usage=");
+        buf.append(this.activeBoostThreads);
+        buf.append('/');
+        buf.append(this.maxBoostThreads);
 
         return buf.toString();
     }

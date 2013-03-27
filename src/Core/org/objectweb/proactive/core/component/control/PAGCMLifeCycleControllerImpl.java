@@ -333,6 +333,10 @@ public class PAGCMLifeCycleControllerImpl extends AbstractPAController implement
     }
 
     public void terminateGCMComponent() throws IllegalLifeCycleException {
+       this.terminateGCMComponent(true);
+    }
+    
+    public void terminateGCMComponent(boolean immediate) throws IllegalLifeCycleException {
         if (fcState.equals(LifeCycleController.STOPPED)) {
             String hierarchical_type = owner.getComponentParameters().getHierarchicalType();
             if (hierarchical_type.equals(Constants.PRIMITIVE)) {
@@ -341,7 +345,7 @@ public class PAGCMLifeCycleControllerImpl extends AbstractPAController implement
                     ((GCMLifeCycleController) owner.getReferenceOnBaseObject()).terminateGCMComponent();
                 }
             }
-            PAActiveObject.terminateActiveObject(true);
+            PAActiveObject.terminateActiveObject(immediate);
         } else {
             throw new IllegalLifeCycleException(
                 "Cannot terminate component because the component is not stopped");

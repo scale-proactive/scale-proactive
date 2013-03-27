@@ -68,4 +68,10 @@ public interface PAGCMLifeCycleController extends GCMLifeCycleController {
      * @see org.objectweb.fractal.api.control.LifeCycleController#stopFc()
      */
     public void stopFc(short priority) throws IllegalLifeCycleException;
+
+    /**
+     * @see GCMLifeCycleController#terminateGCMComponent()
+     */
+    public void terminateGCMComponent(boolean immediate) throws IllegalLifeCycleException;
+
 }

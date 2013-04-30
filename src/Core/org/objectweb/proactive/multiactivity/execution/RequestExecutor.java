@@ -63,7 +63,6 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.ServingController;
 import org.objectweb.proactive.multiactivity.ServingPolicy;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
-import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
 import org.objectweb.proactive.multiactivity.priority.PriorityGroup;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 
@@ -167,8 +166,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * @param priorityConstraints
      *            Priority constraints
      */
-    public RequestExecutor(Body body, CompatibilityTracker compatibility,
-            List<PriorityConstraint> priorityConstraints) {
+    public RequestExecutor(Body body, CompatibilityTracker compatibility) {
         this.compatibility = compatibility;
         this.body = body;
         this.requestQueue = body.getRequestQueue();
@@ -204,9 +202,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      *            source
      */
     public RequestExecutor(Body body, CompatibilityTracker compatibility,
-            List<PriorityConstraint> priorityConstraints, int activeLimit,
-            boolean hardLimit, boolean hostReentrant) {
-        this(body, compatibility, priorityConstraints);
+            int activeLimit, boolean hardLimit, boolean hostReentrant) {
+        this(body, compatibility);
 
         THREAD_LIMIT = activeLimit;
         LIMIT_TOTAL_THREADS = hardLimit;
@@ -428,7 +425,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 try {
                     requestQueue.wait();
                 } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
 
@@ -658,35 +654,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         }
     }
 
-    /*private List<PriorityConstraint> findStarvedPriorityConstraints() {
-        List<PriorityConstraint> priorityConstraints =
-                new ArrayList<PriorityConstraint>();
-
-        for (List<PriorityConstraint> pcs : this.priorityManager.getPriorityConstraints()
-                .values()) {
-            for (PriorityConstraint pc : pcs) {
-                if (pc.hasFreeBoostThreads()) {
-                    // priority constraint satisfied by one of the active
-                    // requests
-                    boolean priorityConstraintSatisfied = false;
-
-                    for (RunnableRequest r : active) {
-                        if (r.getPriorityConstraint() == pc) {
-                            priorityConstraintSatisfied = true;
-                            break;
-                        }
-                    }
-
-                    if (!priorityConstraintSatisfied) {
-                        priorityConstraints.add(pc);
-                    }
-                }
-            }
-        }
-
-        return priorityConstraints;
-    }*/
-
     private void tracePriorityGroups(PriorityGroup priorityGroup) {
         if (log.isTraceEnabled()) {
             StringBuilder buf = new StringBuilder();
@@ -887,12 +854,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      */
     private void serveStopped(RunnableRequest r) {
         synchronized (this) {
-            if (r.isBoosted()) {
-                r.getPriorityConstraint().decrementActiveBoostThreads();
-            } else {
-                active.remove(r);
-            }
-
+            active.remove(r);
             Long tId = Thread.currentThread().getId();
             if (!r.equals(threadUsage.get(tId).remove(0))) {
                 System.err.println("Thread inconsistency -- Request is not found in the stack.");
@@ -936,7 +898,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 try {
                     thisRequest.wait();
                 } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
                 if (hostMap.containsKey(thisRequest)

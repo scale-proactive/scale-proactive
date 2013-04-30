@@ -53,15 +53,12 @@ import org.apache.log4j.Logger;
 import org.objectweb.proactive.annotation.multiactivity.Compatible;
 import org.objectweb.proactive.annotation.multiactivity.DefineGroupPriorities;
 import org.objectweb.proactive.annotation.multiactivity.DefineGroups;
-import org.objectweb.proactive.annotation.multiactivity.DefinePriorities;
 import org.objectweb.proactive.annotation.multiactivity.DefineRules;
 import org.objectweb.proactive.annotation.multiactivity.Group;
 import org.objectweb.proactive.annotation.multiactivity.GroupPriority;
 import org.objectweb.proactive.annotation.multiactivity.MemberOf;
-import org.objectweb.proactive.annotation.multiactivity.Priority;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
-import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
 
 /**
  * Reads and processes the multi-activity related annotations of a class and
@@ -100,9 +97,6 @@ public class AnnotationProcessor {
     // method name -> method group in which it is member
     private Map<String, MethodGroup> methods =
             new HashMap<String, MethodGroup>();
-
-    private List<PriorityConstraint> priorityConstraints =
-            new ArrayList<PriorityConstraint>();
 
     // class that is processed
     private Class<?> processedClass;
@@ -148,10 +142,7 @@ public class AnnotationProcessor {
         Annotation[] declaredAnns = processedClass.getDeclaredAnnotations();
         Annotation groupDefAnn = null;
         Annotation compDefAnn = null;
-        Annotation priorityDefAnn = null;
-        ////////////////////MODIFIED BEGIN JROCHAS-PRIORITY-BENCHMARK/////////////////////
         Annotation groupPriorityDefAnn = null;
-        ////////////////////MODIFIED END JROCHAS-PRIORITY-BENCHMARK/////////////////////
 
         for (Annotation a : declaredAnns) {
             if (groupDefAnn == null
@@ -164,20 +155,13 @@ public class AnnotationProcessor {
                 compDefAnn = a;
             }
 
-            if (priorityDefAnn == null
-                    && a.annotationType().equals(DefinePriorities.class)) {
-                priorityDefAnn = a;
-            }
-            
-            ////////////////////MODIFIED BEGIN JROCHAS-PRIORITY-BENCHMARK/////////////////////
             if (groupPriorityDefAnn == null
                     && a.annotationType().equals(DefineGroupPriorities.class)) {
                 groupPriorityDefAnn = a;
             }
             
             if (compDefAnn != null && groupDefAnn != null
-                    && priorityDefAnn != null && groupPriorityDefAnn != null) {
-            ////////////////////MODIFIED END JROCHAS-PRIORITY-BENCHMARK/////////////////////
+                    && groupPriorityDefAnn != null) {
                 break;
             }
         }
@@ -236,32 +220,7 @@ public class AnnotationProcessor {
 
             }
         }
-
-        // if there are priorities defined
-        if (priorityDefAnn != null) {
-            for (Priority p : ((DefinePriorities) priorityDefAnn).value()) {
-                if (
-                // method name, parameters or both should be set to be
-                // considered
-                (!p.name().isEmpty() || p.parameters().length > 0) ||
-                // special case for priority 0 where we can set only
-                // boostThreads if required
-                        (p.level() == 0 && p.name().isEmpty()
-                                && p.parameters().length == 0 && p.boostThreads() > 0)) {
-                    this.priorityConstraints.add(new PriorityConstraint(
-                            p.level(), p.boostThreads(), p.name().isEmpty()
-                                    ? null : p.name(), p.parameters()));
-                } else {
-                    throw new IllegalStateException(
-                            "Illegal priority definition. You should set a value to "
-                                    + "the method name, the method parameters or both. An "
-                                    + "exception is possible for priority level 0 where only "
-                                    + "boost threads attribute is mandatory.");
-                }
-            }
-        }
         
-        ////////////////////MODIFIED BEGIN JROCHAS-PRIORITY-BENCHMARK/////////////////////
         // if there are group priorities defined
         if (groupPriorityDefAnn != null) {
         	GroupPriority[] priorities = 
@@ -285,7 +244,6 @@ public class AnnotationProcessor {
             	priorityLevel++;
             }    
         }
-        ////////////////////MODIFIED END JROCHAS-PRIORITY-BENCHMARK/////////////////////
     }
 
     /*
@@ -378,17 +336,7 @@ public class AnnotationProcessor {
             MemberOf group = method.getAnnotation(MemberOf.class);
             if (group != null) {
                 MethodGroup mg = groups.get(group.value());
-
-                // priority level specified for a method that belongs
-                // to a group
-                if (group.priority() != 0 || group.boostThreads() > 0) {
-                    PriorityConstraint pc =
-                            new PriorityConstraint(
-                                    group.priority(), group.boostThreads(),
-                                    method.getName());
-                    priorityConstraints.add(pc);
-                }
-
+                
                 String methodSignature = method.toString();
                 methods.put(
                         methodSignature.substring(methodSignature.indexOf(method.getName())),
@@ -495,15 +443,6 @@ public class AnnotationProcessor {
      */
     public Map<String, MethodGroup> getMethodMemberships() {
         return methods;
-    }
-
-    /**
-     * Returns the priority constraints.
-     * 
-     * @return the priorityConstraints.
-     */
-    public List<PriorityConstraint> getPriorityConstraints() {
-        return this.priorityConstraints;
     }
 
     /*

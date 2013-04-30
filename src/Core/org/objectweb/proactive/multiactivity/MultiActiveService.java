@@ -37,7 +37,6 @@
 package org.objectweb.proactive.multiactivity;
 
 import java.util.LinkedList;
-import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.Body;
@@ -47,7 +46,6 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.compatibility.AnnotationProcessor;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
-import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 
 
@@ -85,33 +83,24 @@ public class MultiActiveService extends Service {
         //we are not compatible with 'fifoServing' any more.
 
     }
-
-    //initializing the compatibility info and the executor
-    private void init() {
-        this.init(null);
-    }
     
-    private void init(List<PriorityConstraint> priorityConstraints) {
+    private void init() {
         if (executor != null)
             return;
 
         AnnotationProcessor annotationProcessor = new AnnotationProcessor(body.getReifiedObject().getClass());
 
         compatibility = new CompatibilityTracker(annotationProcessor, requestQueue);
-
-        if (priorityConstraints != null) {
-            annotationProcessor.getPriorityConstraints().addAll(priorityConstraints);
-        }
         
-        executor = new RequestExecutor(body, compatibility, annotationProcessor.getPriorityConstraints());
+        executor = new RequestExecutor(body, compatibility);
 
         if (logger.isDebugEnabled()) {
-            if (executor.getPriorityManager().getPriorityConstraints().size() > 0) {
+            /*if (executor.getPriorityManager().getPriorityConstraints().size() > 0) {
                 logger.debug("Priority constraints for " + body.getReifiedObject().getClass());
                 logger.debug(executor.getPriorityManager());
             } else {
                 logger.debug("No priority constraint defined for " + body.getReifiedObject().getClass());
-            }
+            }*/
         }
     }
 
@@ -123,19 +112,6 @@ public class MultiActiveService extends Service {
      */
     public void multiActiveServing(int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
         init();
-        executor.configure(maxActiveThreads, hardLimit, hostReentrant);
-        executor.execute();
-    }
-    
-    /**
-     * Service that relies on the default parallel policy to extract requests from the queue.
-     * @param priority constraints to apply
-     * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
-     * @param hardLimit false if the above limit is applicable only to active (running) threads, but not the waiting ones
-     * @param hostReentrant true if re-entrant calls should be hosted on the issuer's thread
-     */
-    public void multiActiveServing(List<PriorityConstraint> priorityConstraints, int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
-        init(priorityConstraints);
         executor.configure(maxActiveThreads, hardLimit, hostReentrant);
         executor.execute();
     }
@@ -168,9 +144,9 @@ public class MultiActiveService extends Service {
      * @param hardLimit false if the above limit is applicable only to active (running) threads, but not the waiting ones
      * @param hostReentrant true if re-entrant calls should be hosted on the issuer's thread
      */
-    public void policyServing(ServingPolicy policy, List<PriorityConstraint> priorityConstraints, int maxActiveThreads, boolean hardLimit,
+    public void policyServing(ServingPolicy policy, int maxActiveThreads, boolean hardLimit,
             boolean hostReentrant) {
-        init(priorityConstraints);
+        init();
         executor.configure(maxActiveThreads, hardLimit, hostReentrant);
         executor.execute(policy);
     }

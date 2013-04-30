@@ -39,7 +39,9 @@ package org.objectweb.proactive.multiactivity.compatibility;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -49,10 +51,12 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.annotation.multiactivity.Compatible;
+import org.objectweb.proactive.annotation.multiactivity.DefineGroupPriorities;
 import org.objectweb.proactive.annotation.multiactivity.DefineGroups;
 import org.objectweb.proactive.annotation.multiactivity.DefinePriorities;
 import org.objectweb.proactive.annotation.multiactivity.DefineRules;
 import org.objectweb.proactive.annotation.multiactivity.Group;
+import org.objectweb.proactive.annotation.multiactivity.GroupPriority;
 import org.objectweb.proactive.annotation.multiactivity.MemberOf;
 import org.objectweb.proactive.annotation.multiactivity.Priority;
 import org.objectweb.proactive.core.util.log.Loggers;
@@ -145,6 +149,9 @@ public class AnnotationProcessor {
         Annotation groupDefAnn = null;
         Annotation compDefAnn = null;
         Annotation priorityDefAnn = null;
+        ////////////////////MODIFIED BEGIN JROCHAS-PRIORITY-BENCHMARK/////////////////////
+        Annotation groupPriorityDefAnn = null;
+        ////////////////////MODIFIED END JROCHAS-PRIORITY-BENCHMARK/////////////////////
 
         for (Annotation a : declaredAnns) {
             if (groupDefAnn == null
@@ -161,9 +168,16 @@ public class AnnotationProcessor {
                     && a.annotationType().equals(DefinePriorities.class)) {
                 priorityDefAnn = a;
             }
-
+            
+            ////////////////////MODIFIED BEGIN JROCHAS-PRIORITY-BENCHMARK/////////////////////
+            if (groupPriorityDefAnn == null
+                    && a.annotationType().equals(DefineGroupPriorities.class)) {
+                groupPriorityDefAnn = a;
+            }
+            
             if (compDefAnn != null && groupDefAnn != null
-                    && priorityDefAnn != null) {
+                    && priorityDefAnn != null && groupPriorityDefAnn != null) {
+            ////////////////////MODIFIED END JROCHAS-PRIORITY-BENCHMARK/////////////////////
                 break;
             }
         }
@@ -246,6 +260,32 @@ public class AnnotationProcessor {
                 }
             }
         }
+        
+        ////////////////////MODIFIED BEGIN JROCHAS-PRIORITY-BENCHMARK/////////////////////
+        // if there are group priorities defined
+        if (groupPriorityDefAnn != null) {
+        	GroupPriority[] priorities = 
+        			((DefineGroupPriorities) groupPriorityDefAnn).value();
+			ArrayList<GroupPriority> prioritiesList = 
+					new ArrayList<GroupPriority>(Arrays.asList(priorities));
+			// Apply priorities from 0 to infinity
+        	Collections.reverse(prioritiesList);
+        	int priorityLevel = 1;
+            for (GroupPriority p : prioritiesList) {
+            	for (String groupName : p.groupNames()) {
+            		MethodGroup group = this.groups.get(groupName);
+            		if (group != null) {
+            			group.setPriorityLevel(priorityLevel);
+            			logger.trace("Priority: " + priorityLevel + " has been set for group: " + groupName);
+            		}
+            		else {
+            			logger.trace("Group: " + groupName + " has not been found in the group list");
+            		}
+            	}
+            	priorityLevel++;
+            }    
+        }
+        ////////////////////MODIFIED END JROCHAS-PRIORITY-BENCHMARK/////////////////////
     }
 
     /*

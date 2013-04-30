@@ -172,7 +172,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         this.compatibility = compatibility;
         this.body = body;
         this.requestQueue = body.getRequestQueue();
-        this.priorityManager = new PriorityManager(priorityConstraints);
+        this.priorityManager = new PriorityManager(this.compatibility);
 
         executorService = Executors.newCachedThreadPool();
         active = new HashSet<RunnableRequest>();
@@ -342,7 +342,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                             this.notify();
                         } else {
                             // same for boosted methods
-                            Iterator<List<PriorityConstraint>> it =
+                            /*Iterator<List<PriorityConstraint>> it =
                                     this.priorityManager.getPriorityConstraints()
                                             .values()
                                             .iterator();
@@ -356,7 +356,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                                         break;
                                     }
                                 }
-                            }
+                            }*/
                         }
                     }
                 }
@@ -406,7 +406,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                             this.notify();
                         } else {
                             // same for boosted methods
-                            Iterator<List<PriorityConstraint>> it =
+                            /*Iterator<List<PriorityConstraint>> it =
                                     this.priorityManager.getPriorityConstraints()
                                             .values()
                                             .iterator();
@@ -420,7 +420,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                                         break;
                                     }
                                 }
-                            }
+                            }*/
                         }
                     }
                 }
@@ -597,7 +597,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 // priority constraint must have some free boostThreads.
                 if (this.countActive() == THREAD_LIMIT
                         && this.priorityManager.hasSomeRequestsRegistered()) {
-                    List<PriorityConstraint> starvedPriorityConstraints =
+                    /*List<PriorityConstraint> starvedPriorityConstraints =
                             findStarvedPriorityConstraints();
 
                     for (PriorityConstraint pc : starvedPriorityConstraints) {
@@ -642,7 +642,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                                 log.trace(buf.toString());
                             }
                         }
-                    }
+                    }*/
                 }
 
                 // SLEEP if nothing else to do
@@ -658,7 +658,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         }
     }
 
-    private List<PriorityConstraint> findStarvedPriorityConstraints() {
+    /*private List<PriorityConstraint> findStarvedPriorityConstraints() {
         List<PriorityConstraint> priorityConstraints =
                 new ArrayList<PriorityConstraint>();
 
@@ -685,7 +685,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         }
 
         return priorityConstraints;
-    }
+    }*/
 
     private void tracePriorityGroups(PriorityGroup priorityGroup) {
         if (log.isTraceEnabled()) {

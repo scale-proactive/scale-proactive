@@ -36,109 +36,152 @@
  */
 package org.objectweb.proactive.multiactivity.priority;
 
+import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
 
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
 /**
  * Groups requests that have the same priority level.
+ * This class enables to access all the ready requests with the same
+ * priority, without having to check their group at scheduling time.
  * 
  * @author The ProActive Team
  */
-public class PriorityGroup implements Comparator<PriorityGroup>,
-        Iterable<RunnableRequest> {
+public class PriorityGroup implements Comparator<PriorityGroup>, 
+Iterable<RunnableRequest> {
 
-    private final int priorityLevel;
+	// The priority level is "cached" in the
+	// PriorityGroup class to enable fast lookup
+	private final byte priorityLevel;
 
-    private final Set<RunnableRequest> requests;
+	// The list of ready requests. It behaves like a Set, but
+	// a Set here would not enable direct FIFO scheduling within 
+	// a group since the iteration order is not guaranteed.
+	private final ArrayList<RunnableRequest> requests;
 
-    public PriorityGroup(int priorityLevel) {
-        this.priorityLevel = priorityLevel;
-        this.requests = new HashSet<RunnableRequest>();
-    }
+	
+	public PriorityGroup(byte priorityLevel) {
+		this.priorityLevel = priorityLevel;
+		this.requests = new ArrayList<RunnableRequest>();
+	}
+	
+	/**
+	 * Add a {@link RunnableRequest} in the ready list of the priority group.
+	 * Warning: performs in O(n) because the list where it is added 
+	 * behaves like a set.
+	 * @param request
+	 */
+	public void add(RunnableRequest request) {
+		boolean existAlready = false;
+		for (RunnableRequest runnable : this.requests) {
+			if (runnable.equals(request)) {
+				existAlready = true;
+			}
+		}
+		if (!existAlready) {
+			this.requests.add(request);
+		}
+	}
 
-    public void add(RunnableRequest request) {
-        this.requests.add(request);
-    }
+	/**
+	 * @param request
+	 * @return true if the priority group contains the specified request.
+	 */
+	public boolean contains(RunnableRequest request) {
+		return this.requests.contains(request);
+	}
 
-    public boolean contains(RunnableRequest request) {
-        return this.requests.contains(request);
-    }
+	/**
+	 * Empties all registered requests from the group.
+	 */
+	public void clear() {
+		this.requests.clear();
+	}
 
-    public void clear() {
-        this.requests.clear();
-    }
+	/**
+	 * Returns the priority level of all requests registered in
+	 * this priority group. Note: it means that either the requests
+	 * are from the same group or their respective group has the
+	 * same priority level, since priorities are given per group.
+	 * @return The priority level of the group.
+	 */
+	public byte getPriorityLevel() {
+		return this.priorityLevel;
+	}
 
-    public int getPriorityLevel() {
-        return this.priorityLevel;
-    }
+	/**
+	 * Removes a registered request from the priority group.
+	 * @param request
+	 * @return
+	 */
+	public boolean remove(RunnableRequest request) {
+		return this.requests.remove(request);
+	}
 
-    public boolean remove(RunnableRequest request) {
-        return this.requests.remove(request);
-    }
+	/**
+	 * @return The number of registered ready requests.
+	 */
+	public int size() {
+		return this.requests.size();
+	}
 
-    public int size() {
-        return this.requests.size();
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	 @Override
+	 public int compare(PriorityGroup pg1, PriorityGroup pg2) {
+		 return pg1.priorityLevel - pg2.priorityLevel;
+	 }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int compare(PriorityGroup pg1, PriorityGroup pg2) {
-        return pg1.priorityLevel - pg2.priorityLevel;
-    }
+	 /**
+	  * {@inheritDoc}
+	  */
+	 @Override
+	 public int hashCode() {
+		 final int prime = 31;
+		 int result = 1;
+		 result = prime * result + this.priorityLevel;
+		 result = prime * result + ((this.requests == null)
+				 ? 0 : this.requests.hashCode());
+		 return result;
+	 }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + this.priorityLevel;
-        result = prime * result + ((this.requests == null)
-                ? 0 : this.requests.hashCode());
-        return result;
-    }
+	 /**
+	  * {@inheritDoc}
+	  */
+	 @Override
+	 public boolean equals(Object obj) {
+		 if (this == obj) {
+			 return true;
+		 }
+		 if (obj == null) {
+			 return false;
+		 }
+		 if (getClass() != obj.getClass()) {
+			 return false;
+		 }
+		 PriorityGroup other = (PriorityGroup) obj;
+		 if (this.priorityLevel != other.priorityLevel) {
+			 return false;
+		 }
+		 if (this.requests == null) {
+			 if (other.requests != null) {
+				 return false;
+			 }
+		 } else if (!this.requests.equals(other.requests)) {
+			 return false;
+		 }
+		 return true;
+	 }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        PriorityGroup other = (PriorityGroup) obj;
-        if (this.priorityLevel != other.priorityLevel) {
-            return false;
-        }
-        if (this.requests == null) {
-            if (other.requests != null) {
-                return false;
-            }
-        } else if (!this.requests.equals(other.requests)) {
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Iterator<RunnableRequest> iterator() {
-        return requests.iterator();
-    }
+	 /**
+	  * {@inheritDoc}
+	  */
+	 @Override
+	 public Iterator<RunnableRequest> iterator() {
+		 return requests.iterator();
+	 }
 
 }

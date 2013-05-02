@@ -55,17 +55,21 @@ import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 public class MethodGroup {
 
 	public final String name;
+	
 	private final boolean selfCompatible;
 
 	private Set<MethodGroup> compatibleWith = new HashSet<MethodGroup>();
 
 	private final int hashCode;
 
-	////////////////////MODIFIED BEGIN JROCHAS-PRIORITY-BENCHMARK/////////////////////
-	public int priorityLevel;
-	////////////////////MODIFIED END JROCHAS-PRIORITY-BENCHMARK/////////////////////
+	private byte priorityLevel;
+	
+	private boolean prioritySet;
+	
 	private Class<?> parameter = null;
+	
 	private HashMap<String, Integer> parameterPosition = new HashMap<String, Integer>();
+	
 	/**
 	 * Hashmap that contains the name of an other group and the comparator name that has to be used
 	 * when comparing parameters of methods from his group with that other group.
@@ -80,6 +84,7 @@ public class MethodGroup {
 	 */
 	private HashMap<String, Method> comparatorCache = new HashMap<String, Method>();
 
+	
 	/**
 	 * Standard constructor of a named group.
 	 * @param name A descriptive name for the group -- all group names have to be unique
@@ -89,14 +94,12 @@ public class MethodGroup {
 		this.selfCompatible = selfCompatible;
 		this.name = name;
 		this.hashCode = name.hashCode();
-		////////////////////MODIFIED BEGIN JROCHAS-PRIORITY-BENCHMARK/////////////////////
 		this.priorityLevel = PriorityManager.defaultPriorityLevel;
-		////////////////////MODIFIED END JROCHAS-PRIORITY-BENCHMARK/////////////////////
+		this.prioritySet = false;
 
 		if (selfCompatible) {
 			this.compatibleWith.add(this);
 		}
-
 	}
 
 	/**
@@ -111,7 +114,6 @@ public class MethodGroup {
 			try {
 				this.parameter = Class.forName(parameter);
 			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -152,15 +154,35 @@ public class MethodGroup {
 	 * }
 	 */
 
-	////////////////////MODIFIED BEGIN JROCHAS-PRIORITY-BENCHMARK/////////////////////
-	public int getPriorityLevel() {
+	/**
+	 * @return The priority level associated to all methods of the group.
+	 */
+	public byte getPriorityLevel() {
 		return this.priorityLevel;
 	}
 	
-	public void setPriorityLevel(int priorityLevel) {
-		this.priorityLevel = priorityLevel;
+	/**
+	 * Changes the priority level associated to all methods of the group.
+	 * Warning: Successive call of this method will be taken into account
+	 * only if the priorityLevel parameter is lower than the current 
+	 * priorityLevel. Prevents from any unexpected behavior.
+	 * @param priorityLevel
+	 */
+	public boolean setPriorityLevel(byte priorityLevel) {
+		boolean set = false;
+		if (!prioritySet) {
+			this.priorityLevel = priorityLevel;
+			this.prioritySet = true;
+			set = true;
+		}
+		else {
+			if (priorityLevel < this.priorityLevel) {
+				this.priorityLevel = priorityLevel;
+				set = true;
+			}
+		}
+		return set;
 	}
-	////////////////////MODIFIED END JROCHAS-PRIORITY-BENCHMARK/////////////////////
 
 	/**
 	 * Set the set of compatible groups with this group

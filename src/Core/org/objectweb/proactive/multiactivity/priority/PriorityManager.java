@@ -43,80 +43,100 @@ import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
 /**
- * Maintain {@link PriorityConstraint}s and registered requests classified by
- * priorities.
+ * Maintains the list {@link PriorityGroup} that have 
+ * current requests. Contains the priority strategy to
+ * schedule ready requests.
  * 
  * @author The ProActive Team
  */
 public class PriorityManager {
 
-	public static final int defaultPriorityLevel = -1;
+	public static final byte defaultPriorityLevel = 0;
+	
+	public static final byte maxPriorityLevel = 100;
+	
+	public static final byte minPriorityLevel = -100;
 
-	// priority groups that contain registered requests classified by priority
-	private final TreeMap<Integer, PriorityGroup> priorityGroups;
+	// Priority groups that contain registered requests classified by priority
+	// Searching is accelerated by the use of TreeMap
+	private final TreeMap<Byte, PriorityGroup> priorityGroups;
 
+	// The group manager
 	private final CompatibilityMap compatibility;
 
+	
 	public PriorityManager(CompatibilityMap compatibility) {
-
-		this.priorityGroups = new TreeMap<Integer, PriorityGroup>();
+		this.priorityGroups = new TreeMap<Byte, PriorityGroup>();
 		this.compatibility = compatibility;
 
-		// indicates whether there is an annotation defined for priority group 0
+		// Indicates whether there is an annotation 
+		// defined for the default priority group
 		boolean defaultPriorityGroupOverriden = false;
 
+		// Build one priority group per group. Note:
+		// groups are statically registered in compatibility
 		for (MethodGroup group : compatibility.getGroups()) {
-			if (group.getPriorityLevel() == 0) {
+			if (group.getPriorityLevel() == defaultPriorityLevel) {
 				defaultPriorityGroupOverriden = true;
 			}
-
 			if (!this.priorityGroups.containsKey(group.getPriorityLevel())) {
 				this.priorityGroups.put(
-						group.getPriorityLevel(), new PriorityGroup(
-								group.getPriorityLevel()));
+						group.getPriorityLevel(), 
+						new PriorityGroup(group.getPriorityLevel()));
 			}
 		}
 
+		// Add a priority group for methods without priority
 		if (!defaultPriorityGroupOverriden) {
-			// adds priority group for methods without priority
-			this.priorityGroups.put(defaultPriorityLevel, new PriorityGroup(defaultPriorityLevel));
+			this.priorityGroups.put(
+					defaultPriorityLevel, 
+					new PriorityGroup(defaultPriorityLevel));
 		}
 	}
 
-	private void addToDefaultPriorityGroup(RunnableRequest request) {
-		this.addToPriorityGroup(defaultPriorityLevel, request);
-	}
-
-	private void addToPriorityGroup(int groupLevel, RunnableRequest request) {
-		this.priorityGroups.get(groupLevel).add(request);
-	}
-
+	/**
+	 * @return true if there is at least one registered request,
+	 * all priority groups combined.
+	 */
 	public boolean hasSomeRequestsRegistered() {
 		boolean result = false;
-
 		for (PriorityGroup pg : this.priorityGroups.values()) {
 			result |= pg.size() > 0;
 		}
-
 		return result;
 	}
 
+	/**
+	 * Returns the current total number of registered 
+	 * request, all priority groups combined.
+	 * @return The number of registered requests
+	 */
 	public int getNbRequestsRegistered() {
 		int sum = 0;
-
 		for (PriorityGroup pg : this.priorityGroups.values()) {
 			sum += pg.size();
 		}
-
 		return sum;
 	}
 
-	public TreeMap<Integer, PriorityGroup> getPriorityGroups() {
+	/**
+	 * Return the list of all priority groups with 
+	 * the current registered requests.
+	 * @return The priority groups.
+	 */
+	public TreeMap<Byte, PriorityGroup> getPriorityGroups() {
 		return this.priorityGroups;
 	}
 
+	/**
+	 * Adds a {@link RunnableRequest} to the priority group it belongs to.
+	 * The priority group of the request is determined from the group the 
+	 * request belongs to. See {@link MethodGroup}.
+	 * @param runnableRequest
+	 */
 	public void register(RunnableRequest runnableRequest) {
-		MethodGroup group = this.compatibility.getGroupOf(runnableRequest.getRequest());
+		MethodGroup group = this.compatibility.getGroupOf(
+				runnableRequest.getRequest());
 		if (group == null) {
 			this.addToDefaultPriorityGroup(runnableRequest);
 		}
@@ -126,19 +146,39 @@ public class PriorityManager {
 		}
 	}
 
-	public void unregister(RunnableRequest runnableRequest, int priorityLevel) {
+	/**
+	 * Removes a registered request from the priority 
+	 * group it had been assigned.
+	 * @param runnableRequest
+	 * @param priorityLevel
+	 */
+	public void unregister(
+			RunnableRequest runnableRequest, byte priorityLevel) {
 		this.priorityGroups.get(priorityLevel).remove(runnableRequest);
 	}
 
+	/**
+	 * Return the {@link PriorityGroup} that have the highest 
+	 * priority and that have at least one registered request.
+	 * @return The priority group with the highest priority
+	 */
 	public PriorityGroup getHighestPriorityGroup() {
-		for (PriorityGroup priorityGroup : this.priorityGroups.descendingMap()
-				.values()) {
+		for (PriorityGroup priorityGroup : this.priorityGroups.
+				descendingMap().values()) {
 			if (priorityGroup.size() > 0) {
 				return priorityGroup;
 			}
 		}
-
 		return this.priorityGroups.lastEntry().getValue();
+	}
+	
+	private void addToDefaultPriorityGroup(RunnableRequest request) {
+		this.addToPriorityGroup(defaultPriorityLevel, request);
+	}
+
+	private void addToPriorityGroup(
+			byte groupLevel, RunnableRequest request) {
+		this.priorityGroups.get(groupLevel).add(request);
 	}
 
 }

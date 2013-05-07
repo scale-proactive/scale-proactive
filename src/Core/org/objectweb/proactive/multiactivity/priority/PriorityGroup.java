@@ -36,9 +36,10 @@
  */
 package org.objectweb.proactive.multiactivity.priority;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
@@ -56,33 +57,23 @@ Iterable<RunnableRequest> {
 	// PriorityGroup class to enable fast lookup
 	private final byte priorityLevel;
 
-	// The list of ready requests. It behaves like a Set, but
-	// a Set here would not enable direct FIFO scheduling within 
-	// a group since the iteration order is not guaranteed.
-	private final ArrayList<RunnableRequest> requests;
+	// The list of ready requests. 
+	// The real type should preserve FIFO 
+	// ordering to dequeue the oldest request.
+	private final Set<RunnableRequest> requests;
 
 	
 	public PriorityGroup(byte priorityLevel) {
 		this.priorityLevel = priorityLevel;
-		this.requests = new ArrayList<RunnableRequest>();
+		this.requests = new LinkedHashSet<RunnableRequest>();
 	}
 	
 	/**
 	 * Add a {@link RunnableRequest} in the ready list of the priority group.
-	 * Warning: performs in O(n) because the list where it is added 
-	 * behaves like a set.
 	 * @param request
 	 */
 	public void add(RunnableRequest request) {
-		boolean existAlready = false;
-		for (RunnableRequest runnable : this.requests) {
-			if (runnable.equals(request)) {
-				existAlready = true;
-			}
-		}
-		if (!existAlready) {
-			this.requests.add(request);
-		}
+		this.requests.add(request);
 	}
 
 	/**

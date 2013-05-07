@@ -10,8 +10,8 @@ import org.objectweb.proactive.annotation.PublicAPI;
 
 /**
  * This annotation is used to define a list of 
- * {@link PriorityOrder}s at the header of a
- * class.
+ * {@link Priority}ies at the header of a
+ * class, to model priorities as ranks.
  * 
  * @author jrochas
  */
@@ -19,8 +19,8 @@ import org.objectweb.proactive.annotation.PublicAPI;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @PublicAPI
-public @interface DefinePriorities {
+public @interface DefineRankBasedPriorities {
 
-    public PriorityOrder[] value();
-
+	public Priority[] value();
+	
 }

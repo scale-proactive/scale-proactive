@@ -38,6 +38,7 @@ package org.objectweb.proactive.multiactivity.compatibility;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,15 +50,18 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.annotation.multiactivity.Compatible;
 import org.objectweb.proactive.annotation.multiactivity.DefineGroups;
-import org.objectweb.proactive.annotation.multiactivity.DefinePriorities;
+import org.objectweb.proactive.annotation.multiactivity.DefineGraphBasedPriorities;
+import org.objectweb.proactive.annotation.multiactivity.DefineRankBasedPriorities;
 import org.objectweb.proactive.annotation.multiactivity.DefineRules;
 import org.objectweb.proactive.annotation.multiactivity.Group;
 import org.objectweb.proactive.annotation.multiactivity.Priority;
+import org.objectweb.proactive.annotation.multiactivity.Set;
 import org.objectweb.proactive.annotation.multiactivity.MemberOf;
 import org.objectweb.proactive.annotation.multiactivity.PriorityOrder;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
-import org.objectweb.proactive.multiactivity.priority.PriorityManager;
+import org.objectweb.proactive.multiactivity.priority.PriorityGraph;
+import org.objectweb.proactive.multiactivity.priority.PriorityRank;
 
 /**
  * Reads and processes the multi-activity related annotations of a class and
@@ -96,6 +100,12 @@ public class AnnotationProcessor {
 	// method name -> method group in which it is member
 	private Map<String, MethodGroup> methods =
 			new HashMap<String, MethodGroup>();
+
+	// priority structures
+	private PriorityGraph priorityGraph =
+			new PriorityGraph();
+	private PriorityRank priorityRank = 
+			new PriorityRank();
 
 	// class that is processed
 	private Class<?> processedClass;
@@ -141,7 +151,8 @@ public class AnnotationProcessor {
 		Annotation[] declaredAnns = processedClass.getDeclaredAnnotations();
 		Annotation groupDefAnn = null;
 		Annotation compDefAnn = null;
-		Annotation priorityDefAnn = null;
+		Annotation priorityGraphDefAnn = null;
+		Annotation priorityRankDefAnn = null;
 
 		for (Annotation a : declaredAnns) {
 			if (groupDefAnn == null
@@ -154,13 +165,21 @@ public class AnnotationProcessor {
 				compDefAnn = a;
 			}
 
-			if (priorityDefAnn == null 
-					&& a.annotationType().equals(DefinePriorities.class)) {
-				priorityDefAnn = a;
+			if (priorityGraphDefAnn == null 
+					&& a.annotationType().equals(
+							DefineGraphBasedPriorities.class)) {
+				priorityGraphDefAnn = a;
+			}
+
+			if (priorityRankDefAnn == null 
+					&& a.annotationType().equals(
+							DefineRankBasedPriorities.class)) {
+				priorityRankDefAnn = a;
 			}
 
 			if (compDefAnn != null && groupDefAnn != null
-					&& priorityDefAnn != null) {
+					&& priorityGraphDefAnn != null 
+					&& priorityRankDefAnn != null) {
 				break;
 			}
 		}
@@ -220,44 +239,45 @@ public class AnnotationProcessor {
 			}
 		}
 
-		// if there are group priorities defined
-		if (priorityDefAnn != null) {
-			byte priorityLevel;
-			boolean prioritySet;
-			Priority[] priorities;
-			
-			// Process the DefinePriorities annotations
-			for (PriorityOrder priorityOrder : ((DefinePriorities) priorityDefAnn).value()) {
-				
-				priorities = priorityOrder.value();
-				priorityLevel = PriorityManager.maxPriorityLevel;
+		// if there are graph based priorities defined
+		if (priorityGraphDefAnn != null) {
 
-				// Process the Priority annotations
-				for (Priority priority : priorities) {
+			List<MethodGroup> predecessors = new ArrayList<MethodGroup>();
+
+			for (PriorityOrder priorityOrder : ((DefineGraphBasedPriorities) priorityGraphDefAnn).value()) {
+				for (Set priority : priorityOrder.value()) {
 					for (String groupName : priority.groupNames()) {
 
 						// Get the group object associated with the group name
 						MethodGroup group = this.groups.get(groupName);
 						if (group != null) {
-							prioritySet = group.setPriorityLevel(priorityLevel);
-							if (prioritySet) {
-								logger.trace("Priority: " + priorityLevel + 
-										" has been set for group: " + groupName);
+							for(MethodGroup predecessor : predecessors) {
+								priorityGraph.insert(group, predecessor);
 							}
 						}
-						else {
-							logger.trace("Group: " + groupName + 
-									" has not been found in the group list;" +
-									" could not set priority");
-						}
+						predecessors.clear();
+						predecessors.add(group);
 					}
-					
-					// If there are more than (maxPriorityLevel-minPriorityLevel) levels 
-					// of priority, then only the highest priorities are representative
-					if (priorityLevel != PriorityManager.minPriorityLevel) {
-						priorityLevel--;
+				}
+				predecessors.clear();
+			}
+		}
+
+		// if there are rank based priorities defined
+		if (priorityRankDefAnn != null) {
+
+			int priorityLevel;
+
+			for (Priority priority : ((DefineRankBasedPriorities) priorityGraphDefAnn).value()) {
+
+				priorityLevel = priority.level();
+
+				for (String groupName : priority.groupNames()) {
+					MethodGroup group = this.groups.get(groupName);
+					if (group != null) {
+						priorityRank.insert(group, priorityLevel);
 					}
-				} 
+				}
 			}
 		}
 	}
@@ -485,6 +505,16 @@ public class AnnotationProcessor {
 			}
 		}
 		return classMethods.contains(what);
+	}
+
+	public PriorityGraph getPriorityGraph() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public PriorityRank getPriorityRank() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

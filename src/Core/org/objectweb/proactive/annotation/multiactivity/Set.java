@@ -8,18 +8,16 @@ import org.objectweb.proactive.annotation.PublicAPI;
 
 /**
  * This annotation represents a priority set to hold groups 
- * of same priority level.
+ * of same priority level. There can be several groups 
+ * that have the same priority level.
  * 
  * @author jrochas
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @PublicAPI
-public @interface Priority {
-	
-	/** The names of the groups belonging to the same priority level */
-	String[] groupNames();
-	
-	/** The priority level defined through an integer value */
-	int level() default 0;
+public @interface Set {
+
+    /** The names of the groups to be held in the same priority level */
+    public String[] groupNames();
 }

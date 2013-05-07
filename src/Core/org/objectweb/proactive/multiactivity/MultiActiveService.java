@@ -46,7 +46,9 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.compatibility.AnnotationProcessor;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
+import org.objectweb.proactive.multiactivity.priority.PriorityGraph;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
+import org.objectweb.proactive.multiactivity.priority.PriorityRank;
 
 
 /**
@@ -69,6 +71,8 @@ public class MultiActiveService extends Service {
     private static final Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
     CompatibilityTracker compatibility;
+    PriorityGraph priorityGraph;
+    PriorityRank priorityRank;
     RequestExecutor executor = null;
 
     /**
@@ -92,7 +96,12 @@ public class MultiActiveService extends Service {
 
         compatibility = new CompatibilityTracker(annotationProcessor, requestQueue);
         
-        executor = new RequestExecutor(body, compatibility);
+        // Filling priority structures according to what was extracted from annotations
+        priorityGraph = annotationProcessor.getPriorityGraph();
+        priorityRank = annotationProcessor.getPriorityRank();
+        
+        // Building executor with all required information for scheduling
+        executor = new RequestExecutor(body, compatibility); //, priorityGraph, priorityRank);
 
         if (logger.isDebugEnabled()) {
             /*if (executor.getPriorityManager().getPriorityConstraints().size() > 0) {

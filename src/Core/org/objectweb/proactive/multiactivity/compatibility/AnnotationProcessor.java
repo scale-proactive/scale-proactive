@@ -270,7 +270,7 @@ public class AnnotationProcessor {
 
 			int priorityLevel;
 
-			for (Priority priority : ((DefineRankBasedPriorities) priorityGraphDefAnn).value()) {
+			for (Priority priority : ((DefineRankBasedPriorities) priorityRankDefAnn).value()) {
 
 				priorityLevel = priority.level();
 

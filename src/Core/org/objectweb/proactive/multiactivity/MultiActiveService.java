@@ -69,9 +69,7 @@ public class MultiActiveService extends Service {
 
     private static final Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
-    CompatibilityTracker compatibility;
-    PriorityStructure priority;
-    RequestExecutor executor = null;
+    RequestExecutor executor;
 
     /**
      * MultiActiveService that will be able to optionally use a policy, and will deploy each serving request on a 
@@ -92,13 +90,13 @@ public class MultiActiveService extends Service {
 
         AnnotationProcessor annotationProcessor = new AnnotationProcessor(body.getReifiedObject().getClass());
 
-        compatibility = new CompatibilityTracker(annotationProcessor, requestQueue);
+        CompatibilityTracker compatibility = new CompatibilityTracker(annotationProcessor, requestQueue);
         
         // Filling priority structures according to what was extracted from annotations
-        priority = annotationProcessor.getPriorityStructure();
+        PriorityStructure priority = annotationProcessor.getPriorityStructure();
         
         // Building executor with all required information for scheduling
-        executor = new RequestExecutor(body, compatibility); //, priorityGraph, priorityRank);
+        executor = new RequestExecutor(body, compatibility, priority);
 
         if (logger.isDebugEnabled()) {
             /*if (executor.getPriorityManager().getPriorityConstraints().size() > 0) {

@@ -64,6 +64,7 @@ import org.objectweb.proactive.multiactivity.ServingController;
 import org.objectweb.proactive.multiactivity.ServingPolicy;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
+import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
 
 /**
  * The request executor that constitutes the multi-active service. It contains
@@ -165,11 +166,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * @param priorityConstraints
      *            Priority constraints
      */
-    public RequestExecutor(Body body, CompatibilityTracker compatibility) {
+    public RequestExecutor(Body body, CompatibilityTracker compatibility, PriorityStructure priority) {
         this.compatibility = compatibility;
         this.body = body;
         this.requestQueue = body.getRequestQueue();
-        this.priorityManager = new PriorityManager(this.compatibility);
+        this.priorityManager = new PriorityManager(priority, this.compatibility);
 
         executorService = Executors.newCachedThreadPool();
         active = new HashSet<RunnableRequest>();
@@ -201,8 +202,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      *            source
      */
     public RequestExecutor(Body body, CompatibilityTracker compatibility,
-            int activeLimit, boolean hardLimit, boolean hostReentrant) {
-        this(body, compatibility);
+            PriorityStructure priority, int activeLimit, boolean hardLimit, 
+            boolean hostReentrant) {
+        this(body, compatibility, priority);
 
         THREAD_LIMIT = activeLimit;
         LIMIT_TOTAL_THREADS = hardLimit;
@@ -575,10 +577,14 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                     if (i.hasNext()) {
                         log.trace("Requests served");
                     }
+                    
+                    this.priorityManager.printRequests();
 
                     while (canServeOne() && i.hasNext()) {
+                    	System.out.println("trying to execute the selected request");
                         RunnableRequest current = i.next();
-                        i.remove();
+                        this.priorityManager.unregister(current);
+                        this.priorityManager.printRequests();
                         active.add(current);
                         executorService.execute(current);
 

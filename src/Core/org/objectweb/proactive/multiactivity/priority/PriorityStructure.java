@@ -1,8 +1,8 @@
 package org.objectweb.proactive.multiactivity.priority;
 
-import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
+import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 
 public interface PriorityStructure {
 
-	public abstract boolean canOvertake(RunnableRequest request1, RunnableRequest request2);
+	public abstract boolean canOvertake(MethodGroup group1, MethodGroup group2);
 }

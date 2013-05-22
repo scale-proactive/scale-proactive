@@ -44,7 +44,6 @@ import java.util.Set;
 
 import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.core.body.request.Request;
-import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 
 
 /**

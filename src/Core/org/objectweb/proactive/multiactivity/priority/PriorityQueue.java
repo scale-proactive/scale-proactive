@@ -8,7 +8,8 @@ import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
 public class PriorityQueue {
 
-	private PriorityElement head;	
+	private PriorityElement first;	
+	private PriorityElement last;
 	private PriorityStructure priorityStructure;
 
 	public PriorityQueue(PriorityStructure priorityStructure) {
@@ -22,7 +23,33 @@ public class PriorityQueue {
 	 */
 	public void insert(RunnableRequest request, MethodGroup group) {
 		PriorityElement toInsert = new PriorityElement(request, group);
-		if (this.head == null) {
+
+		if (this.first == null) {
+			this.first = toInsert;
+		}
+		else {
+			PriorityElement element = this.first;
+			while (element.next != null) {
+				element = element.next;
+			}
+			// Here element is the last
+			while (this.priorityStructure.canOvertake(group, element.belongingGroup) && element.previous != null) {
+				element = element.previous;
+			}
+
+			if (element.previous == null) {
+				PriorityElement secondElement = this.first;
+				this.first = toInsert;
+				toInsert.next = secondElement;
+			}
+
+			else {
+				toInsert.next = element.next;
+				element.next = toInsert;
+			}
+		}
+
+		/*if (this.head == null) {
 			this.head = toInsert;
 		}
 		else {
@@ -31,12 +58,11 @@ public class PriorityQueue {
 			while (element != null) {
 				previousElement = element;
 				element = element.next;
-			}
-			if (previousElement != null) {
-				previousElement.next = toInsert;
-			}
+			}	
+			previousElement.next = toInsert;
 			toInsert.previous = previousElement;
-		}
+		}*/
+
 	}
 
 	/**
@@ -44,11 +70,12 @@ public class PriorityQueue {
 	 */
 	public int nbRequests() {
 		int size = 0;
-		PriorityElement element = this.head;
+		PriorityElement element = this.first;
 		while (element != null) {
 			size++;
 			element = element.next;
 		}
+		System.out.println("nbRequests registered: " + size);
 		return size;
 	}
 
@@ -56,7 +83,7 @@ public class PriorityQueue {
 	 * Constant
 	 */
 	public boolean hasRequests() {
-		if (this.head == null) {
+		if (this.first == null) {
 			return false;
 		}
 		else {
@@ -69,36 +96,55 @@ public class PriorityQueue {
 	 * @param runnableRequest
 	 */
 	public void remove(RunnableRequest request) {
-		PriorityElement element = this.head;
-		if (element.next == null) {
-			this.head = null;
+		System.out.println("Calling remove");
+		PriorityElement element = this.first;
+		// There is only the element to remove in the PriorityQueue
+		if (this.first.request.equals(request) && this.first.next == null) {
+			this.first = null;
 		}
 		else {
 			while (element != null) {
-				System.out.println("searching element");
 				if (element.request.equals(request)) {
 					System.out.println("element found");
 					PriorityElement previous = element.previous;
 					PriorityElement next = element.next;
+					// The element to remove can be the first
 					if (previous != null) {
+						System.out.println("The request was not the first");
 						previous.next = next;
 					}
-					next.previous = previous;
+					else {
+						this.first = next;
+					}
+					// The element to remove can be the last
+					if (next != null) {
+						System.out.println("The request was not the last");
+						next.previous = previous;
+					}
 					break;
 				}
 				element = element.next;
 			}
 		}
+		System.out.println("remove end");
 	}
 
 	public List<RunnableRequest> getHighestPriorityRequests() {	
 		List<RunnableRequest> requests = new LinkedList<RunnableRequest>();
-		PriorityElement element = this.head;
+		PriorityElement element = this.first;
 		while (element != null) {
 			requests.add(element.request);
 			element = element.next;
 		}
 		return requests;
+	}
+
+	public void printQueue() {
+		PriorityElement element = this.first;
+		while (element != null) {
+			System.out.println(element.request.getRequest().getMethodName() + " ");
+			element = element.next;
+		}
 	}
 
 	private class PriorityElement {
@@ -114,5 +160,5 @@ public class PriorityQueue {
 			this.belongingGroup = belongingGroup;
 		}	
 	}
-	
+
 }

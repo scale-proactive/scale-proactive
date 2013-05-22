@@ -160,8 +160,8 @@ public class PriorityGraph implements PriorityStructure {
 	}
 
 	@Override
-	public boolean canOvertake(RunnableRequest request1,
-			RunnableRequest request2) {
+	public boolean canOvertake(MethodGroup group1,
+			MethodGroup group2) {
 		// TODO Auto-generated method stub
 		return false;
 	}

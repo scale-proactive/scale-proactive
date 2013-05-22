@@ -38,7 +38,6 @@ package org.objectweb.proactive.multiactivity.priority;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeMap;
 
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityMap;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
@@ -54,16 +53,16 @@ import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 public class PriorityManager {
 	
 	public static final PriorityManagement management = PriorityManagement.RANK_BASED; 
-	
-	private List<RunnableRequest> requests;
 
 	// The group manager
 	private final CompatibilityMap compatibility;
+	
+	private PriorityQueue priorityQueue;
 
 	
-	public PriorityManager(CompatibilityMap compatibility) {
+	public PriorityManager(PriorityStructure priority, CompatibilityMap compatibility) {
 		this.compatibility = compatibility;
-		this.requests = new ArrayList<RunnableRequest>();
+		this.priorityQueue = new PriorityQueue(priority);
 	}
 
 	/**
@@ -71,7 +70,7 @@ public class PriorityManager {
 	 * all priority groups combined.
 	 */
 	public boolean hasSomeRequestsRegistered() {
-		return !this.requests.isEmpty();
+		return this.priorityQueue.hasRequests();
 	}
 
 	/**
@@ -80,7 +79,7 @@ public class PriorityManager {
 	 * @return The number of registered requests
 	 */
 	public int getNbRequestsRegistered() {
-		return this.requests.size();
+		return this.priorityQueue.nbRequests();
 	}
 
 	/**
@@ -90,7 +89,8 @@ public class PriorityManager {
 	 * @param request
 	 */
 	public void register(RunnableRequest request) {
-		this.requests.add(request);
+		MethodGroup group = this.compatibility.getGroupOf(request.getRequest());
+		this.priorityQueue.insert(request, group);
 	}
 
 	/**
@@ -101,7 +101,7 @@ public class PriorityManager {
 	 */
 	public void unregister(
 			RunnableRequest request) {
-		this.requests.remove(request);
+		this.priorityQueue.remove(request);
 	}
 
 	/**
@@ -110,7 +110,11 @@ public class PriorityManager {
 	 * @return The priority group with the highest priority
 	 */
 	public List<RunnableRequest> getHighestPriorityRequests() {
-		return this.requests;
+		return this.priorityQueue.getHighestPriorityRequests();
+	}
+	
+	public void printRequests() {
+		this.priorityQueue.printQueue();
 	}
 	
 	public enum PriorityManagement {

@@ -63,7 +63,6 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.ServingController;
 import org.objectweb.proactive.multiactivity.ServingPolicy;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
-import org.objectweb.proactive.multiactivity.priority.PriorityGroup;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 
 /**
@@ -495,12 +494,13 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
                 if (SAME_THREAD_REENTRANT) {
                     if (canServeOneHosted()) {
-                        PriorityGroup selectedPriorityGroup =
+                        /*PriorityGroup selectedPriorityGroup =
                                 this.priorityManager.getHighestPriorityGroup();
                         tracePriorityGroups(selectedPriorityGroup);
 
-                        i = selectedPriorityGroup.iterator();
-
+                        i = selectedPriorityGroup.iterator();*/
+                    	i = this.priorityManager.getHighestPriorityRequests().iterator();
+                    	
                         if (i.hasNext()) {
                             log.trace("Requests served SAME_THREAD_REENTRANT");
                         }
@@ -564,12 +564,14 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 // SERVE any request who is ready and there are resources
                 // available but requests with highest priority in first
                 if (canServeOne()) {
-                    PriorityGroup selectedPriorityGroup =
+                    /*PriorityGroup selectedPriorityGroup =
                             this.priorityManager.getHighestPriorityGroup();
                     tracePriorityGroups(selectedPriorityGroup);
 
-                    i = selectedPriorityGroup.iterator();
+                    i = selectedPriorityGroup.iterator();*/
 
+                    i = this.priorityManager.getHighestPriorityRequests().iterator();
+                    
                     if (i.hasNext()) {
                         log.trace("Requests served");
                     }
@@ -654,7 +656,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         }
     }
 
-    private void tracePriorityGroups(PriorityGroup priorityGroup) {
+    /*private void tracePriorityGroups(PriorityGroup priorityGroup) {
         if (log.isTraceEnabled()) {
             StringBuilder buf = new StringBuilder();
 
@@ -675,7 +677,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
             log.trace(buf.toString());
         }
-    }
+    }*/
 
     private static String toString(Request request) {
         StringBuilder result = new StringBuilder();

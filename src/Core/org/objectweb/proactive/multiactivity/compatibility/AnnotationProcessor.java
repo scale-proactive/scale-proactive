@@ -61,7 +61,9 @@ import org.objectweb.proactive.annotation.multiactivity.PriorityOrder;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.priority.PriorityGraph;
-import org.objectweb.proactive.multiactivity.priority.PriorityRank;
+import org.objectweb.proactive.multiactivity.priority.PriorityManager;
+import org.objectweb.proactive.multiactivity.priority.PriorityRanking;
+import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
 
 /**
  * Reads and processes the multi-activity related annotations of a class and
@@ -104,8 +106,8 @@ public class AnnotationProcessor {
 	// priority structures
 	private PriorityGraph priorityGraph =
 			new PriorityGraph();
-	private PriorityRank priorityRank = 
-			new PriorityRank();
+	private PriorityRanking priorityRanking = 
+			new PriorityRanking();
 
 	// class that is processed
 	private Class<?> processedClass;
@@ -275,7 +277,7 @@ public class AnnotationProcessor {
 				for (String groupName : priority.groupNames()) {
 					MethodGroup group = this.groups.get(groupName);
 					if (group != null) {
-						priorityRank.insert(group, priorityLevel);
+						priorityRanking.insert(priorityLevel, group);
 					}
 				}
 			}
@@ -507,14 +509,17 @@ public class AnnotationProcessor {
 		return classMethods.contains(what);
 	}
 
-	public PriorityGraph getPriorityGraph() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public PriorityRank getPriorityRank() {
-		// TODO Auto-generated method stub
-		return null;
+	public PriorityStructure getPriorityStructure() {
+		PriorityStructure structure = null;
+		switch (PriorityManager.management) {
+		case RANK_BASED:
+			structure = this.priorityRanking;
+			break;
+		case GRAPH_BASED:
+			structure = this.priorityGraph;
+			break;
+		}
+		return structure;
 	}
 
 }

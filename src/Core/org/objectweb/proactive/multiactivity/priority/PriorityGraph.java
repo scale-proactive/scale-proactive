@@ -4,8 +4,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
+import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
-public class PriorityGraph {
+public class PriorityGraph implements PriorityStructure {
 	
 	private Set<PriorityNode> roots;
 	
@@ -156,6 +157,13 @@ public class PriorityGraph {
 		System.out.println("m5 inserted");
 		graph.insert(m4, m5);
 		System.out.println("m4 inserted");
+	}
+
+	@Override
+	public boolean canOvertake(RunnableRequest request1,
+			RunnableRequest request2) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 
 }

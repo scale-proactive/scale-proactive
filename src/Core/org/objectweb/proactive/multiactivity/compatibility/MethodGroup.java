@@ -61,10 +61,6 @@ public class MethodGroup {
 	private Set<MethodGroup> compatibleWith = new HashSet<MethodGroup>();
 
 	private final int hashCode;
-
-	private byte priorityLevel;
-	
-	private boolean prioritySet;
 	
 	private Class<?> parameter = null;
 	
@@ -94,8 +90,6 @@ public class MethodGroup {
 		this.selfCompatible = selfCompatible;
 		this.name = name;
 		this.hashCode = name.hashCode();
-		this.priorityLevel = PriorityManager.defaultPriorityLevel;
-		this.prioritySet = false;
 
 		if (selfCompatible) {
 			this.compatibleWith.add(this);
@@ -153,36 +147,6 @@ public class MethodGroup {
 	 * 
 	 * }
 	 */
-
-	/**
-	 * @return The priority level associated to all methods of the group.
-	 */
-	public byte getPriorityLevel() {
-		return this.priorityLevel;
-	}
-	
-	/**
-	 * Changes the priority level associated to all methods of the group.
-	 * Warning: Successive call of this method will be taken into account
-	 * only if the priorityLevel parameter is lower than the current 
-	 * priorityLevel. Prevents from any unexpected behavior.
-	 * @param priorityLevel
-	 */
-	public boolean setPriorityLevel(byte priorityLevel) {
-		boolean set = false;
-		if (!prioritySet) {
-			this.priorityLevel = priorityLevel;
-			this.prioritySet = true;
-			set = true;
-		}
-		else {
-			if (priorityLevel < this.priorityLevel) {
-				this.priorityLevel = priorityLevel;
-				set = true;
-			}
-		}
-		return set;
-	}
 
 	/**
 	 * Set the set of compatible groups with this group

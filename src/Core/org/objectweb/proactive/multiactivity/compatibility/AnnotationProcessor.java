@@ -244,25 +244,37 @@ public class AnnotationProcessor {
 		// if there are graph based priorities defined
 		if (priorityGraphDefAnn != null) {
 
-			List<MethodGroup> predecessors = new ArrayList<MethodGroup>();
+			List<MethodGroup> predecessors = new LinkedList<MethodGroup>();
+			List<MethodGroup> nextPredecessors = new LinkedList<MethodGroup>();
 
 			for (PriorityOrder priorityOrder : ((DefineGraphBasedPriorities) priorityGraphDefAnn).value()) {
 				for (Set priority : priorityOrder.value()) {
 					for (String groupName : priority.groupNames()) {
-
+						System.out.println("Annotation processor - inserting " + groupName);
 						// Get the group object associated with the group name
 						MethodGroup group = this.groups.get(groupName);
 						if (group != null) {
-							for(MethodGroup predecessor : predecessors) {
-								priorityGraph.insert(group, predecessor);
+							System.out.println("AnnotationProcessor - group found " + group.name);
+							if (predecessors.isEmpty()) {
+								priorityGraph.insert(group, null);
+							}
+							else {
+								for(MethodGroup predecessor : predecessors) {
+									System.out.println("AnnotationProcessor - inserting..." );
+									priorityGraph.insert(group, predecessor);
+									System.out.println("AnnotationProcessor - insertion finished");
+								}
 							}
 						}
-						predecessors.clear();
-						predecessors.add(group);
+						nextPredecessors.add(group);
 					}
+					predecessors.clear();
+					predecessors.addAll(nextPredecessors);
+					nextPredecessors.clear();
 				}
 				predecessors.clear();
 			}
+			System.out.println(priorityGraph);
 		}
 
 		// if there are rank based priorities defined

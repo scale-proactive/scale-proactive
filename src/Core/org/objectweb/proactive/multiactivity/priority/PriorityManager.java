@@ -52,7 +52,7 @@ import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
  */
 public class PriorityManager {
 	
-	public static final PriorityManagement management = PriorityManagement.RANK_BASED; 
+	public static final PriorityManagement management = PriorityManagement.GRAPH_BASED; 
 
 	// The group manager
 	private final CompatibilityMap compatibility;

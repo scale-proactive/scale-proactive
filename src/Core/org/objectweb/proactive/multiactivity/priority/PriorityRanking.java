@@ -56,6 +56,30 @@ public class PriorityRanking implements PriorityStructure {
 			this.priorityRanks.put(level, priorityRank);
 		}
 	}
+	
+	/** 
+	 * Cannot return unrelated because there exist an order inevitably
+	 */
+	@Override
+	public boolean canOvertake(MethodGroup group1,
+			MethodGroup group2) {
+		Entry<Integer, PriorityRank> group1Entry = null;
+		Entry<Integer, PriorityRank> group2Entry = null;
+		for (Entry<Integer, PriorityRank> entry : this.priorityRanks.entrySet()) {
+			if (entry.getValue().contains(group1)) {
+				group1Entry = entry;
+			}
+			if (entry.getValue().contains(group2)) {
+				group2Entry = entry;
+			}
+		}
+		if (group1Entry != null && group2Entry != null) {
+			return group1Entry.getKey() > group2Entry.getKey();
+		}
+		else {
+			return false;
+		}	
+	}
 
 	/**
 	 * Encapsulates a set of groups for a given priority and 
@@ -79,27 +103,6 @@ public class PriorityRanking implements PriorityStructure {
 			return this.methodGroups.contains(group);
 		}
 
-	}
-
-	@Override
-	public boolean canOvertake(MethodGroup group1,
-			MethodGroup group2) {
-		Entry<Integer, PriorityRank> group1Entry = null;
-		Entry<Integer, PriorityRank> group2Entry = null;
-		for (Entry<Integer, PriorityRank> entry : this.priorityRanks.entrySet()) {
-			if (entry.getValue().contains(group1)) {
-				group1Entry = entry;
-			}
-			if (entry.getValue().contains(group2)) {
-				group2Entry = entry;
-			}
-		}
-		if (group1Entry != null && group2Entry != null) {
-			return group1Entry.getKey() > group2Entry.getKey();
-		}
-		else {
-			return false;
-		}	
 	}
 
 }

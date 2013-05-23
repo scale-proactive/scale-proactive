@@ -574,17 +574,15 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
                     i = this.priorityManager.getHighestPriorityRequests().iterator();
                     
+                    log.trace(this.priorityManager);
+                    
                     if (i.hasNext()) {
                         log.trace("Requests served");
                     }
-                    
-                    this.priorityManager.printRequests();
 
                     while (canServeOne() && i.hasNext()) {
-                    	System.out.println("trying to execute the selected request");
                         RunnableRequest current = i.next();
                         this.priorityManager.unregister(current);
-                        this.priorityManager.printRequests();
                         active.add(current);
                         executorService.execute(current);
 

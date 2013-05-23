@@ -9,7 +9,6 @@ import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 public class PriorityQueue {
 
 	private PriorityElement first;	
-	private PriorityElement last;
 	private PriorityStructure priorityStructure;
 
 	public PriorityQueue(PriorityStructure priorityStructure) {
@@ -36,17 +35,13 @@ public class PriorityQueue {
 			while (this.priorityStructure.canOvertake(group, element.belongingGroup) && element.previous != null) {
 				element = element.previous;
 			}
-
-			if (element.previous == null) {
-				PriorityElement secondElement = this.first;
-				this.first = toInsert;
-				toInsert.next = secondElement;
+			toInsert.previous = element;
+			toInsert.next = element.next;
+			if (element.next != null) {
+				element.next.previous = toInsert;
 			}
+			element.next = toInsert;
 
-			else {
-				toInsert.next = element.next;
-				element.next = toInsert;
-			}
 		}
 
 		/*if (this.head == null) {
@@ -105,12 +100,10 @@ public class PriorityQueue {
 		else {
 			while (element != null) {
 				if (element.request.equals(request)) {
-					System.out.println("element found");
 					PriorityElement previous = element.previous;
 					PriorityElement next = element.next;
 					// The element to remove can be the first
 					if (previous != null) {
-						System.out.println("The request was not the first");
 						previous.next = next;
 					}
 					else {
@@ -118,7 +111,6 @@ public class PriorityQueue {
 					}
 					// The element to remove can be the last
 					if (next != null) {
-						System.out.println("The request was not the last");
 						next.previous = previous;
 					}
 					break;
@@ -126,9 +118,11 @@ public class PriorityQueue {
 				element = element.next;
 			}
 		}
-		System.out.println("remove end");
 	}
 
+	/**
+	 * @return 
+	 */
 	public List<RunnableRequest> getHighestPriorityRequests() {	
 		List<RunnableRequest> requests = new LinkedList<RunnableRequest>();
 		PriorityElement element = this.first;
@@ -139,26 +133,57 @@ public class PriorityQueue {
 		return requests;
 	}
 
-	public void printQueue() {
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String toString() {
+		int count = 0 ;
+		StringBuilder sb = new StringBuilder();
 		PriorityElement element = this.first;
+		
+		sb.append("\n");
 		while (element != null) {
-			System.out.println(element.request.getRequest().getMethodName() + " ");
+			for (int i = 0 ; i < count ; i++) {
+				sb.append("\t");
+			}
+			sb.append(element.request.getRequest().getMethodName() + "\n");
 			element = element.next;
+			count++;
 		}
+		
+		return sb.toString();
 	}
 
+	/**
+	 * Represents an element in the PriorityQueue. Since it is a private class,
+	 * the fields have been declared public for convenience.
+	 * 
+	 * @author jrochas
+	 */
 	private class PriorityElement {
 
-		// We can afford public fields since it is a private class
+		/** The request to schedule */
 		public final RunnableRequest request;
+		
+		/** The group where the request belongs. Warning: it is up to the 
+		 * programmer to keep this variable consistent with the request. No 
+		 * further verification are done to ensure that it really is the group 
+		 * of the request. */
 		public final MethodGroup belongingGroup;
+		
+		/** The previous element in the PriorityQueue (with higher priority)*/
 		public PriorityElement previous;
+		
+		/** The next element in the PriorityQueue (with lower priority)*/
 		public PriorityElement next;
 
-		public PriorityElement(RunnableRequest request, MethodGroup belongingGroup) {
+		public PriorityElement(RunnableRequest request, 
+				MethodGroup belongingGroup) {
 			this.request = request;
 			this.belongingGroup = belongingGroup;
-		}	
+		}
+		
 	}
 
 }

@@ -113,8 +113,12 @@ public class PriorityManager {
 		return this.priorityQueue.getHighestPriorityRequests();
 	}
 	
-	public void printRequests() {
-		this.priorityQueue.printQueue();
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String toString() {
+		return this.priorityQueue.toString();
 	}
 	
 	public enum PriorityManagement {

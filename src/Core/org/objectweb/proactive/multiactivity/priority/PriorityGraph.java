@@ -146,31 +146,31 @@ public class PriorityGraph implements PriorityStructure {
 	}
 
 	@Override
-	public boolean canOvertake(MethodGroup group1,
+	public PriorityOvertakeState canOvertake(MethodGroup group1,
 			MethodGroup group2) {
-		boolean canOvertake = true;
+		PriorityOvertakeState canOvertake = PriorityOvertakeState.UNRELATED;
 		for (PriorityNode root : this.roots) {
-			canOvertake = canOvertake && this.recursiveCanOvertake(group1, group2, root, false);
+			canOvertake = PriorityOvertakeState.and(canOvertake, this.recursiveCanOvertake(group1, group2, root, false));
 		}
 		return canOvertake;
 	}
 
-	private boolean recursiveCanOvertake(MethodGroup group1,
+	private PriorityOvertakeState recursiveCanOvertake(MethodGroup group1,
 			MethodGroup group2, PriorityNode currentNode, boolean g2Found) {
-		boolean canOvertake = true;
+		PriorityOvertakeState canOvertake = PriorityOvertakeState.UNRELATED;
 		if (group1.equals(currentNode.group)) {
 			if (g2Found) {
-				canOvertake = false;
+				canOvertake = PriorityOvertakeState.FALSE;
 			}
 			else {
-				canOvertake = true;
+				canOvertake = PriorityOvertakeState.TRUE;
 			}
 		}
 		if (group2.equals(currentNode.group)) {
 			g2Found = true;
 		}
 		for (PriorityNode pn : currentNode.successors) {
-			canOvertake = canOvertake && recursiveCanOvertake(group1, group2, pn, g2Found);
+			canOvertake = PriorityOvertakeState.and(canOvertake, recursiveCanOvertake(group1, group2, pn, g2Found));
 		}
 
 		return canOvertake;

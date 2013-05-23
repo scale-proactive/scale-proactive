@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
+import org.objectweb.proactive.multiactivity.priority.PriorityStructure.PriorityOvertakeState;
 
 public class PriorityQueue {
 
@@ -32,7 +33,9 @@ public class PriorityQueue {
 				element = element.next;
 			}
 			// Here element is the last
-			while (this.priorityStructure.canOvertake(group, element.belongingGroup) && element.previous != null) {
+			while ((this.priorityStructure.canOvertake(group, element.belongingGroup) == PriorityOvertakeState.TRUE ||
+					this.priorityStructure.canOvertake(group, element.belongingGroup) == PriorityOvertakeState.UNRELATED) &&
+					element.previous != null) {
 				element = element.previous;
 			}
 			toInsert.previous = element;

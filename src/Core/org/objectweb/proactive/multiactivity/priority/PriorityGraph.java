@@ -150,29 +150,31 @@ public class PriorityGraph implements PriorityStructure {
 			MethodGroup group2) {
 		PriorityOvertakeState canOvertake = PriorityOvertakeState.UNRELATED;
 		for (PriorityNode root : this.roots) {
-			canOvertake = PriorityOvertakeState.and(canOvertake, this.recursiveCanOvertake(group1, group2, root, false));
+			canOvertake = PriorityOvertakeState.and(canOvertake, this.recursiveCanOvertake(group1, group2, root, false, false));
 		}
 		return canOvertake;
 	}
 
 	private PriorityOvertakeState recursiveCanOvertake(MethodGroup group1,
-			MethodGroup group2, PriorityNode currentNode, boolean g2Found) {
+			MethodGroup group2, PriorityNode currentNode, boolean g1Found, boolean g2Found) {
 		PriorityOvertakeState canOvertake = PriorityOvertakeState.UNRELATED;
-		if (group1.equals(currentNode.group)) {
-			if (g2Found) {
-				canOvertake = PriorityOvertakeState.FALSE;
+		if (!group1.equals(group2)) {
+			if (group1.equals(currentNode.group)) {
+				if (g2Found) {
+					canOvertake = PriorityOvertakeState.FALSE;
+				}
+				g1Found = true;
 			}
-			else {
-				canOvertake = PriorityOvertakeState.TRUE;
+			if (group2.equals(currentNode.group)) {
+				if (g1Found) {
+					canOvertake = PriorityOvertakeState.TRUE;
+				}
+				g2Found = true;
+			}
+			for (PriorityNode pn : currentNode.successors) {
+				canOvertake = PriorityOvertakeState.and(canOvertake, recursiveCanOvertake(group1, group2, pn, g1Found, g2Found));
 			}
 		}
-		if (group2.equals(currentNode.group)) {
-			g2Found = true;
-		}
-		for (PriorityNode pn : currentNode.successors) {
-			canOvertake = PriorityOvertakeState.and(canOvertake, recursiveCanOvertake(group1, group2, pn, g2Found));
-		}
-
 		return canOvertake;
 	}
 
@@ -240,7 +242,7 @@ public class PriorityGraph implements PriorityStructure {
 		graph.insert(g4, g5);
 		System.out.println("m4 inserted");
 		System.out.println(graph);
-		
+
 		System.out.println("Can g4 overtake g3 (no)? " + graph.canOvertake(g4, g3));
 		System.out.println("Can g3 overtake g4 (yes)? " + graph.canOvertake(g3, g4));
 		System.out.println("Can g2 overtake g1 (no)? " + graph.canOvertake(g2, g1));

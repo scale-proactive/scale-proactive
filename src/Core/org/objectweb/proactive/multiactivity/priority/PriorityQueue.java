@@ -33,9 +33,9 @@ public class PriorityQueue {
 				element = element.next;
 			}
 			// Here element is the last
-			while ((this.priorityStructure.canOvertake(group, element.belongingGroup) == PriorityOvertakeState.TRUE ||
-					this.priorityStructure.canOvertake(group, element.belongingGroup) == PriorityOvertakeState.UNRELATED) &&
-					element.previous != null) {
+			while ((this.priorityStructure.canOvertake(group, element.belongingGroup) == PriorityOvertakeState.TRUE //||
+					//this.priorityStructure.canOvertake(group, element.belongingGroup) == PriorityOvertakeState.UNRELATED) &&
+					&& element.previous != null)) {
 				element = element.previous;
 			}
 			toInsert.previous = element;
@@ -141,20 +141,19 @@ public class PriorityQueue {
 	 */
 	@Override
 	public String toString() {
-		int count = 0 ;
 		StringBuilder sb = new StringBuilder();
 		PriorityElement element = this.first;
 		
-		sb.append("\n");
+		sb.append("\n\nPriority queue - from high priority...\n");
 		while (element != null) {
-			for (int i = 0 ; i < count ; i++) {
-				sb.append("\t");
+			sb.append("\t" + element.request.getRequest().getMethodName() + "(");
+			for (int i = 0 ; i < element.request.getRequest().getMethodCall().getNumberOfParameter() ; i++) {
+				sb.append(element.request.getRequest().getParameter(i));
 			}
-			sb.append(element.request.getRequest().getMethodName() + "\n");
+			sb.append(")\n");
 			element = element.next;
-			count++;
 		}
-		
+		sb.append("Priority queue - to low priority\n");
 		return sb.toString();
 	}
 

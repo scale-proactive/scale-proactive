@@ -146,6 +146,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
     private HashMap<Request, Set<Request>> invalidates =
             new HashMap<Request, Set<Request>>();
+    
+    /** List of the requests that have already been served */
+    private LinkedList<Request> servingHistory = new LinkedList<Request>();
 
     /*
      * This counter allows to warn the multiactivity framework that a thread has 
@@ -585,6 +588,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                         this.priorityManager.unregister(current);
                         active.add(current);
                         executorService.execute(current);
+                        servingHistory.add(current.getRequest());
 
                         if (log.isTraceEnabled()) {
                             log.trace("  " + toString(current.getRequest()));
@@ -700,6 +704,10 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         }
 
         return result.toString();
+    }
+    
+    public LinkedList<Request> getServingHistory() {
+    	return this.servingHistory;
     }
 
     /**

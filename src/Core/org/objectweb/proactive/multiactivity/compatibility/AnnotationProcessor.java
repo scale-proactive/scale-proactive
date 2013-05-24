@@ -523,7 +523,7 @@ public class AnnotationProcessor {
 
 	public PriorityStructure getPriorityStructure() {
 		PriorityStructure structure = null;
-		switch (PriorityManager.management) {
+		switch (PriorityStructure.currentStructure) {
 		case RANK_BASED:
 			structure = this.priorityRanking;
 			break;

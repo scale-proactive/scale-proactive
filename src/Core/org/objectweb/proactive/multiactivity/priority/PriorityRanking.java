@@ -1,15 +1,11 @@
 package org.objectweb.proactive.multiactivity.priority;
 
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
-import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
 /**
  * Internal representation of priorities defined with 

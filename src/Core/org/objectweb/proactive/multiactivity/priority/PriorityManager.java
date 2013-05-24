@@ -51,8 +51,6 @@ import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
  * @author The ProActive Team
  */
 public class PriorityManager {
-	
-	public static final PriorityManagement management = PriorityManagement.GRAPH_BASED; 
 
 	// The group manager
 	private final CompatibilityMap compatibility;
@@ -119,10 +117,6 @@ public class PriorityManager {
 	@Override
 	public String toString() {
 		return this.priorityQueue.toString();
-	}
-	
-	public enum PriorityManagement {
-		RANK_BASED, GRAPH_BASED
 	}
 
 }

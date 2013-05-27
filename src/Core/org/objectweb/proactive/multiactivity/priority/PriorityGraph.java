@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
-import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
 public class PriorityGraph implements PriorityStructure {
 
@@ -21,7 +20,13 @@ public class PriorityGraph implements PriorityStructure {
 		else {
 			if (predecessorGroup != null) {
 				PriorityNode predecessorNode = this.findNode(predecessorGroup);
-				predecessorNode.addSuccessor(group);
+				if (this.contains(group)) {
+					PriorityNode groupNode = this.findNode(group);
+					predecessorNode.addSuccessor(groupNode);
+				}
+				else {
+					predecessorNode.addSuccessor(group);
+				}
 				for (PriorityNode node : predecessorNode.successors) {
 					System.out.println("Successor of " + predecessorGroup.name + ": " + node.group.name);
 				}
@@ -191,6 +196,10 @@ public class PriorityGraph implements PriorityStructure {
 		public PriorityNode(MethodGroup group) {
 			this.successors = new HashSet<PriorityNode>();
 			this.group = group;
+		}
+		
+		public void addSuccessor(PriorityNode groupNode) {
+			this.successors.add(groupNode);
 		}
 
 		public void addSuccessor(MethodGroup group) {

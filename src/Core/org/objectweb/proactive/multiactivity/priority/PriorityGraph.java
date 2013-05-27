@@ -13,9 +13,9 @@ public class PriorityGraph implements PriorityStructure {
 		this.roots = new HashSet<PriorityNode>();
 	}
 
-	public void insert(MethodGroup group, MethodGroup predecessorGroup) {
+	public void insert(MethodGroup group, int reservedThreads, MethodGroup predecessorGroup) {
 		if (!this.contains(group) && predecessorGroup == null) {
-			this.addRoot(group);
+			this.addRoot(group, reservedThreads);
 		}
 		else {
 			if (predecessorGroup != null) {
@@ -25,7 +25,7 @@ public class PriorityGraph implements PriorityStructure {
 					predecessorNode.addSuccessor(groupNode);
 				}
 				else {
-					predecessorNode.addSuccessor(group);
+					predecessorNode.addSuccessor(group, reservedThreads);
 				}
 				for (PriorityNode node : predecessorNode.successors) {
 					System.out.println("Successor of " + predecessorGroup.name + ": " + node.group.name);
@@ -38,8 +38,8 @@ public class PriorityGraph implements PriorityStructure {
 		}
 	}
 
-	private void addRoot(MethodGroup group) {
-		this.roots.add(new PriorityNode(group));
+	private void addRoot(MethodGroup group, int reservedThreads) {
+		this.roots.add(new PriorityNode(group, reservedThreads));
 	}
 
 	private void removeRoot(MethodGroup group) {
@@ -138,11 +138,11 @@ public class PriorityGraph implements PriorityStructure {
 		}
 		// TOREMOVE - USELESS
 		if (!currentNode.hasSuccessors()) {
-			description += currentNode.group.name + "\n";
+			description += currentNode.group.name + "(" + currentNode.reservedThreads + ")" + "\n";
 		}
 		// TOREMOVE
 		else {
-			description += currentNode.group.name + "\n";
+			description += currentNode.group.name + "(" + currentNode.reservedThreads + ")" + "\n";
 			for (PriorityNode pn : currentNode.successors) {
 				description += recursiveToString(pn, level + 1);
 			}
@@ -191,19 +191,21 @@ public class PriorityGraph implements PriorityStructure {
 	private class PriorityNode {
 
 		public final MethodGroup group;
+		public final int reservedThreads;
 		public Set<PriorityNode> successors;
 
-		public PriorityNode(MethodGroup group) {
+		public PriorityNode(MethodGroup group, int reservedThreads) {
 			this.successors = new HashSet<PriorityNode>();
 			this.group = group;
+			this.reservedThreads = reservedThreads;
 		}
 		
 		public void addSuccessor(PriorityNode groupNode) {
 			this.successors.add(groupNode);
 		}
 
-		public void addSuccessor(MethodGroup group) {
-			this.successors.add(new PriorityNode(group));
+		public void addSuccessor(MethodGroup group, int reservedThreads) {
+			this.successors.add(new PriorityNode(group, reservedThreads));
 		}
 
 		public boolean hasSuccessors() {
@@ -224,31 +226,31 @@ public class PriorityGraph implements PriorityStructure {
 		MethodGroup g4 = new MethodGroup("m4", true);
 		MethodGroup g5 = new MethodGroup("m5", true);
 
-		graph.insert(g1, null);
+		graph.insert(g1, -1, null);
 		System.out.println("m1 inserted");
 		System.out.println(graph);
 
-		graph.insert(g2, g1);
+		graph.insert(g2, -1, g1);
 		System.out.println("m2 inserted");
 		System.out.println(graph);
 
-		graph.insert(g3, g2);
+		graph.insert(g3, -1, g2);
 		System.out.println("m3 inserted");
 		System.out.println(graph);
 
-		graph.insert(g4, g3);
+		graph.insert(g4, -1, g3);
 		System.out.println("m4 inserted");
 		System.out.println(graph);
 
-		graph.insert(g2, null);
+		graph.insert(g2, -1, null);
 		System.out.println("m2 inserted");
 		System.out.println(graph);
 
-		graph.insert(g5, g2);
+		graph.insert(g5, -1, g2);
 		System.out.println("m5 inserted");
 		System.out.println(graph);
 
-		graph.insert(g4, g5);
+		graph.insert(g4, -1, g5);
 		System.out.println("m4 inserted");
 		System.out.println(graph);
 

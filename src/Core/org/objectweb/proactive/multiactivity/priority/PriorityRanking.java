@@ -1,6 +1,8 @@
 package org.objectweb.proactive.multiactivity.priority;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
@@ -40,15 +42,15 @@ public class PriorityRanking implements PriorityStructure {
 	 * @param level The level of priority
 	 * @param group The group to add
 	 */
-	public void insert(int level, MethodGroup group) {
+	public void insert(int level, MethodGroup group, int reservedThreads) {
 		// The structure already has this priority level
 		if (this.priorityRanks.containsKey(level)) {
-			this.priorityRanks.get(level).addGroup(group);
+			this.priorityRanks.get(level).addGroup(group, reservedThreads);
 		}
 		// This priority level is a new one
 		else {
 			PriorityRank priorityRank = new PriorityRank();
-			priorityRank.addGroup(group);
+			priorityRank.addGroup(group, reservedThreads);
 			this.priorityRanks.put(level, priorityRank);
 		}
 	}
@@ -92,18 +94,18 @@ public class PriorityRanking implements PriorityStructure {
 	 */
 	private class PriorityRank {
 
-		private Set<MethodGroup> methodGroups;
+		private Map<MethodGroup, Integer> methodGroups;
 
 		public PriorityRank() {
-			this.methodGroups = new HashSet<MethodGroup>();
+			this.methodGroups = new HashMap<MethodGroup, Integer>();
 		}
 
-		public void addGroup(MethodGroup group) {
-			this.methodGroups.add(group);
+		public void addGroup(MethodGroup group, int reservedThreads) {
+			this.methodGroups.put(group, reservedThreads);
 		}
 		
 		public boolean contains(MethodGroup group) {
-			return this.methodGroups.contains(group);
+			return this.methodGroups.containsKey(group);
 		}
 
 	}

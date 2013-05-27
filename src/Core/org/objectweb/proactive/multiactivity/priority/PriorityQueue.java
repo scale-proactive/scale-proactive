@@ -167,6 +167,7 @@ public class PriorityQueue {
 		List<RunnableRequest> requests = new LinkedList<RunnableRequest>();
 		PriorityElement element = this.first;
 		while (element != null) {
+			// TODO Check here if there are enough thread to schedule the request
 			requests.add(element.request);
 			element = element.next;
 		}

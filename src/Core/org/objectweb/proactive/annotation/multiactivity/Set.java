@@ -20,4 +20,8 @@ public @interface Set {
 
     /** The names of the groups to be held in the same priority level */
     public String[] groupNames();
+    
+    /** The number of threads that will be reserved for executing methods that 
+     * belong to groups of this set declaration */
+    public int reservedThreads() default -1;
 }

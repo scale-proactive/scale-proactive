@@ -254,12 +254,12 @@ public class AnnotationProcessor {
 						if (group != null) {
 							System.out.println("AnnotationProcessor - group found " + group.name);
 							if (predecessors.isEmpty()) {
-								priorityGraph.insert(group, null);
+								priorityGraph.insert(group, priority.reservedThreads(), null);
 							}
 							else {
 								for(MethodGroup predecessor : predecessors) {
 									System.out.println("AnnotationProcessor - inserting..." );
-									priorityGraph.insert(group, predecessor);
+									priorityGraph.insert(group, priority.reservedThreads(), predecessor);
 									System.out.println("AnnotationProcessor - insertion finished");
 								}
 							}
@@ -287,7 +287,7 @@ public class AnnotationProcessor {
 				for (String groupName : priority.groupNames()) {
 					MethodGroup group = this.groups.get(groupName);
 					if (group != null) {
-						priorityRanking.insert(priorityLevel, group);
+						priorityRanking.insert(priorityLevel, group, priority.reservedThreads());
 					}
 				}
 			}

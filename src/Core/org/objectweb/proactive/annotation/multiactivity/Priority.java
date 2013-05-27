@@ -22,4 +22,8 @@ public @interface Priority {
 	
 	/** The priority level defined through an integer value */
 	int level() default 0;
+	
+	/** The number of threads that will be reserved for executing methods that 
+     * belong to groups of this set declaration */
+	int reservedThreads() default -1;
 }

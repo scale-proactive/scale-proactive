@@ -28,22 +28,59 @@ public class PriorityQueue {
 			this.first = toInsert;
 		}
 		else {
-			PriorityElement element = this.first;
-			while (element.next != null) {
-				element = element.next;
+			PriorityElement currentElement = this.first;
+			boolean falseEncountered = false;
+			while (currentElement.next != null) {
+				currentElement = currentElement.next;
 			}
 			// Here element is the last
-			while ((this.priorityStructure.canOvertake(group, element.belongingGroup) == PriorityOvertakeState.TRUE //||
-					//this.priorityStructure.canOvertake(group, element.belongingGroup) == PriorityOvertakeState.UNRELATED) &&
-					&& element.previous != null)) {
-				element = element.previous;
+			PriorityElement lastViableElement = currentElement;
+			
+			// We continue to overtake if no unovertakable element has been encountered and if there still are previous element in the queue 
+			while (!falseEncountered && currentElement != null) {
+				PriorityOvertakeState overtakable = this.priorityStructure.canOvertake(group, currentElement.belongingGroup);
+				if (overtakable.equals(PriorityOvertakeState.TRUE)) {
+					// This position is viable for sure, save it.
+					lastViableElement = currentElement.previous;
+				}
+				else {
+					if (overtakable.equals(PriorityOvertakeState.FALSE)) {
+						// An unovertakable element has been found, stop searching better position
+						falseEncountered = true;
+					}
+				}
+				currentElement = currentElement.previous;
 			}
-			toInsert.previous = element;
-			toInsert.next = element.next;
-			if (element.next != null) {
-				element.next.previous = toInsert;
+			
+			// the loop stopped, insert to asved element
+			if (lastViableElement != null) {
+				toInsert.previous = lastViableElement;
+				toInsert.next = lastViableElement.next;
+				if (lastViableElement.next != null) {
+					lastViableElement.next.previous = toInsert;
+				}
+				lastViableElement.next = toInsert;
 			}
-			element.next = toInsert;
+			// Mean that the element to insert must be the first
+			else {
+				toInsert.next = this.first;
+				this.first.previous = toInsert;
+				this.first = toInsert;
+			}
+			
+			///////////////////////
+			/*while ((this.priorityStructure.canOvertake(group, currentElement.belongingGroup) == PriorityOvertakeState.TRUE
+					&& currentElement.previous != null)) {
+				currentElement = currentElement.previous;
+			}
+
+			toInsert.previous = currentElement;
+			toInsert.next = currentElement.next;
+			if (currentElement.next != null) {
+				currentElement.next.previous = toInsert;
+			}
+			currentElement.next = toInsert;*/
+			//////////////
 
 		}
 

@@ -43,7 +43,6 @@ import org.apache.log4j.Logger;
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.Service;
 import org.objectweb.proactive.core.body.request.Request;
-import org.objectweb.proactive.core.body.request.ServeException;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.compatibility.AnnotationProcessor;
@@ -51,7 +50,6 @@ import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
 import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
-import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 
 
 /**
@@ -70,8 +68,6 @@ public class MultiActiveService extends Service {
     public int activeServes = 0;
     public LinkedList<Integer> serveHistory = new LinkedList<Integer>();
     public LinkedList<Integer> serveTsts = new LinkedList<Integer>();
-
-    private LinkedList<Request> servingHistory = new LinkedList<Request>();
     
     private static final Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 

@@ -43,7 +43,7 @@ import org.objectweb.proactive.core.body.request.Request;
 
 
 /**
- * This is an extension to the {@link CompatibilityMap}, and it incorporates information
+ * This is an extension to the {@link CompatibilityManager}, and it incorporates information
  * about the state of the scheduler. It facilitates checking compatibility of methods with
  * the ones in the waiting queue, or the ones that are currently executing.
  * <br>
@@ -52,7 +52,7 @@ import org.objectweb.proactive.core.body.request.Request;
  * @author The ProActive Team
  *
  */
-public abstract class StatefulCompatibilityMap extends CompatibilityMap {
+public abstract class StatefulCompatibilityMap extends CompatibilityManager {
 
     public StatefulCompatibilityMap(AnnotationProcessor annotProc) {
         super(annotProc);

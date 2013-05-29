@@ -55,7 +55,7 @@ import org.objectweb.proactive.core.body.request.Request;
  * reason for this is that compatibility checking can be sped up if we cache some data in this class.
  * @author  The ProActive Team
  */
-public class CompatibilityTracker extends StatefulCompatibilityMap {
+public class CompatibilityTracker extends CompatibilityManager {
 
     private HashMap<MethodGroup, Set<Request>> runningGroups = new HashMap<MethodGroup, Set<Request>>();
     private Set<Request> running = new HashSet<Request>();
@@ -94,7 +94,6 @@ public class CompatibilityTracker extends StatefulCompatibilityMap {
         runningGroups.get(getGroupOf(request)).remove(request);
     }
 
-    @Override
     public boolean isCompatibleWithExecuting(Request r) {
         if (runningCount == 0)
             return true;
@@ -124,22 +123,18 @@ public class CompatibilityTracker extends StatefulCompatibilityMap {
         return true;
     }
 
-    @Override
     public Collection<Request> getExecutingRequests() {
         return running;
     }
 
-    @Override
     public Request getOldestInTheQueue() {
         return queue.getOldest();
     }
 
-    @Override
     public List<Request> getQueueContents() {
         return queue.getInternalQueue();
     }
 
-    @Override
     public int getNumberOfExecutingRequests() {
         return runningCount;
     }

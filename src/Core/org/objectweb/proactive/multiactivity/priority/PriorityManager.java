@@ -36,12 +36,11 @@
  */
 package org.objectweb.proactive.multiactivity.priority;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.objectweb.proactive.multiactivity.compatibility.CompatibilityMap;
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
@@ -55,14 +54,14 @@ import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 public class PriorityManager {
 
 	// The group manager
-	private final CompatibilityMap compatibility;
+	private final CompatibilityManager compatibility;
 	
 	private PriorityQueue priorityQueue;
 	
 	private ThreadManager threadManager;
 
 	
-	public PriorityManager(PriorityStructure priority, CompatibilityMap compatibility, Map<MethodGroup, Integer> threadLimits) {
+	public PriorityManager(PriorityStructure priority, CompatibilityManager compatibility, Map<MethodGroup, Integer> threadLimits) {
 		this.compatibility = compatibility;
 		this.priorityQueue = new PriorityQueue(priority);
 		this.threadManager = new ThreadManager(threadLimits);
@@ -141,11 +140,11 @@ public class PriorityManager {
 	}
 	
 	/**
-	 * {@inheritDoc}
+	 * 
 	 */
-	@Override
-	public String toString() {
-		return this.priorityQueue.toString(this.compatibility, this.threadManager);
+	public String toString(int globalUsage, int globalLimit) {
+		String global = "\n\nGlobal usage: " + globalUsage + "/" + globalLimit;
+		return global + this.priorityQueue.toString(this.compatibility, this.threadManager);
 	}
 
 }

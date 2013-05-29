@@ -3,7 +3,7 @@ package org.objectweb.proactive.multiactivity.priority;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.objectweb.proactive.multiactivity.compatibility.CompatibilityMap;
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 import org.objectweb.proactive.multiactivity.priority.PriorityStructure.PriorityOvertakeState;
@@ -178,7 +178,7 @@ public class PriorityQueue {
 	/**
 	 * 
 	 */
-	public String toString(CompatibilityMap compatibility, ThreadManager threadManager) {
+	public String toString(CompatibilityManager compatibility, ThreadManager threadManager) {
 		StringBuilder sb = new StringBuilder();
 		PriorityElement element = this.first;
 
@@ -191,7 +191,7 @@ public class PriorityQueue {
 			sb.append(")");
 			MethodGroup group = compatibility.getGroupOf(element.request.getRequest());
 			if (group != null) {
-				sb.append(threadManager.printUsage(group) + "\n");
+				sb.append((!threadManager.hasFreeThreads(group) ? " cannot be executed (thread limit: " + threadManager.printUsage(group) : "") + "\n");
 			}
 			element = element.next;
 		}

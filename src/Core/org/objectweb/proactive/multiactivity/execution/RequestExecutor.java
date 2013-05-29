@@ -407,23 +407,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                         // if anything can be done, let the other thread know
                         if (countActive() < THREAD_LIMIT) {
                             this.notify();
-                        } else {
-                            // same for boosted methods
-                            /*Iterator<List<PriorityConstraint>> it =
-                                    this.priorityManager.getPriorityConstraints()
-                                            .values()
-                                            .iterator();
-
-                            boolean notFound = true;
-                            while (it.hasNext() && notFound) {
-                                for (PriorityConstraint pc : it.next()) {
-                                    if (pc.hasFreeBoostThreads()) {
-                                        notFound = false;
-                                        this.notify();
-                                        break;
-                                    }
-                                }
-                            }*/
                         }
                     }
                 }
@@ -501,11 +484,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
                 if (SAME_THREAD_REENTRANT) {
                     if (canServeOneHosted()) {
-                        /*PriorityGroup selectedPriorityGroup =
-                                this.priorityManager.getHighestPriorityGroup();
-                        tracePriorityGroups(selectedPriorityGroup);
 
-                        i = selectedPriorityGroup.iterator();*/
                     	i = this.priorityManager.getHighestPriorityRequests().iterator();
                     	
                         if (i.hasNext()) {
@@ -560,7 +539,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                             && isNotAHost(cont)) {
 
                         synchronized (cont) {
-                            // i.remove();
                             waiting.remove(cont);
                             resumeServing(cont, cont.getWaitingOn());
                             cont.notify();
@@ -571,15 +549,10 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 // SERVE any request who is ready and there are resources
                 // available but requests with highest priority in first
                 if (canServeOne()) {
-                    /*PriorityGroup selectedPriorityGroup =
-                            this.priorityManager.getHighestPriorityGroup();
-                    tracePriorityGroups(selectedPriorityGroup);
-
-                    i = selectedPriorityGroup.iterator();*/
 
                     i = this.priorityManager.getHighestPriorityRequests().iterator();
                     
-                    log.trace(this.priorityManager);
+                    log.trace(this.priorityManager.toString(countActive(), THREAD_LIMIT));
                     
                     if (i.hasNext()) {
                         log.trace("Requests served");
@@ -599,64 +572,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                     }
                 }
 
-                // all available threads are used, we try to use boost threads
-                // for executing starved method calls. A method call is said
-                // "starved" if the priority constraint it belongs to is not
-                // associated to another request being served. Besides, the
-                // priority constraint must have some free boostThreads.
-                if (this.countActive() == THREAD_LIMIT
-                        && this.priorityManager.hasSomeRequestsRegistered()) {
-                    /*List<PriorityConstraint> starvedPriorityConstraints =
-                            findStarvedPriorityConstraints();
-
-                    for (PriorityConstraint pc : starvedPriorityConstraints) {
-                        // find ready requests for the specified starved
-                        // priority constraint
-                        if (pc.hasFreeBoostThreads()) {
-                            List<RunnableRequest> l =
-                                    this.priorityManager.getRequestsSatisfying(pc);
-
-                            i = l.iterator();
-
-                            StringBuilder buf = null;
-                            if (log.isTraceEnabled()) {
-                                buf = new StringBuilder();
-
-                                if (i.hasNext()) {
-                                    buf.append("Requests served with boost for ");
-                                    buf.append(pc);
-                                    buf.append("\n");
-                                }
-                            }
-
-                            while (pc.hasFreeBoostThreads() && i.hasNext()) {
-                                RunnableRequest current = i.next();
-                                current.setBoosted();
-                                this.priorityManager.unregister(
-                                        current, pc.getPriorityLevel());
-                                pc.incrementActiveBoostThreads();
-                                executorService.execute(current);
-
-                                if (log.isTraceEnabled()) {
-                                    buf.append("  ");
-                                    buf.append(toString(current.getRequest()));
-
-                                    if (i.hasNext()) {
-                                        buf.append("\n");
-                                    }
-                                }
-                            }
-
-                            if (log.isTraceEnabled() && buf.length() > 0) {
-                                log.trace(buf.toString());
-                            }
-                        }
-                    }*/
-                }
-
-                // SLEEP if nothing else to do
-                // will wake up on 1) new submit, 2) finish of a request, 3)
-                // arrival of a future, 4) wait of a request
+                // SLEEP if nothing else to do will wake up on 1) new submit, 
+                // 2) finish of a request, 3) arrival of a future, 4) wait of 
+                // a request
                 try {
                     this.wait();
                 } catch (InterruptedException e) {
@@ -666,29 +584,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
             }
         }
     }
-
-    /*private void tracePriorityGroups(PriorityGroup priorityGroup) {
-        if (log.isTraceEnabled()) {
-            StringBuilder buf = new StringBuilder();
-
-            buf.append("Priority groups snapshot\n");
-
-            for (PriorityGroup pg : this.priorityManager.getPriorityGroups()
-                    .values()) {
-                buf.append("  groupLevel=" + pg.getPriorityLevel()
-                        + "\t nbRequests=" + pg.size() + ((pg == priorityGroup)
-                                ? "\t [selected]" : "") + "\n");
-            }
-
-            buf.append("  default threads usage ");
-            buf.append(this.countActive());
-            buf.append("/");
-            buf.append(this.THREAD_LIMIT);
-            buf.append("\n");
-
-            log.trace(buf.toString());
-        }
-    }*/
 
     private static String toString(Request request) {
         StringBuilder result = new StringBuilder();

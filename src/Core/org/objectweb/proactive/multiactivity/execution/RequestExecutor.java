@@ -42,7 +42,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -64,9 +63,9 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.ServingController;
 import org.objectweb.proactive.multiactivity.ServingPolicy;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
-import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
+import org.objectweb.proactive.multiactivity.priority.ThreadManager;
 
 /**
  * The request executor that constitutes the multi-active service. It contains
@@ -171,12 +170,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * @param priorityConstraints
      *            Priority constraints
      */
-    public RequestExecutor(Body body, CompatibilityTracker compatibility, PriorityStructure priority, Map<MethodGroup, Integer> threadLimits) {
+    public RequestExecutor(Body body, CompatibilityTracker compatibility, PriorityStructure priority, ThreadManager threadManager) {
         this.compatibility = compatibility;
         this.body = body;
         this.requestQueue = body.getRequestQueue();
-        this.priorityManager = new PriorityManager(priority, this.compatibility, threadLimits);
-
+        this.priorityManager = new PriorityManager(compatibility, priority, threadManager);
         executorService = Executors.newCachedThreadPool();
         active = new HashSet<RunnableRequest>();
         waiting = new HashSet<RunnableRequest>();
@@ -207,9 +205,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      *            source
      */
     public RequestExecutor(Body body, CompatibilityTracker compatibility,
-            PriorityStructure priority, Map<MethodGroup, Integer> threadLimits, int activeLimit, boolean hardLimit, 
+            PriorityStructure priority, ThreadManager threadManager, int activeLimit, boolean hardLimit, 
             boolean hostReentrant) {
-        this(body, compatibility, priority, threadLimits);
+        this(body, compatibility, priority, threadManager);
 
         THREAD_LIMIT = activeLimit;
         LIMIT_TOTAL_THREADS = hardLimit;

@@ -136,17 +136,11 @@ public class PriorityGraph implements PriorityStructure {
 		for (int i = 0 ; i < level ; i++) {
 			description += "\t";
 		}
-		// TOREMOVE - USELESS
-		if (!currentNode.hasSuccessors()) {
-			description += currentNode.group.name + "(" +  ")" + "\n";
+		description += currentNode.group.name + "(" +  ")" + "\n";
+		for (PriorityNode pn : currentNode.successors) {
+			description += recursiveToString(pn, level + 1);
 		}
-		// TOREMOVE
-		else {
-			description += currentNode.group.name + "(" +  ")" + "\n";
-			for (PriorityNode pn : currentNode.successors) {
-				description += recursiveToString(pn, level + 1);
-			}
-		}
+
 		return description;
 	}
 
@@ -162,50 +156,78 @@ public class PriorityGraph implements PriorityStructure {
 
 	private PriorityOvertakeState recursiveCanOvertake(MethodGroup group1,
 			MethodGroup group2, PriorityNode currentNode, boolean g1Found, boolean g2Found) {
-		PriorityOvertakeState canOvertake = PriorityOvertakeState.UNRELATED;
+
+		PriorityOvertakeState canOvertake = PriorityOvertakeState.UNRELATED;		
 		if (!group1.equals(group2)) {
+
 			if (group1.equals(currentNode.group)) {
+
 				if (g2Found) {
 					canOvertake = PriorityOvertakeState.FALSE;
 				}
 				g1Found = true;
 			}
+
 			if (group2.equals(currentNode.group)) {
+
 				if (g1Found) {
 					canOvertake = PriorityOvertakeState.TRUE;
 				}
 				g2Found = true;
 			}
+
 			for (PriorityNode pn : currentNode.successors) {
-				canOvertake = PriorityOvertakeState.and(canOvertake, recursiveCanOvertake(group1, group2, pn, g1Found, g2Found));
+				canOvertake = PriorityOvertakeState.and(canOvertake, 
+						recursiveCanOvertake(group1, group2, pn, g1Found, 
+								g2Found));
 			}
 		}
 		return canOvertake;
 	}
 
 	/**
-	 * Represents a node in the graph of group considering the methods in it.
+	 * Represents a node in the PriorityGraph.
+	 * 
 	 * @author jrochas
-	 *
 	 */
 	private class PriorityNode {
 
+		/** The group contained in the node */
 		public final MethodGroup group;
+
+		/** The successors of this node (successors have lower priority than 
+		 * the considered node) */
 		public Set<PriorityNode> successors;
 
 		public PriorityNode(MethodGroup group) {
 			this.successors = new HashSet<PriorityNode>();
 			this.group = group;
 		}
-		
+
+		/**
+		 * Add a successor node to the considered node. The successor node has 
+		 * then a lower priority than the considered node.
+		 * @param groupNode The node to add as successor
+		 */
 		public void addSuccessor(PriorityNode groupNode) {
 			this.successors.add(groupNode);
 		}
 
+		/**
+		 * Create a new PriorityNode from a MethodGroup and then add it to the 
+		 * successors of the considered node
+		 * @param group
+		 */
 		public void addSuccessor(MethodGroup group) {
 			this.successors.add(new PriorityNode(group));
 		}
 
+		/**
+		 * If false, it means that no other node has a lower priority than the 
+		 * considered node, but other nodes can be unrelated to it.
+		 * @return true if the considered node has successor nodes, false 
+		 * otherwise
+		 */
 		public boolean hasSuccessors() {
 			if (successors.isEmpty()) {
 				return false;
@@ -214,10 +236,17 @@ public class PriorityGraph implements PriorityStructure {
 				return true;
 			}
 		}
+
 	}
 
+	/**
+	 * Quick test to debug the graph operations.
+	 * @param args Unused
+	 */
 	public static void main(String[] args) {
+
 		PriorityGraph graph = new PriorityGraph();
+
 		MethodGroup g1 = new MethodGroup("m1", true);
 		MethodGroup g2 = new MethodGroup("m2", true);
 		MethodGroup g3 = new MethodGroup("m3", true);
@@ -252,11 +281,16 @@ public class PriorityGraph implements PriorityStructure {
 		System.out.println("m4 inserted");
 		System.out.println(graph);
 
-		System.out.println("Can g4 overtake g3 (no)? " + graph.canOvertake(g4, g3));
-		System.out.println("Can g3 overtake g4 (yes)? " + graph.canOvertake(g3, g4));
-		System.out.println("Can g2 overtake g1 (no)? " + graph.canOvertake(g2, g1));
-		System.out.println("Can g1 overtake g2 (yes)? " + graph.canOvertake(g1, g2));
-		System.out.println("Can g3 overtake m5 (unrelated)? " + graph.canOvertake(g3, g5));
+		System.out.println("Can g4 overtake g3 (no)? " +
+				"" + graph.canOvertake(g4, g3));
+		System.out.println("Can g3 overtake g4 (yes)? " +
+				"" + graph.canOvertake(g3, g4));
+		System.out.println("Can g2 overtake g1 (no)? " +
+				"" + graph.canOvertake(g2, g1));
+		System.out.println("Can g1 overtake g2 (yes)? " +
+				"" + graph.canOvertake(g1, g2));
+		System.out.println("Can g3 overtake m5 (not related)? " +
+				"" + graph.canOvertake(g3, g5));
 	}
 
 }

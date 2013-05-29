@@ -38,7 +38,6 @@ package org.objectweb.proactive.multiactivity.priority;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
@@ -61,10 +60,10 @@ public class PriorityManager {
 	private ThreadManager threadManager;
 
 	
-	public PriorityManager(PriorityStructure priority, CompatibilityManager compatibility, Map<MethodGroup, Integer> threadLimits) {
+	public PriorityManager(CompatibilityManager compatibility, PriorityStructure priority, ThreadManager threadManager) {
 		this.compatibility = compatibility;
 		this.priorityQueue = new PriorityQueue(priority);
-		this.threadManager = new ThreadManager(threadLimits);
+		this.threadManager = threadManager;
 	}
 
 	/**

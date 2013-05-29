@@ -62,6 +62,7 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.priority.PriorityGraph;
 import org.objectweb.proactive.multiactivity.priority.PriorityRanking;
 import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
+import org.objectweb.proactive.multiactivity.priority.ThreadManager;
 
 /**
  * Reads and processes the multi-activity related annotations of a class and
@@ -108,8 +109,7 @@ public class AnnotationProcessor {
 			new PriorityRanking();
 	
 	// group -> maximum number of threads used by methods of the group
-	private Map<MethodGroup, Integer> threadLimits =
-			new HashMap<MethodGroup, Integer>();
+	private ThreadManager threadManager = new ThreadManager();
 
 	// class that is processed
 	private Class<?> processedClass;
@@ -197,7 +197,7 @@ public class AnnotationProcessor {
 									g.name(), g.selfCompatible(),
 									g.parameter(), g.condition());
 					groups.put(g.name(), mg);
-					threadLimits.put(mg, g.threadLimit());
+					threadManager.addThreadLimit(mg, g.threadLimit());
 				} else {
 					addError(
 							LOC_CLASS, processedClass.getCanonicalName(),
@@ -537,8 +537,8 @@ public class AnnotationProcessor {
 		return structure;
 	}
 	
-	public Map<MethodGroup, Integer> getThreadLimits() {
-		return this.threadLimits;
+	public ThreadManager getThreadManager() {
+		return this.threadManager;
 	}
 
 }

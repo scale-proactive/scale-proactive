@@ -37,6 +37,7 @@
 package org.objectweb.proactive.multiactivity;
 
 import java.util.LinkedList;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.Body;
@@ -47,6 +48,7 @@ import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.compatibility.AnnotationProcessor;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
+import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
 import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
@@ -99,8 +101,10 @@ public class MultiActiveService extends Service {
         // Filling priority structures according to what was extracted from annotations
         PriorityStructure priority = annotationProcessor.getPriorityStructure();
         
+        Map<MethodGroup, Integer> threadLimits = annotationProcessor.getThreadLimits();
+        
         // Building executor with all required information for scheduling
-        executor = new RequestExecutor(body, compatibility, priority);
+        executor = new RequestExecutor(body, compatibility, priority, threadLimits);
 
         if (logger.isDebugEnabled()) {
             /*if (executor.getPriorityManager().getPriorityConstraints().size() > 0) {

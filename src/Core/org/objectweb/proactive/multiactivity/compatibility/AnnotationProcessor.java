@@ -106,6 +106,10 @@ public class AnnotationProcessor {
 			new PriorityGraph();
 	private PriorityRanking priorityRanking = 
 			new PriorityRanking();
+	
+	// group -> maximum number of threads used by methods of the group
+	private Map<MethodGroup, Integer> threadLimits =
+			new HashMap<MethodGroup, Integer>();
 
 	// class that is processed
 	private Class<?> processedClass;
@@ -193,6 +197,7 @@ public class AnnotationProcessor {
 									g.name(), g.selfCompatible(),
 									g.parameter(), g.condition());
 					groups.put(g.name(), mg);
+					threadLimits.put(mg, g.threadLimit());
 				} else {
 					addError(
 							LOC_CLASS, processedClass.getCanonicalName(),
@@ -254,12 +259,12 @@ public class AnnotationProcessor {
 						if (group != null) {
 							System.out.println("AnnotationProcessor - group found " + group.name);
 							if (predecessors.isEmpty()) {
-								priorityGraph.insert(group, priority.reservedThreads(), null);
+								priorityGraph.insert(group, null);
 							}
 							else {
 								for(MethodGroup predecessor : predecessors) {
 									System.out.println("AnnotationProcessor - inserting..." );
-									priorityGraph.insert(group, priority.reservedThreads(), predecessor);
+									priorityGraph.insert(group, predecessor);
 									System.out.println("AnnotationProcessor - insertion finished");
 								}
 							}
@@ -287,7 +292,7 @@ public class AnnotationProcessor {
 				for (String groupName : priority.groupNames()) {
 					MethodGroup group = this.groups.get(groupName);
 					if (group != null) {
-						priorityRanking.insert(priorityLevel, group, priority.reservedThreads());
+						priorityRanking.insert(priorityLevel, group);
 					}
 				}
 			}
@@ -530,6 +535,10 @@ public class AnnotationProcessor {
 			break;
 		}
 		return structure;
+	}
+	
+	public Map<MethodGroup, Integer> getThreadLimits() {
+		return this.threadLimits;
 	}
 
 }

@@ -42,6 +42,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -63,6 +64,7 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.ServingController;
 import org.objectweb.proactive.multiactivity.ServingPolicy;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
+import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
 
@@ -169,11 +171,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * @param priorityConstraints
      *            Priority constraints
      */
-    public RequestExecutor(Body body, CompatibilityTracker compatibility, PriorityStructure priority) {
+    public RequestExecutor(Body body, CompatibilityTracker compatibility, PriorityStructure priority, Map<MethodGroup, Integer> threadLimits) {
         this.compatibility = compatibility;
         this.body = body;
         this.requestQueue = body.getRequestQueue();
-        this.priorityManager = new PriorityManager(priority, this.compatibility);
+        this.priorityManager = new PriorityManager(priority, this.compatibility, threadLimits);
 
         executorService = Executors.newCachedThreadPool();
         active = new HashSet<RunnableRequest>();
@@ -205,9 +207,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      *            source
      */
     public RequestExecutor(Body body, CompatibilityTracker compatibility,
-            PriorityStructure priority, int activeLimit, boolean hardLimit, 
+            PriorityStructure priority, Map<MethodGroup, Integer> threadLimits, int activeLimit, boolean hardLimit, 
             boolean hostReentrant) {
-        this(body, compatibility, priority);
+        this(body, compatibility, priority, threadLimits);
 
         THREAD_LIMIT = activeLimit;
         LIMIT_TOTAL_THREADS = hardLimit;
@@ -585,7 +587,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
                     while (canServeOne() && i.hasNext()) {
                         RunnableRequest current = i.next();
-                        this.priorityManager.unregister(current);
+                        priorityManager.unregister(current);
+                        priorityManager.notifyRunning(current);
                         active.add(current);
                         executorService.execute(current);
                         servingHistory.add(current.getRequest());
@@ -839,6 +842,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         body.serve(runnableRequest.getRequest());
         synchronized (this.requestQueue) {
             serveStopped(runnableRequest);
+            priorityManager.notifyFinished(runnableRequest);
             compatibility.removeRunning(runnableRequest.getRequest());
             requestQueue.notify();
         }

@@ -41,6 +41,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 import org.objectweb.proactive.annotation.PublicAPI;
+import org.objectweb.proactive.multiactivity.priority.ThreadManager;
 
 
 /**
@@ -69,6 +70,15 @@ public @interface Group {
      * @return
      */
     public boolean selfCompatible();
+    
+    public int threadLimit() default ThreadManager.UNBOUNDED_MAX_THREADS;
+    
+    /**
+     * Conditioning function of the self-compatibility.
+     * 
+     * @return
+     */
+    public String condition() default "";
 
     /**
      * Class name of the common argument of all methods belonging to this group.
@@ -76,12 +86,5 @@ public @interface Group {
      * @return
      */
     public String parameter() default "";
-
-    /**
-     * Conditioning function of the self-compatibility.
-     * 
-     * @return
-     */
-    public String condition() default "";
 
 }

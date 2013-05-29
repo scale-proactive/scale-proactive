@@ -37,7 +37,9 @@
 package org.objectweb.proactive.multiactivity.priority;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityMap;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
@@ -56,11 +58,14 @@ public class PriorityManager {
 	private final CompatibilityMap compatibility;
 	
 	private PriorityQueue priorityQueue;
+	
+	private ThreadManager threadManager;
 
 	
-	public PriorityManager(PriorityStructure priority, CompatibilityMap compatibility) {
+	public PriorityManager(PriorityStructure priority, CompatibilityMap compatibility, Map<MethodGroup, Integer> threadLimits) {
 		this.compatibility = compatibility;
 		this.priorityQueue = new PriorityQueue(priority);
+		this.threadManager = new ThreadManager(threadLimits);
 	}
 
 	/**
@@ -108,7 +113,31 @@ public class PriorityManager {
 	 * @return The priority group with the highest priority
 	 */
 	public List<RunnableRequest> getHighestPriorityRequests() {
-		return this.priorityQueue.getHighestPriorityRequests();
+		List<RunnableRequest> requests = this.priorityQueue.getHighestPriorityRequests();
+		Iterator<RunnableRequest> it = requests.iterator();
+		while (it.hasNext()) {
+			MethodGroup group = this.compatibility.getGroupOf(it.next().getRequest());
+			if (group != null) {
+				if (!this.threadManager.hasFreeThreads(group)) {
+					it.remove();
+				}
+			}
+		}
+		return requests;
+	}
+	
+	public void notifyRunning(RunnableRequest request) {
+		MethodGroup group = this.compatibility.getGroupOf(request.getRequest());
+		if (group != null) {
+			this.threadManager.increaseUsage(group);
+		}
+	}
+	
+	public void notifyFinished(RunnableRequest request) {
+		MethodGroup group = this.compatibility.getGroupOf(request.getRequest());
+		if (group != null) {
+			this.threadManager.decreaseUsage(group);
+		}
 	}
 	
 	/**
@@ -116,7 +145,7 @@ public class PriorityManager {
 	 */
 	@Override
 	public String toString() {
-		return this.priorityQueue.toString();
+		return this.priorityQueue.toString(this.compatibility, this.threadManager);
 	}
 
 }

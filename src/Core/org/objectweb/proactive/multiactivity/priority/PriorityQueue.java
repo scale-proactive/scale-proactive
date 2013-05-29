@@ -3,6 +3,7 @@ package org.objectweb.proactive.multiactivity.priority;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityMap;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 import org.objectweb.proactive.multiactivity.priority.PriorityStructure.PriorityOvertakeState;
@@ -35,7 +36,7 @@ public class PriorityQueue {
 			}
 			// Here element is the last
 			PriorityElement lastViableElement = currentElement;
-			
+
 			// We continue to overtake if no unovertakable element has been encountered and if there still are previous element in the queue 
 			while (!falseEncountered && currentElement != null) {
 				PriorityOvertakeState overtakable = this.priorityStructure.canOvertake(group, currentElement.belongingGroup);
@@ -51,7 +52,7 @@ public class PriorityQueue {
 				}
 				currentElement = currentElement.previous;
 			}
-			
+
 			// the loop stopped, insert to asved element
 			if (lastViableElement != null) {
 				toInsert.previous = lastViableElement;
@@ -67,7 +68,7 @@ public class PriorityQueue {
 				this.first.previous = toInsert;
 				this.first = toInsert;
 			}
-			
+
 			///////////////////////
 			/*while ((this.priorityStructure.canOvertake(group, currentElement.belongingGroup) == PriorityOvertakeState.TRUE
 					&& currentElement.previous != null)) {
@@ -175,20 +176,23 @@ public class PriorityQueue {
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * 
 	 */
-	@Override
-	public String toString() {
+	public String toString(CompatibilityMap compatibility, ThreadManager threadManager) {
 		StringBuilder sb = new StringBuilder();
 		PriorityElement element = this.first;
-		
+
 		sb.append("\n\nPriority queue - from high priority...\n");
 		while (element != null) {
 			sb.append("\t" + element.request.getRequest().getMethodName() + "(");
 			for (int i = 0 ; i < element.request.getRequest().getMethodCall().getNumberOfParameter() ; i++) {
 				sb.append(element.request.getRequest().getParameter(i));
 			}
-			sb.append(")\n");
+			sb.append(")");
+			MethodGroup group = compatibility.getGroupOf(element.request.getRequest());
+			if (group != null) {
+				sb.append(threadManager.printUsage(group) + "\n");
+			}
 			element = element.next;
 		}
 		sb.append("Priority queue - to low priority\n");
@@ -205,16 +209,16 @@ public class PriorityQueue {
 
 		/** The request to schedule */
 		public final RunnableRequest request;
-		
+
 		/** The group where the request belongs. Warning: it is up to the 
 		 * programmer to keep this variable consistent with the request. No 
 		 * further verification are done to ensure that it really is the group 
 		 * of the request. */
 		public final MethodGroup belongingGroup;
-		
+
 		/** The previous element in the PriorityQueue (with higher priority)*/
 		public PriorityElement previous;
-		
+
 		/** The next element in the PriorityQueue (with lower priority)*/
 		public PriorityElement next;
 
@@ -223,7 +227,7 @@ public class PriorityQueue {
 			this.request = request;
 			this.belongingGroup = belongingGroup;
 		}
-		
+
 	}
 
 }

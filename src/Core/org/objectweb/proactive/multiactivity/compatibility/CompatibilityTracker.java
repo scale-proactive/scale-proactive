@@ -60,7 +60,6 @@ public class CompatibilityTracker extends StatefulCompatibilityMap {
     private HashMap<MethodGroup, Set<Request>> runningGroups = new HashMap<MethodGroup, Set<Request>>();
     private Set<Request> running = new HashSet<Request>();
     private BlockingRequestQueue queue;
-    private int runningCount = 0;
 
     public CompatibilityTracker(AnnotationProcessor annotProc, BlockingRequestQueue queue) {
         super(annotProc);
@@ -79,7 +78,6 @@ public class CompatibilityTracker extends StatefulCompatibilityMap {
      * @param request
      */
     public void addRunning(Request request) {
-        runningCount++;
         running.add(request);
         runningGroups.get(getGroupOf(request)).add(request);
     }
@@ -89,14 +87,13 @@ public class CompatibilityTracker extends StatefulCompatibilityMap {
      * @param request
      */
     public void removeRunning(Request request) {
-        runningCount--;
         running.remove(request);
         runningGroups.get(getGroupOf(request)).remove(request);
     }
 
     @Override
     public boolean isCompatibleWithExecuting(Request r) {
-        if (runningCount == 0)
+        if (running.size() == 0)
             return true;
 
         MethodGroup reqGroup = getGroupOf(r);
@@ -141,7 +138,7 @@ public class CompatibilityTracker extends StatefulCompatibilityMap {
 
     @Override
     public int getNumberOfExecutingRequests() {
-        return runningCount;
+        return running.size();
     }
 
 }

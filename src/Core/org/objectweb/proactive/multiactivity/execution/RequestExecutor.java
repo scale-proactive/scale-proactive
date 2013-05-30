@@ -61,8 +61,8 @@ import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.ServingController;
-import org.objectweb.proactive.multiactivity.ServingPolicy;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
+import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
 import org.objectweb.proactive.multiactivity.priority.PriorityGroup;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
@@ -142,11 +142,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * 'resume' the waiting when the second request finishes execution
      */
     private ConcurrentHashMap<RunnableRequest, RunnableRequest> hostMap;
-
-    private HashSet<Request> invalid = new HashSet<Request>();
-
-    private HashMap<Request, Set<Request>> invalidates =
-            new HashMap<Request, Set<Request>>();
 
     /*
      * This counter allows to warn the multiactivity framework that a thread has 
@@ -274,25 +269,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     /**
      * This is the heart of the executor. It is an internal scheduling thread
      * that coordinates wake-ups, and waits and future value arrivals. Before
-     * doing that it also starts a thread for the queue handler.
-     */
-    public void execute() {
-
-        new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                requestQueueHandler();
-
-            }
-        }, "Request listener for " + body).start();
-
-        internalExecute();
-    }
-
-    /**
-     * This is the heart of the executor. It is an internal scheduling thread
-     * that coordinates wake-ups, and waits and future value arrivals. Before
      * doing that it also starts a thread for the queue handler that uses a
      * custom policy for scheduling.
      * 
@@ -314,64 +290,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     }
 
     /**
-     * Method which schedules requests with the default policy.
-     */
-    private void requestQueueHandler() {
-
-        // register thread, so we can look up the Body if needed
-        LocalBodyStore.getInstance().pushContext(new Context(body, null));
-
-        synchronized (requestQueue) {
-            while (body.isActive()) {
-
-                // get compatible ones from the queue
-                List<Request> rc;
-                rc = runDefaultPolicy();
-
-                if (rc.size() >= 0) {
-                    synchronized (this) {
-                        // add them to the ready set
-                        for (int i = 0; i < rc.size(); i++) {
-                            RunnableRequest runnableRequest =
-                                    wrapRequest(rc.get(i));
-                            priorityManager.register(runnableRequest);
-                        }
-
-                        // if anything can be done, let the other thread know
-                        if (countActive() < THREAD_LIMIT) {
-                            this.notify();
-                        } else {
-                            // same for boosted methods
-                            Iterator<List<PriorityConstraint>> it =
-                                    this.priorityManager.getPriorityConstraints()
-                                            .values()
-                                            .iterator();
-
-                            boolean notFound = true;
-                            while (it.hasNext() && notFound) {
-                                for (PriorityConstraint pc : it.next()) {
-                                    if (pc.hasFreeBoostThreads()) {
-                                        notFound = false;
-                                        this.notify();
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                try {
-                    requestQueue.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        }
-    }
-
-    /**
      * Method that retrieves the compatible requests from the queue based on a
      * custom policy.
      * 
@@ -386,13 +304,13 @@ public class RequestExecutor implements FutureWaiter, ServingController {
             while (body.isActive()) {
 
                 // get compatible ones from the queue
-                List<Request> rc;
-                rc = policy.runPolicy(compatibility);
+                List<Request> rc = policy.runPolicy(compatibility);
 
                 if (rc.size() >= 0) {
                     for (int i = 0; i < rc.size(); i++) {
                         compatibility.addRunning(rc.get(i));
                     }
+                    
                     synchronized (this) {
                         // add them to the ready set
                         for (int i = 0; i < rc.size(); i++) {
@@ -436,58 +354,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         }
     }
 
-    /**
-     * Default scheduling policy. <br>
-     * It will take a request from the queue if it is compatible with all
-     * executing ones and also with everyone before it in the queue. If a
-     * request can not be taken out from the queue, the requests it is invalid
-     * with are marked accordingly so that they are not retried until this one
-     * is finally served.
-     * 
-     * @return
-     */
-    private List<Request> runDefaultPolicy() {
-
-        List<Request> reqs = requestQueue.getInternalQueue();
-        List<Request> ret = new ArrayList<Request>();
-
-        int i, lastIndex;
-        for (i = 0; i < reqs.size(); i++) {
-            lastIndex = -2;
-            if (!invalid.contains(reqs.get(i))
-                    && compatibility.isCompatibleWithExecuting(reqs.get(i))
-                    && (lastIndex =
-                            compatibility.getIndexOfLastCompatibleWith(
-                                    reqs.get(i), reqs.subList(0, i))) == i - 1) {
-                Request r = reqs.get(i);
-                ret.add(r);
-
-                compatibility.addRunning(r);
-
-                if (invalidates.containsKey(reqs.get(i))) {
-                    for (Request ok : invalidates.get(reqs.get(i))) {
-                        invalid.remove(ok);
-                    }
-                    invalidates.remove(reqs.get(i));
-                }
-
-                reqs.remove(i);
-                i--;
-
-            } else if (lastIndex > -2 && lastIndex < i) {
-                lastIndex++;
-                if (!invalidates.containsKey(reqs.get(lastIndex))) {
-                    invalidates.put(reqs.get(lastIndex), new HashSet<Request>());
-                }
-
-                invalidates.get(reqs.get(lastIndex)).add(reqs.get(i));
-                invalid.add(reqs.get(i));
-            }
-        }
-
-        return ret;
-    }
-
+   
     /**
      * Serving and Thread management.
      */

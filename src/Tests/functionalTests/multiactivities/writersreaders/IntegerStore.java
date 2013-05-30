@@ -41,8 +41,8 @@ import org.objectweb.proactive.RunActive;
 import org.objectweb.proactive.annotation.multiactivity.Modifies;
 import org.objectweb.proactive.annotation.multiactivity.Reads;
 import org.objectweb.proactive.multiactivity.MultiActiveService;
-import org.objectweb.proactive.multiactivity.ServingPolicy;
-import org.objectweb.proactive.multiactivity.ServingPolicyFactory;
+import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
+import org.objectweb.proactive.multiactivity.policy.ServingPolicyFactory;
 
 
 /**

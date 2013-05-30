@@ -34,7 +34,7 @@
  * ################################################################
  * $$PROACTIVE_INITIAL_DEV$$
  */
-package org.objectweb.proactive.multiactivity;
+package org.objectweb.proactive.multiactivity.policy;
 
 import java.util.List;
 
@@ -44,8 +44,8 @@ import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibility
 
 /**
  * Interface for describing the scheduling policy to be used in a multi-active service.
+ * 
  * @author The ProActive Team
- *
  */
 public interface ServingPolicy {
 

@@ -50,7 +50,7 @@ import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.core.node.NodeException;
 import org.objectweb.proactive.core.util.wrapper.BooleanWrapper;
 import org.objectweb.proactive.multiactivity.MultiActiveService;
-import org.objectweb.proactive.multiactivity.ServingPolicyFactory;
+import org.objectweb.proactive.multiactivity.policy.ServingPolicyFactory;
 
 
 @DefineGroups(@Group(name = "group", selfCompatible = false))

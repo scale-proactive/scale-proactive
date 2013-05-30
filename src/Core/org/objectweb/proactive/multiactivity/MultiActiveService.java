@@ -47,6 +47,8 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.compatibility.AnnotationProcessor;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
+import org.objectweb.proactive.multiactivity.policy.DefaultServingPolicy;
+import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 
@@ -124,7 +126,7 @@ public class MultiActiveService extends Service {
     public void multiActiveServing(int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
         init();
         executor.configure(maxActiveThreads, hardLimit, hostReentrant);
-        executor.execute();
+        executor.execute(new DefaultServingPolicy());
     }
     
     /**
@@ -137,7 +139,7 @@ public class MultiActiveService extends Service {
     public void multiActiveServing(List<PriorityConstraint> priorityConstraints, int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
         init(priorityConstraints);
         executor.configure(maxActiveThreads, hardLimit, hostReentrant);
-        executor.execute();
+        executor.execute(new DefaultServingPolicy());
     }
 
     /**
@@ -147,7 +149,7 @@ public class MultiActiveService extends Service {
     public void multiActiveServing(int maxActiveThreads) {
         init();
         executor.configure(maxActiveThreads, false, false);
-        executor.execute();
+        executor.execute(new DefaultServingPolicy());
 
     }
 
@@ -157,7 +159,7 @@ public class MultiActiveService extends Service {
     public void multiActiveServing() {
         init();
         executor.configure(Integer.MAX_VALUE, false, false);
-        executor.execute();
+        executor.execute(new DefaultServingPolicy());
     }
 
     /**
@@ -197,7 +199,7 @@ public class MultiActiveService extends Service {
 
     /**
      * Returns the object through which the service's properties can be modified at run-time.
-     * @return
+     * @return serving controller
      */
     public ServingController getServingController() {
         //this init runs only once even if invoked many times

@@ -44,7 +44,7 @@ import org.objectweb.proactive.annotation.multiactivity.DefineRules;
 import org.objectweb.proactive.annotation.multiactivity.Group;
 import org.objectweb.proactive.annotation.multiactivity.MemberOf;
 import org.objectweb.proactive.multiactivity.MultiActiveService;
-import org.objectweb.proactive.multiactivity.ServingPolicyFactory;
+import org.objectweb.proactive.multiactivity.policy.ServingPolicyFactory;
 
 
 @DefineGroups( { @Group(name = "gCounter", selfCompatible = false),

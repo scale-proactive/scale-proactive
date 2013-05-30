@@ -82,12 +82,14 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * Number of concurrent threads allowed
      */
     private int THREAD_LIMIT = Integer.MAX_VALUE;
+    
     /**
      * If set to true, then the THREAD_LIMIT refers to the total number of
      * serves. If false then it refers to actively executing serves, not the
      * waiting by necessity ones.
      */
     private boolean LIMIT_TOTAL_THREADS = false;
+    
     /**
      * If true re-entrant calls will be hosted on the same thread as their
      * source. If false than all serves will be served on separate threads.
@@ -95,7 +97,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     private boolean SAME_THREAD_REENTRANT = false;
 
     private CompatibilityTracker compatibility;
+   
     private Body body;
+    
     private RequestQueue requestQueue;
 
     /**
@@ -145,8 +149,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
     /*
      * This counter allows to warn the multiactivity framework that a thread has 
-     * been sent to sleep or awaken from sleep manually such that these state are 
-     * considered in the soft and hard limit of the current multi active object.
+     * been sent to sleep or awaken from sleep manually such that these states are 
+     * considered in the soft and hard limit of the current multi-active object.
      */
     private final AtomicInteger extraActiveRequestCount = new AtomicInteger(0);
 

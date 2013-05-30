@@ -128,13 +128,12 @@ import org.objectweb.proactive.multiactivity.execution.FutureWaiterRegistry;
  * objects allowing subclasses to create them as they want (using customizable
  * factories or instance).
  * </p>
- * 
+ *
  * @author The ProActive Team
  * @version 1.0, 2001/10/23
- * @since ProActive 0.9
  * @see org.objectweb.proactive.Body
  * @see UniqueID
- * 
+ * @since ProActive 0.9
  */
 public abstract class BodyImpl extends AbstractBody implements java.io.Serializable, BodyImplMBean {
     //
@@ -145,10 +144,14 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
     // -- PROTECTED MEMBERS -----------------------------------------------
     //
 
-    /** The component in charge of receiving reply */
+    /**
+     * The component in charge of receiving reply
+     */
     protected ReplyReceiver replyReceiver;
 
-    /** The component in charge of receiving request */
+    /**
+     * The component in charge of receiving request
+     */
     protected RequestReceiver requestReceiver;
 
     // already checked methods
@@ -166,13 +169,11 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 
     /**
      * Creates a new AbstractBody for an active object attached to a given node.
-     * 
+     *
      * @param reifiedObject the active object that body is for
-     *
-     * @param nodeURL the URL of the node that body is attached to
-     *
-     * @param factory the factory able to construct new factories for each type of meta objects
-     * needed by this body
+     * @param nodeURL       the URL of the node that body is attached to
+     * @param factory       the factory able to construct new factories for each type of meta objects
+     *                      needed by this body
      */
     public BodyImpl(Object reifiedObject, String nodeURL, MetaObjectFactory factory)
             throws ActiveObjectCreationException {
@@ -275,8 +276,7 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
      * body cannot temporary receive the request.
      *
      * @param request the request to process
-     * 
-     * @exception java.io.IOException if the request cannot be accepted
+     * @throws java.io.IOException if the request cannot be accepted
      */
     @Override
     protected int internalReceiveRequest(Request request) throws java.io.IOException,
@@ -306,10 +306,9 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 
     /**
      * Receives a reply in response to a former request.
-     * 
-     * @param reply the reply received
      *
-     * @exception java.io.IOException if the reply cannot be accepted
+     * @param reply the reply received
+     * @throws java.io.IOException if the reply cannot be accepted
      */
     @Override
     protected int internalReceiveReply(Reply reply) throws java.io.IOException {
@@ -329,9 +328,9 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 
     /**
      * Signals that the activity of this body, managed by the active thread has just stopped.
-     * 
+     *
      * @param completeACs if true, and if there are remaining AC in the futurepool, the AC thread is
-     * not killed now; it will be killed after the sending of the last remaining AC.
+     *                    not killed now; it will be killed after the sending of the last remaining AC.
      */
     @Override
     protected void activityStopped(boolean completeACs) {
@@ -472,8 +471,7 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
      * Stores the given method name with the given parameters types inside our method signature
      * cache to avoid re-testing them
      *
-     * @param methodName name of the method
-     * 
+     * @param methodName      name of the method
      * @param parametersTypes parameter type list
      */
     private void storeInMethodCache(String methodName, Class<?>[] parametersTypes) {
@@ -519,10 +517,14 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
     // -- inner classes -----------------------------------------------
     //
     private class ActiveLocalBodyStrategy implements LocalBodyStrategy, java.io.Serializable {
-        /** A pool future that contains the pending future objects */
+        /**
+         * A pool future that contains the pending future objects
+         */
         protected FuturePool futures;
 
-        /** The reified object target of the request processed by this body */
+        /**
+         * The reified object target of the request processed by this body
+         */
         protected Object reifiedObject;
         protected BlockingRequestQueue requestQueue;
         protected RequestFactory internalRequestFactory;
@@ -558,10 +560,6 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
             return this.reifiedObject;
         }
 
-        public String getName() {
-            return this.reifiedObject.getClass().getName();
-        }
-
         /**
          * Serves the request. The request should be removed from the request queue before serving,
          * which is correctly done by all methods of the Service class. However, this condition is
@@ -578,7 +576,7 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
                             .getForBody(BodyImpl.this.getID())));
 
             try {
-                serveInternal(request);
+                serveInternal(request, null);
             } finally {
                 LocalBodyStore.getInstance().popContext();
             }
@@ -588,7 +586,32 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
             }
         }
 
-        private void serveInternal(Request request) {
+        /**
+         * Serves the request with the given exception as result instead of the normal execution.
+         * The request should be removed from the request queue before serving,
+         * which is correctly done by all methods of the Service class. However, this condition is
+         * not ensured for custom calls on serve.
+         */
+        public void serveWithException(Request request, Throwable exception) {
+            if (Profiling.TIMERS_COMPILED) {
+                TimerWarehouse.startServeTimer(bodyID, request.getMethodCall().getReifiedMethod());
+            }
+
+            // push the new context
+            LocalBodyStore.getInstance().pushContext(new Context(BodyImpl.this, request));
+
+            try {
+                serveInternal(request, exception);
+            } finally {
+                LocalBodyStore.getInstance().popContext();
+            }
+
+            if (Profiling.TIMERS_COMPILED) {
+                TimerWarehouse.stopServeTimer(BodyImpl.this.bodyID);
+            }
+        }
+
+        private void serveInternal(Request request, Throwable exception) {
             if (request == null) {
                 return;
             }
@@ -617,7 +640,30 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
             // If the request is not a "terminate Active Object" request,
             // it is served normally.
             if (!isTerminateAORequest(request)) {
-                reply = request.serve(BodyImpl.this);
+                if (exception != null) {
+
+                    if ((exception instanceof Exception) && !(exception instanceof RuntimeException)) {
+                        // if the exception is a checked exception, the method must declare in its throws statement, otherwise
+                        // the future sent to the user will be invalid
+                        boolean thrownFound = false;
+                        for (Class exptype : request.getMethodCall().getReifiedMethod().getExceptionTypes()) {
+                            thrownFound = thrownFound || exptype.isAssignableFrom(exception.getClass());
+                        }
+                        if (!thrownFound) {
+                            throw new IllegalArgumentException("Invalid Exception " + exception.getClass() +
+                                ". The method " + request.getMethodCall().getReifiedMethod() +
+                                " don't declare it to be thrown.");
+                        }
+                        reply = new ReplyImpl(BodyImpl.this.getID(), request.getSequenceNumber(), request
+                                .getMethodName(), new MethodCallResult(null, exception), securityManager);
+                    } else {
+                        reply = new ReplyImpl(BodyImpl.this.getID(), request.getSequenceNumber(), request
+                                .getMethodName(), new MethodCallResult(null, exception), securityManager);
+                    }
+
+                } else {
+                    reply = request.serve(BodyImpl.this);
+                }
             }
 
             if (!isProActiveInternalObject) {
@@ -720,7 +766,9 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
                     } catch (Throwable retryException1) {
                         // log the issue on the AO side for debugging purpose
                         // the initial exception must be the one to appear in the log.
-                        sendReplyExceptionsLogger.error("Failed to send reply to " + request, e1);
+                        sendReplyExceptionsLogger.error(shortString() + " : Failed to send reply to method:" +
+                            request.getMethodName() + " sequence: " + request.getSequenceNumber() + " by " +
+                            request.getSenderNodeURL() + "/" + request.getSender(), e1);
                     }
                 }
             }
@@ -816,11 +864,11 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 
         /**
          * Returns a unique identifier that can be used to tag a future, a request
-         * 
+         *
          * @return a unique identifier that can be used to tag a future, a request.
          */
         public synchronized long getNextSequenceID() {
-            return BodyImpl.this.bodyID.toString().hashCode() + ++this.absoluteSequenceID;
+            return BodyImpl.this.bodyID.hashCode() + ++this.absoluteSequenceID;
         }
 
         //
@@ -832,7 +880,6 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
          * true, AbstractBody.terminate() is called
          *
          * @param request The request to serve
-         * 
          * @return true if the name of the method is "terminateAO" or "terminateAOImmediately".
          */
         private boolean isTerminateAORequest(Request request) {
@@ -847,6 +894,7 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 
         /**
          * Propagate all tags attached to the current served request.
+         *
          * @return The MessageTags for the propagation
          */
         private MessageTags applyTags(long sequenceID) {
@@ -884,6 +932,7 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
         // -- CONSTRUCTORS -----------------------------------------------
         //
         public InactiveLocalBodyStrategy() {
+
         }
 
         public InactiveLocalBodyStrategy(FuturePool remainingsACs) {
@@ -913,11 +962,13 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
             throw new InactiveBodyException(BodyImpl.this);
         }
 
-        public String getName() {
-            return "inactive body";
+        public void serve(Request request) {
+            throw new InactiveBodyException(BodyImpl.this, (request != null) ? request.getMethodName()
+                    : "null request");
         }
 
-        public void serve(Request request) {
+        @Override
+        public void serveWithException(Request request, Throwable exception) {
             throw new InactiveBodyException(BodyImpl.this, (request != null) ? request.getMethodName()
                     : "null request");
         }

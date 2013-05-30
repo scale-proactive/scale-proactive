@@ -45,6 +45,7 @@ import java.util.Set;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
 
+
 /**
  * Interface for describing the scheduling policy to be used in a multi-active
  * service.
@@ -55,8 +56,7 @@ public class DefaultServingPolicy implements ServingPolicy {
 
     private HashSet<Request> invalid = new HashSet<Request>();
 
-    private HashMap<Request, Set<Request>> invalidates =
-            new HashMap<Request, Set<Request>>();
+    private HashMap<Request, Set<Request>> invalidates = new HashMap<Request, Set<Request>>();
 
     /**
      * Default scheduling policy. <br>
@@ -75,11 +75,9 @@ public class DefaultServingPolicy implements ServingPolicy {
         int i, lastIndex;
         for (i = 0; i < reqs.size(); i++) {
             lastIndex = -2;
-            if (!invalid.contains(reqs.get(i))
-                    && compatibility.isCompatibleWithExecuting(reqs.get(i))
-                    && (lastIndex =
-                            compatibility.getIndexOfLastCompatibleWith(
-                                    reqs.get(i), reqs.subList(0, i))) == i - 1) {
+            if (!invalid.contains(reqs.get(i)) &&
+                compatibility.isCompatibleWithExecuting(reqs.get(i)) &&
+                (lastIndex = compatibility.getIndexOfLastCompatibleWith(reqs.get(i), reqs.subList(0, i))) == i - 1) {
                 Request r = reqs.get(i);
                 ret.add(r);
 

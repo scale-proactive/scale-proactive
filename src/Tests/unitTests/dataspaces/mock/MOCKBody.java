@@ -188,11 +188,6 @@ public class MOCKBody implements Body {
         return null;
     }
 
-    public String getName() {
-
-        return null;
-    }
-
     public long getNextSequenceID() {
 
         return 0;
@@ -217,6 +212,10 @@ public class MOCKBody implements Body {
 
     }
 
+    public void serveWithException(Request request, Throwable exception) {
+
+    }
+
     public void createShortcut(Shortcut shortcut) throws IOException {
 
     }
@@ -231,6 +230,11 @@ public class MOCKBody implements Body {
 
     public UniqueID getID() {
         return uid;
+    }
+
+    @Override
+    public String getName() {
+        return this.getClass().getName();
     }
 
     public String getNodeURL() {

@@ -90,9 +90,9 @@ import org.objectweb.proactive.core.security.PolicyServer;
 import org.objectweb.proactive.core.security.ProActiveSecurity;
 import org.objectweb.proactive.core.security.ProActiveSecurityManager;
 import org.objectweb.proactive.core.security.Secure;
+import org.objectweb.proactive.core.security.SecurityConstants.EntityType;
 import org.objectweb.proactive.core.security.SecurityContext;
 import org.objectweb.proactive.core.security.TypedCertificate;
-import org.objectweb.proactive.core.security.SecurityConstants.EntityType;
 import org.objectweb.proactive.core.security.crypto.KeyExchangeException;
 import org.objectweb.proactive.core.security.crypto.SessionException;
 import org.objectweb.proactive.core.security.exceptions.CommunicationForbiddenException;
@@ -145,6 +145,7 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
     //
     // -- PROTECTED MEMBERS -----------------------------------------------
     //
+
     protected ThreadStore threadStore;
 
     // the current implementation of the local view of this body
@@ -201,8 +202,6 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
     // the StepByStep mode
     protected Debugger debugger;
 
-    private String reifiedObjectClassName;
-
     //
     // -- CONSTRUCTORS -----------------------------------------------
     //
@@ -226,15 +225,12 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
      */
     public AbstractBody(Object reifiedObject, String nodeURL, MetaObjectFactory factory)
             throws ActiveObjectCreationException {
-        super(nodeURL);
+        super(reifiedObject, nodeURL);
 
         this.threadStore = factory.newThreadStoreFactory().newThreadStore();
 
         // GROUP
         this.spmdManager = factory.newProActiveSPMDGroupManagerFactory().newProActiveSPMDGroupManager();
-
-        if (reifiedObject != null)
-            this.reifiedObjectClassName = reifiedObject.getClass().getName();
 
         ProActiveSecurity.loadProvider();
 
@@ -309,11 +305,19 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
         String inc = (this.ftmanager != null) ? ("" + this.ftmanager) : ("");
 
         if (this.localBodyStrategy != null) {
-            return "Body for " + this.localBodyStrategy.getName() + " node=" + this.nodeURL + " id=" +
-                this.bodyID + inc;
+            return "Body for " + this.getName() + " node=" + this.nodeURL + " id=" + this.bodyID + inc;
         }
 
         return "Method call called during Body construction -- the body is not yet initialized ";
+    }
+
+    /**
+     * Returns a short string representation of this object.
+     *
+     * @return a string representation of this object
+     */
+    public String shortString() {
+        return "" + this.nodeURL + "/" + this.bodyID;
     }
 
     //
@@ -325,7 +329,7 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
         int ftres = FTManager.NON_FT;
         if (this.ftmanager != null) {
             if (this.isDead) {
-                throw new BodyTerminatedRequestException(reifiedObjectClassName, request != null ? request
+                throw new BodyTerminatedRequestException(shortString(), request != null ? request
                         .getMethodName() : null);
             } else {
                 ftres = this.ftmanager.onReceiveRequest(request);
@@ -337,7 +341,7 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
         try {
             this.enterInThreadStore();
             if (this.isDead) {
-                throw new BodyTerminatedRequestException(reifiedObjectClassName, request != null ? request
+                throw new BodyTerminatedRequestException(shortString(), request != null ? request
                         .getMethodName() : null);
             }
             if (this.isSecurityOn) {
@@ -919,10 +923,6 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
         return this.localBodyStrategy.getReifiedObject();
     }
 
-    public String getName() {
-        return this.localBodyStrategy.getName();
-    }
-
     /**
      * Serves the request. The request should be removed from the request queue before serving,
      * which is correctly done by all methods of the Service class. However, this condition is not
@@ -942,6 +942,34 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
             this.ftmanager.onServeRequestAfter(request);
         } else {
             this.localBodyStrategy.serve(request);
+        }
+
+        // Sterility control
+        // Once the service of a sterile methodCall is done, the body can be turned back to standard
+        // mode
+        this.setSterility(false, null);
+    }
+
+    /**
+     * Serves the request with the given exception as result instead of the normal execution.
+     * The request should be removed from the request queue before serving,
+     * which is correctly done by all methods of the Service class. However, this condition is
+     * not ensured for custom calls on serve.
+     */
+    public void serveWithException(Request request, Throwable exception) {
+        // Sterility control
+        // If the methodCall is sterile, the body must be sterile during its service
+        if (request != null && request.getMethodCall() != null && request.getMethodCall().isSterile()) {
+            setSterility(true, request.getSender().getID());
+        }
+
+        // Serve
+        if (this.ftmanager != null) {
+            this.ftmanager.onServeRequestBefore(request);
+            this.localBodyStrategy.serveWithException(request, exception);
+            this.ftmanager.onServeRequestAfter(request);
+        } else {
+            this.localBodyStrategy.serveWithException(request, exception);
         }
 
         // Sterility control

@@ -70,8 +70,16 @@ public interface PAGCMLifeCycleController extends GCMLifeCycleController {
     public void stopFc(short priority) throws IllegalLifeCycleException;
 
     /**
-     * @see GCMLifeCycleController#terminateGCMComponent()
+     * Terminates the component to which this interface belongs.
+     * 
+     * @param immediate
+     *            If this boolean is true, this method is served as an immediate service. The
+     *            termination is then synchronous. The component dies immediately. Else, the kill
+     *            request is served as a normal request, it is put on the request queue. The
+     *            termination is asynchronous.
+     * @throws IllegalLifeCycleException
+     *             If the component to which this interface belongs is not in an
+     *             appropriate state to perform this operation.
      */
     public void terminateGCMComponent(boolean immediate) throws IllegalLifeCycleException;
-
 }

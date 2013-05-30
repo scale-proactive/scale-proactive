@@ -43,13 +43,13 @@ import java.util.Set;
 
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
+
 /**
  * Groups requests that have the same priority level.
  * 
  * @author The ProActive Team
  */
-public class PriorityGroup implements Comparator<PriorityGroup>,
-        Iterable<RunnableRequest> {
+public class PriorityGroup implements Comparator<PriorityGroup>, Iterable<RunnableRequest> {
 
     private final int priorityLevel;
 
@@ -100,8 +100,7 @@ public class PriorityGroup implements Comparator<PriorityGroup>,
         final int prime = 31;
         int result = 1;
         result = prime * result + this.priorityLevel;
-        result = prime * result + ((this.requests == null)
-                ? 0 : this.requests.hashCode());
+        result = prime * result + ((this.requests == null) ? 0 : this.requests.hashCode());
         return result;
     }
 

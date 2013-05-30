@@ -92,7 +92,7 @@ public class MultiActiveService extends Service {
     private void init() {
         this.init(null);
     }
-    
+
     private void init(List<PriorityConstraint> priorityConstraints) {
         if (executor != null)
             return;
@@ -104,7 +104,7 @@ public class MultiActiveService extends Service {
         if (priorityConstraints != null) {
             annotationProcessor.getPriorityConstraints().addAll(priorityConstraints);
         }
-        
+
         executor = new RequestExecutor(body, compatibility, annotationProcessor.getPriorityConstraints());
 
         if (logger.isDebugEnabled()) {
@@ -128,7 +128,7 @@ public class MultiActiveService extends Service {
         executor.configure(maxActiveThreads, hardLimit, hostReentrant);
         executor.execute(new DefaultServingPolicy());
     }
-    
+
     /**
      * Service that relies on the default parallel policy to extract requests from the queue.
      * @param priority constraints to apply
@@ -136,7 +136,8 @@ public class MultiActiveService extends Service {
      * @param hardLimit false if the above limit is applicable only to active (running) threads, but not the waiting ones
      * @param hostReentrant true if re-entrant calls should be hosted on the issuer's thread
      */
-    public void multiActiveServing(List<PriorityConstraint> priorityConstraints, int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
+    public void multiActiveServing(List<PriorityConstraint> priorityConstraints, int maxActiveThreads,
+            boolean hardLimit, boolean hostReentrant) {
         init(priorityConstraints);
         executor.configure(maxActiveThreads, hardLimit, hostReentrant);
         executor.execute(new DefaultServingPolicy());
@@ -170,8 +171,8 @@ public class MultiActiveService extends Service {
      * @param hardLimit false if the above limit is applicable only to active (running) threads, but not the waiting ones
      * @param hostReentrant true if re-entrant calls should be hosted on the issuer's thread
      */
-    public void policyServing(ServingPolicy policy, List<PriorityConstraint> priorityConstraints, int maxActiveThreads, boolean hardLimit,
-            boolean hostReentrant) {
+    public void policyServing(ServingPolicy policy, List<PriorityConstraint> priorityConstraints,
+            int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
         init(priorityConstraints);
         executor.configure(maxActiveThreads, hardLimit, hostReentrant);
         executor.execute(policy);

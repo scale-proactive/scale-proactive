@@ -59,6 +59,7 @@ import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
 
+
 /**
  * Reads and processes the multi-activity related annotations of a class and
  * produces two data structures that describe the compatibility of the methods
@@ -91,14 +92,11 @@ public class AnnotationProcessor {
     protected Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
     // group names -> method groups
-    private Map<String, MethodGroup> groups =
-            new HashMap<String, MethodGroup>();
+    private Map<String, MethodGroup> groups = new HashMap<String, MethodGroup>();
     // method name -> method group in which it is member
-    private Map<String, MethodGroup> methods =
-            new HashMap<String, MethodGroup>();
+    private Map<String, MethodGroup> methods = new HashMap<String, MethodGroup>();
 
-    private List<PriorityConstraint> priorityConstraints =
-            new ArrayList<PriorityConstraint>();
+    private List<PriorityConstraint> priorityConstraints = new ArrayList<PriorityConstraint>();
 
     // class that is processed
     private Class<?> processedClass;
@@ -147,23 +145,19 @@ public class AnnotationProcessor {
         Annotation priorityDefAnn = null;
 
         for (Annotation a : declaredAnns) {
-            if (groupDefAnn == null
-                    && a.annotationType().equals(DefineGroups.class)) {
+            if (groupDefAnn == null && a.annotationType().equals(DefineGroups.class)) {
                 groupDefAnn = a;
             }
 
-            if (compDefAnn == null
-                    && a.annotationType().equals(DefineRules.class)) {
+            if (compDefAnn == null && a.annotationType().equals(DefineRules.class)) {
                 compDefAnn = a;
             }
 
-            if (priorityDefAnn == null
-                    && a.annotationType().equals(DefinePriorities.class)) {
+            if (priorityDefAnn == null && a.annotationType().equals(DefinePriorities.class)) {
                 priorityDefAnn = a;
             }
 
-            if (compDefAnn != null && groupDefAnn != null
-                    && priorityDefAnn != null) {
+            if (compDefAnn != null && groupDefAnn != null && priorityDefAnn != null) {
                 break;
             }
         }
@@ -172,15 +166,11 @@ public class AnnotationProcessor {
         if (groupDefAnn != null) {
             for (Group g : ((DefineGroups) groupDefAnn).value()) {
                 if (!groups.containsKey(g.name())) {
-                    MethodGroup mg =
-                            new MethodGroup(
-                                    g.name(), g.selfCompatible(),
-                                    g.parameter(), g.condition());
+                    MethodGroup mg = new MethodGroup(g.name(), g.selfCompatible(), g.parameter(), g
+                            .condition());
                     groups.put(g.name(), mg);
                 } else {
-                    addError(
-                            LOC_CLASS, processedClass.getCanonicalName(),
-                            DUP_GROUP, g.name());
+                    addError(LOC_CLASS, processedClass.getCanonicalName(), DUP_GROUP, g.name());
                 }
             }
         }
@@ -191,30 +181,18 @@ public class AnnotationProcessor {
                 String comparator = c.condition();
                 for (String group : c.value()) {
                     for (String other : c.value()) {
-                        if (groups.containsKey(group)
-                                && groups.containsKey(other)
-                                && !other.equals(group)) {
-                            groups.get(group).addCompatibleWith(
-                                    groups.get(other));
-                            groups.get(group).setComparatorFor(
-                                    other, comparator);
-                            groups.get(other).addCompatibleWith(
-                                    groups.get(group));
-                            groups.get(other).setComparatorFor(
-                                    group, comparator);
+                        if (groups.containsKey(group) && groups.containsKey(other) && !other.equals(group)) {
+                            groups.get(group).addCompatibleWith(groups.get(other));
+                            groups.get(group).setComparatorFor(other, comparator);
+                            groups.get(other).addCompatibleWith(groups.get(group));
+                            groups.get(other).setComparatorFor(group, comparator);
 
                         } else {
                             if (!groups.containsKey(group)) {
-                                addError(
-                                        LOC_CLASS,
-                                        processedClass.getCanonicalName(),
-                                        UNDEF_GROUP, group);
+                                addError(LOC_CLASS, processedClass.getCanonicalName(), UNDEF_GROUP, group);
                             }
                             if (!groups.containsKey(other)) {
-                                addError(
-                                        LOC_CLASS,
-                                        processedClass.getCanonicalName(),
-                                        UNDEF_GROUP, other);
+                                addError(LOC_CLASS, processedClass.getCanonicalName(), UNDEF_GROUP, other);
                             }
                         }
                     }
@@ -231,18 +209,15 @@ public class AnnotationProcessor {
                 // considered
                 (!p.name().isEmpty() || p.parameters().length > 0) ||
                 // special case for priority 0 where we can set only
-                // boostThreads if required
-                        (p.level() == 0 && p.name().isEmpty()
-                                && p.parameters().length == 0 && p.boostThreads() > 0)) {
-                    this.priorityConstraints.add(new PriorityConstraint(
-                            p.level(), p.boostThreads(), p.name().isEmpty()
-                                    ? null : p.name(), p.parameters()));
+                    // boostThreads if required
+                    (p.level() == 0 && p.name().isEmpty() && p.parameters().length == 0 && p.boostThreads() > 0)) {
+                    this.priorityConstraints.add(new PriorityConstraint(p.level(), p.boostThreads(), p.name()
+                            .isEmpty() ? null : p.name(), p.parameters()));
                 } else {
-                    throw new IllegalStateException(
-                            "Illegal priority definition. You should set a value to "
-                                    + "the method name, the method parameters or both. An "
-                                    + "exception is possible for priority level 0 where only "
-                                    + "boost threads attribute is mandatory.");
+                    throw new IllegalStateException("Illegal priority definition. You should set a value to "
+                        + "the method name, the method parameters or both. An "
+                        + "exception is possible for priority level 0 where only "
+                        + "boost threads attribute is mandatory.");
                 }
             }
         }
@@ -342,22 +317,16 @@ public class AnnotationProcessor {
                 // priority level specified for a method that belongs
                 // to a group
                 if (group.priority() != 0 || group.boostThreads() > 0) {
-                    PriorityConstraint pc =
-                            new PriorityConstraint(
-                                    group.priority(), group.boostThreads(),
-                                    method.getName());
+                    PriorityConstraint pc = new PriorityConstraint(group.priority(), group.boostThreads(),
+                        method.getName());
                     priorityConstraints.add(pc);
                 }
 
                 String methodSignature = method.toString();
-                methods.put(
-                        methodSignature.substring(methodSignature.indexOf(method.getName())),
-                        mg);
+                methods.put(methodSignature.substring(methodSignature.indexOf(method.getName())), mg);
 
                 if (mg == null) {
-                    addError(
-                            LOC_METHOD, method.toString(), UNDEF_GROUP,
-                            group.value());
+                    addError(LOC_METHOD, method.toString(), UNDEF_GROUP, group.value());
                 }
             }
 
@@ -399,21 +368,16 @@ public class AnnotationProcessor {
      * @param problemType
      * @param problemName
      */
-    private void addError(String locationType, String location,
-                          String problemType, String problemName) {
+    private void addError(String locationType, String location, String problemType, String problemName) {
         String msg;
 
         if (!locationType.equals(LOC_CLASS)) {
-            msg =
-                    "In '" + processedClass.getName() + "' " + locationType
-                            + " '" + location + "' " + problemType + " '"
-                            + problemName + "'";
+            msg = "In '" + processedClass.getName() + "' " + locationType + " '" + location + "' " +
+                problemType + " '" + problemName + "'";
             logger.error(msg);
             errorMessages.add(msg);
         } else {
-            msg =
-                    "In '" + location + "' " + problemType + " '" + problemName
-                            + "'";
+            msg = "In '" + location + "' " + problemType + " '" + problemName + "'";
             logger.error(msg);
             errorMessages.add(msg);
         }

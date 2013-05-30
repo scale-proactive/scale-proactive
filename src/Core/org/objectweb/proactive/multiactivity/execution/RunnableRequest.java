@@ -42,6 +42,7 @@ import org.objectweb.proactive.core.body.tags.Tag;
 import org.objectweb.proactive.core.body.tags.tag.DsiTag;
 import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
 
+
 /**
  * Wrapper class for a request. Apart from the actual serving it also performs
  * calls for thread registering and unregistering inside the executor and
@@ -68,7 +69,7 @@ public class RunnableRequest implements Runnable {
     private PriorityConstraint priorityConstraint;
 
     private boolean boosted = false;
-    
+
     public RunnableRequest(RequestExecutor requestExecutor, Request r) {
         this.requestExecutor = requestExecutor;
         this.request = r;
@@ -159,11 +160,11 @@ public class RunnableRequest implements Runnable {
     public boolean isBoosted() {
         return this.boosted;
     }
-    
+
     public void setBoosted() {
         this.boosted = true;
     }
-    
+
     public PriorityConstraint getPriorityConstraint() {
         return this.priorityConstraint;
     }
@@ -171,5 +172,5 @@ public class RunnableRequest implements Runnable {
     public void setPriorityConstraint(PriorityConstraint priorityConstraint) {
         this.priorityConstraint = priorityConstraint;
     }
-    
+
 }

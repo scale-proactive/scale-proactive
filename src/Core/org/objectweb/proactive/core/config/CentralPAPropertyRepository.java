@@ -38,6 +38,7 @@ package org.objectweb.proactive.core.config;
 
 import java.net.Socket;
 
+import org.objectweb.proactive.core.body.ProActiveMetaObjectFactory;
 import org.objectweb.proactive.core.config.PAProperties.PAPropertiesLoaderSPI;
 import org.objectweb.proactive.core.filetransfer.FileTransferService;
 import org.objectweb.proactive.core.runtime.broadcast.BTCallbackDefaultImpl;
@@ -77,6 +78,11 @@ public class CentralPAPropertyRepository implements PAPropertiesLoaderSPI {
      */
     static public PAPropertyString GCM_PROVIDER = new PAPropertyString("gcm.provider", true);
 
+    /**
+     * Indicate the {@link ProActiveMetaObjectFactory} to use when component interfaces are created
+     */
+    static public PAPropertyString GCM_META_OBJECT_FACTORY = new PAPropertyString("gcm.meta.object.factory", true);
+    
     /**
      * Indicate the Fractal provider class, to the ProActive implementation of
      * Fractal/GCM set it to org.objectweb.proactive.core.component.Fractive

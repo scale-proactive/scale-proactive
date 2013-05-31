@@ -69,6 +69,7 @@ import org.objectweb.proactive.core.component.representative.PAComponentRepresen
 import org.objectweb.proactive.core.component.representative.PAComponentRepresentativeFactory;
 import org.objectweb.proactive.core.component.type.Composite;
 import org.objectweb.proactive.core.component.type.PAGCMTypeFactoryImpl;
+import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.mop.MOP;
 import org.objectweb.proactive.core.mop.StubObject;
 import org.objectweb.proactive.core.node.Node;
@@ -511,7 +512,23 @@ public class Fractive implements PAGenericFactory, Component, Factory {
                 factory_params.put(ProActiveMetaObjectFactory.SYNCHRONOUS_COMPOSITE_COMPONENT_KEY,
                         Constants.SYNCHRONOUS);
             }
-            contentDesc.setFactory(new ProActiveMetaObjectFactory(factory_params));
+
+            ProActiveMetaObjectFactory metaObjectFactory;
+            String gcmMetaObjectFactoryProperty = 
+                    CentralPAPropertyRepository.GCM_META_OBJECT_FACTORY.getValue();
+
+            if (gcmMetaObjectFactoryProperty == null) {
+                metaObjectFactory = new ProActiveMetaObjectFactory(factory_params);
+            } else {
+                try {
+                    metaObjectFactory = 
+                            (ProActiveMetaObjectFactory) Class.forName(gcmMetaObjectFactoryProperty).getDeclaredConstructor(Map.class).newInstance(factory_params);
+                } catch (Exception e) {
+                    throw new ProActiveRuntimeException(e);
+                }
+            }
+            
+            contentDesc.setFactory(metaObjectFactory);
             // factory =
             // PAComponentMetaObjectFactory.newInstance(componentParameters);
         }

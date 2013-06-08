@@ -265,11 +265,17 @@ public class MethodGroup {
 
         if (other != null) {
             boolean rules = (getCompatibleWith().contains(other) || other.getCompatibleWith().contains(this));
-            if (rules == true && comparators.containsKey(other.name)) {
-                Object param1 = getGroupParameterFor(r1);
-                Object param2 = other.getGroupParameterFor(r2);
-                if (comparators.get(other.name) != null) {
-                    return evaluateComparator(param1, param2, comparators.get(other.name));
+            
+            if (rules == true) {
+                if (comparators.containsKey(other.name)) {
+                    Object param1 = getGroupParameterFor(r1);
+                    Object param2 = other.getGroupParameterFor(r2);
+                    if (comparators.get(other.name) != null) {
+                        return evaluateComparator(
+                                param1, param2, comparators.get(other.name));
+                    }
+                } else {
+                    return true;
                 }
             }
         }

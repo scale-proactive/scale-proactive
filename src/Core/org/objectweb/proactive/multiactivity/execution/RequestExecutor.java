@@ -309,10 +309,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 List<Request> rc = policy.runPolicy(compatibility);
 
                 if (rc.size() >= 0) {
-                    for (int i = 0; i < rc.size(); i++) {
-                        compatibility.addRunning(rc.get(i));
-                    }
-
                     synchronized (this) {
                         // add them to the ready set
                         for (int i = 0; i < rc.size(); i++) {

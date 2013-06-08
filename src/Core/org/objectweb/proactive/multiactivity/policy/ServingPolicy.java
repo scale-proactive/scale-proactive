@@ -55,15 +55,17 @@ public interface ServingPolicy {
      * <i>IMPORTANT:</i> While executing a policy the state of the queue and the
      * running set is guaranteed not to change. <br>
      * Please also note this is up to the person that defines the serving policy
-     * to remove the requests that are returned with this method from the
-     * compatibility map passed into parameter. This behavior lets the
-     * possibility to use some caches and thus removing requests from the
-     * compatibility map by index or by value.
+     * to add requests to the running with a call to
+     * {@link StatefulCompatibilityMap#addRunning(Request)} and to remove the
+     * requests that are returned with this method from the compatibility map
+     * passed into parameter through a call to remove on
+     * {@link StatefulCompatibilityMap#getQueueContents()}. This allows to use
+     * some caches and thus to remove requests from the compatibility map by
+     * index or by value.
      * 
-     * @param state
      * @param compatibilityMap
      * 
-     * @return a sublist of the requests that can be started in parallel
+     * @return a sublist of the requests that can be executed in parallel.
      */
     public List<Request> runPolicy(StatefulCompatibilityMap compatibility);
 

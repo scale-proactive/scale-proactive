@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.objectweb.proactive.core.body.request.Request;
@@ -54,9 +55,9 @@ import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibility
  */
 public class DefaultServingPolicy implements ServingPolicy {
 
-    private HashSet<Request> invalid = new HashSet<Request>();
+    private Set<Request> invalid = new HashSet<Request>();
 
-    private HashMap<Request, Set<Request>> invalidates = new HashMap<Request, Set<Request>>();
+    private Map<Request, Set<Request>> invalidates = new HashMap<Request, Set<Request>>();
 
     /**
      * Default scheduling policy. <br>
@@ -81,6 +82,8 @@ public class DefaultServingPolicy implements ServingPolicy {
                 Request r = reqs.get(i);
                 ret.add(r);
 
+                compatibility.addRunning(r);
+                
                 if (invalidates.containsKey(reqs.get(i))) {
                     for (Request ok : invalidates.get(reqs.get(i))) {
                         invalid.remove(ok);

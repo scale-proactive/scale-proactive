@@ -517,12 +517,12 @@ public class MethodGroup {
         }
 
         Method m = comparatorCache.get(cachedName);
-        if (enablePrivate) {
-            m.setAccessible(true);
-        }
-
         if (m == null) {
             throw new NullPointerException("Method " + cachedName + " was not found!");
+        }
+        
+        if (enablePrivate) {
+            m.setAccessible(true);
         }
 
         if (p1 != null && p2 != null) {

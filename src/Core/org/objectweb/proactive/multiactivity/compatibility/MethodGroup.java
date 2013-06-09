@@ -243,10 +243,12 @@ public class MethodGroup {
         if (!isSelfCompatible()) {
             return false;
         }
-        if (comparators.get(name) != null) {
+        
+        String comparator = comparators.get(name);
+        if (comparator != null) {
             Object param1 = getGroupParameterFor(request1);
             Object param2 = getGroupParameterFor(request2);
-            return evaluateComparator(param1, param2, comparators.get(name));
+            return evaluateComparator(param1, param2, comparator);
         } else {
             return true;
         }
@@ -265,15 +267,17 @@ public class MethodGroup {
         }
 
         if (other != null) {
-            boolean rules = (getCompatibleWith().contains(other) || other.getCompatibleWith().contains(this));
+            boolean rules = getCompatibleWith().contains(other) || other.getCompatibleWith().contains(this);
             
             if (rules == true) {
                 if (comparators.containsKey(other.name)) {
+                    String comparator = comparators.get(other.name); 
                     Object param1 = getGroupParameterFor(r1);
                     Object param2 = other.getGroupParameterFor(r2);
-                    if (comparators.get(other.name) != null) {
+                    
+                    if (comparator != null) {
                         return evaluateComparator(
-                                param1, param2, comparators.get(other.name));
+                                param1, param2, comparator);
                     }
                 } else {
                     return true;

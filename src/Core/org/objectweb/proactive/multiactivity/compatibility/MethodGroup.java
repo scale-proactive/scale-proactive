@@ -44,6 +44,7 @@ import java.util.Set;
 
 import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.core.body.request.Request;
+import org.springframework.util.ReflectionUtils;
 
 
 /**
@@ -463,7 +464,18 @@ public class MethodGroup {
             (p2 != null ? p2.getClass().toString() : "") + ")";
 
         if (!comparatorCache.containsKey(cachedName)) {
-            Method[] meths = enablePrivate ? clazz.getDeclaredMethods() : clazz.getMethods();
+            Method[] meths;
+            
+            if (enablePrivate) {
+                if (clazz.getSuperclass() != null) {
+                    meths = ReflectionUtils.getAllDeclaredMethods(clazz);
+                } else {
+                    meths = clazz.getDeclaredMethods();
+                }
+            } else {
+                meths = clazz.getMethods();
+            }
+            
             if (p1 != null && p2 != null) {
                 for (Method cmp : meths) {
                     if (cmp.getName().equals(method)) {

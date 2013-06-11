@@ -243,7 +243,7 @@ public class MethodGroup {
         if (!isSelfCompatible()) {
             return false;
         }
-        
+
         String comparator = comparators.get(name);
         if (comparator != null) {
             Object param1 = getGroupParameterFor(request1);
@@ -268,16 +268,15 @@ public class MethodGroup {
 
         if (other != null) {
             boolean rules = getCompatibleWith().contains(other) || other.getCompatibleWith().contains(this);
-            
+
             if (rules == true) {
                 if (comparators.containsKey(other.name)) {
-                    String comparator = comparators.get(other.name); 
+                    String comparator = comparators.get(other.name);
                     Object param1 = getGroupParameterFor(r1);
                     Object param2 = other.getGroupParameterFor(r2);
-                    
+
                     if (comparator != null) {
-                        return evaluateComparator(
-                                param1, param2, comparator);
+                        return evaluateComparator(param1, param2, comparator);
                     }
                 } else {
                     return true;
@@ -469,7 +468,7 @@ public class MethodGroup {
 
         if (!comparatorCache.containsKey(cachedName)) {
             Method[] meths;
-            
+
             if (enablePrivate) {
                 if (clazz.getSuperclass() != null) {
                     meths = ReflectionUtils.getAllDeclaredMethods(clazz);
@@ -479,7 +478,7 @@ public class MethodGroup {
             } else {
                 meths = clazz.getMethods();
             }
-            
+
             if (p1 != null && p2 != null) {
                 for (Method cmp : meths) {
                     if (cmp.getName().equals(method)) {
@@ -542,7 +541,7 @@ public class MethodGroup {
         if (m == null) {
             throw new NullPointerException("Method " + cachedName + " was not found!");
         }
-        
+
         if (enablePrivate) {
             m.setAccessible(true);
         }

@@ -63,7 +63,7 @@ import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
 public class CompatibilityTracker extends StatefulCompatibilityMap {
 
     private static Logger log = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
-    
+
     private HashMap<MethodGroup, Set<Request>> runningGroups = new HashMap<MethodGroup, Set<Request>>();
     private Set<Request> running = new HashSet<Request>();
     private BlockingRequestQueue queue;

@@ -83,7 +83,7 @@ public class DefaultServingPolicy implements ServingPolicy {
                 ret.add(r);
 
                 compatibility.addRunning(r);
-                
+
                 if (invalidates.containsKey(reqs.get(i))) {
                     for (Request ok : invalidates.get(reqs.get(i))) {
                         invalid.remove(ok);

@@ -41,6 +41,7 @@ import java.util.List;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
 
+
 /**
  * Interface for describing the scheduling policy to be used in a multi-active
  * service.

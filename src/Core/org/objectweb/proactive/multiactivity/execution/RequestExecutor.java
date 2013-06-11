@@ -77,7 +77,7 @@ import org.objectweb.proactive.multiactivity.priority.PriorityManager;
  */
 public class RequestExecutor implements FutureWaiter, ServingController {
 
-    public static Logger log = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
+    private static Logger log = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
     /**
      * Number of concurrent threads allowed
@@ -557,13 +557,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         }
     }
 
-    private static String toString(Request request) {
+    public static String toString(Request request) {
         StringBuilder result = new StringBuilder();
 
-        result.append("methodCallName=[");
         result.append(request.getMethodCall().getName());
-        result.append("]");
-        result.append(" ");
+        result.append('(');
 
         for (int i = 0; i < request.getMethodCall().getNumberOfParameter(); i++) {
             result.append(request.getMethodCall().getParameter(i).getClass());
@@ -572,6 +570,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 result.append(" ");
             }
         }
+
+        result.append(')');
 
         return result.toString();
     }

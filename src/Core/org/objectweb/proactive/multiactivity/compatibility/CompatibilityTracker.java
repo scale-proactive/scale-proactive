@@ -39,11 +39,16 @@ package org.objectweb.proactive.multiactivity.compatibility;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.body.request.BlockingRequestQueue;
 import org.objectweb.proactive.core.body.request.Request;
+import org.objectweb.proactive.core.util.log.Loggers;
+import org.objectweb.proactive.core.util.log.ProActiveLogger;
+import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
 
 
 /**
@@ -57,6 +62,8 @@ import org.objectweb.proactive.core.body.request.Request;
  */
 public class CompatibilityTracker extends StatefulCompatibilityMap {
 
+    private static Logger log = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
+    
     private HashMap<MethodGroup, Set<Request>> runningGroups = new HashMap<MethodGroup, Set<Request>>();
     private Set<Request> running = new HashSet<Request>();
     private BlockingRequestQueue queue;
@@ -91,13 +98,54 @@ public class CompatibilityTracker extends StatefulCompatibilityMap {
         runningGroups.get(getGroupOf(request)).remove(request);
     }
 
+    private String toString(Collection<Set<Request>> requests) {
+        StringBuilder buf = new StringBuilder();
+
+        Iterator<Set<Request>> it = requests.iterator();
+        while (it.hasNext()) {
+            Set<Request> set = it.next();
+
+            Iterator<Request> setIterator = set.iterator();
+            while (setIterator.hasNext()) {
+                buf.append(RequestExecutor.toString(setIterator.next()));
+
+                if (setIterator.hasNext()) {
+                    buf.append(", ");
+                }
+            }
+        }
+
+        return buf.toString();
+    }
+
+    private String toStringCompatibilityWithExecuting(Request request, Collection<Set<Request>> requests,
+            boolean result) {
+        StringBuilder buf = new StringBuilder();
+
+        buf.append("Checking compatibility between [");
+        buf.append(RequestExecutor.toString(request));
+        buf.append("] and executing requests [");
+        buf.append(toString(requests));
+        buf.append("] answer is ");
+        buf.append(result);
+
+        return buf.toString();
+    }
+
     @Override
     public boolean isCompatibleWithExecuting(Request r) {
-        if (running.size() == 0)
+        if (running.size() == 0) {
+            if (log.isTraceEnabled()) {
+                log.trace(toStringCompatibilityWithExecuting(r, this.runningGroups.values(), true));
+            }
             return true;
+        }
 
         MethodGroup reqGroup = getGroupOf(r);
         if (reqGroup == null) {
+            if (log.isTraceEnabled()) {
+                log.trace(toStringCompatibilityWithExecuting(r, this.runningGroups.values(), false));
+            }
             return false;
         }
 
@@ -108,16 +156,26 @@ public class CompatibilityTracker extends StatefulCompatibilityMap {
 
                     for (Request other : runningGroups.get(otherGroup)) {
                         if (!reqGroup.isCompatible(r, otherGroup, other)) {
+                            if (log.isTraceEnabled()) {
+                                log.trace(toStringCompatibilityWithExecuting(r, this.runningGroups.values(),
+                                        false));
+                            }
                             return false;
                         }
                     }
 
                 } else if (!reqGroup.isCompatibleWith(otherGroup)) {
+                    if (log.isTraceEnabled()) {
+                        log.trace(toStringCompatibilityWithExecuting(r, this.runningGroups.values(), false));
+                    }
                     return false;
                 }
             }
         }
 
+        if (log.isTraceEnabled()) {
+            log.trace(toStringCompatibilityWithExecuting(r, this.runningGroups.values(), true));
+        }
         return true;
     }
 

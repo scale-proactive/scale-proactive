@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.objectweb.proactive.core.body.request.Request;
-import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 
 
 /**
@@ -69,7 +69,7 @@ public class DefaultServingPolicy implements ServingPolicy {
      * 
      * @return compatible requests to serve.
      */
-    public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
+    public List<Request> runPolicy(CompatibilityTracker compatibility) {
         List<Request> reqs = compatibility.getQueueContents();
         List<Request> ret = new ArrayList<Request>();
 

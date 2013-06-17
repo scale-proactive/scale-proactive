@@ -166,4 +166,9 @@ public class CompatibilityManager {
         }
         return others.size() - 1;
     }
+
+	public boolean isCompatibleWithExecuting(Request r) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

@@ -62,6 +62,8 @@ public abstract class StatefulCompatibilityMap extends CompatibilityManager {
         super(clazz);
     }
 
+    public abstract void addRunning(Request request);
+
     /*
      * Returns the set of methods which are currently executing. Even if 
      * a method is executing in multiple instances, it will appear only 

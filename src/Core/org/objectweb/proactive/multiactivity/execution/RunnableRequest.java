@@ -41,6 +41,7 @@ import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.body.tags.Tag;
 import org.objectweb.proactive.core.body.tags.tag.DsiTag;
 
+
 /**
  * Wrapper class for a request. Apart from the actual serving it also performs
  * calls for thread registering and unregistering inside the executor and
@@ -63,7 +64,7 @@ public class RunnableRequest implements Runnable {
     private String sessionTag;
 
     private boolean boosted = false;
-    
+
     public RunnableRequest(RequestExecutor requestExecutor, Request r) {
         this.requestExecutor = requestExecutor;
         this.request = r;
@@ -154,9 +155,9 @@ public class RunnableRequest implements Runnable {
     public boolean isBoosted() {
         return this.boosted;
     }
-    
+
     public void setBoosted() {
         this.boosted = true;
     }
-
+    
 }

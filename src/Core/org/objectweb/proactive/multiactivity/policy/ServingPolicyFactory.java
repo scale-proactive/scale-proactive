@@ -34,7 +34,7 @@
  * ################################################################
  * $$PROACTIVE_INITIAL_DEV$$
  */
-package org.objectweb.proactive.multiactivity;
+package org.objectweb.proactive.multiactivity.policy;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -47,7 +47,6 @@ import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
  * A factory with examples of serving policies.
  * 
  * @author The ProActive Team
- * 
  */
 @Deprecated
 public class ServingPolicyFactory {

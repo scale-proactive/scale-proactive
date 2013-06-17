@@ -1,11 +1,10 @@
 /*
- * ################################################################
- *
+ *  *
  * ProActive Parallel Suite(TM): The Java(TM) library for
  *    Parallel, Distributed, Multi-Core Computing for
  *    Enterprise Grids & Clouds
  *
- * Copyright (C) 1997-2012 INRIA/University of
+ * Copyright (C) 1997-2011 INRIA/University of
  *                 Nice-Sophia Antipolis/ActiveEon
  * Contact: proactive@ow2.org or contact@activeeon.com
  *
@@ -31,33 +30,14 @@
  *                        http://proactive.inria.fr/team_members.htm
  *  Contributor(s):
  *
- * ################################################################
- * $$PROACTIVE_INITIAL_DEV$$
+ *  * $$PROACTIVE_INITIAL_DEV$$
  */
-package org.objectweb.proactive.multiactivity;
-
-import java.util.List;
-
-import org.objectweb.proactive.core.body.request.Request;
-import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
-
+package functionalTests.activeobject.service;
 
 /**
- * Interface for describing the scheduling policy to be used in a multi-active service.
- * @author The ProActive Team
+ * CustomException
  *
+ * @author The ProActive Team
  */
-public interface ServingPolicy {
-
-    /**
-     * This method will decide which methods get to run given the current state of the scheduler
-     * and the relation between methods. 
-     * <br>
-     * <i>IMPORTANT:</i> While executing a policy the state of the queue and the running set is guaranteed not to change.
-     * @param state
-     * @param compatibilityMap
-     * @return a sublist of the requests that can be started in parallel
-     */
-    public List<Request> runPolicy(CompatibilityTracker compatibility);
-
+public class CustomException2 extends Exception {
 }

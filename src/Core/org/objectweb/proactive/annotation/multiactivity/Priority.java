@@ -6,6 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 
 import org.objectweb.proactive.annotation.PublicAPI;
 
+
 /**
  * This annotation represents a priority set to hold groups 
  * of same priority level.

@@ -37,15 +37,15 @@
 package org.objectweb.proactive.multiactivity;
 
 /**
- * Interface for a controller object that can set the properties of geenric multi-active services.
+ * Interface for a controller object that can set the properties of generic multi-active services.
+ * 
  * @author The ProActive Team
- *
  */
 public interface ServingController {
 
     /**
      * Get the number of allowed concurrent servings inside the service.
-     * @return
+     * @return numberOfConcurrent
      */
     public int getNumberOfConcurrent();
 

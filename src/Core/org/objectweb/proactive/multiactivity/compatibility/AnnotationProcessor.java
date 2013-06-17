@@ -64,6 +64,7 @@ import org.objectweb.proactive.multiactivity.priority.PriorityRanking;
 import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
 import org.objectweb.proactive.multiactivity.priority.ThreadManager;
 
+
 /**
  * Reads and processes the multi-activity related annotations of a class and
  * produces two data structures that describe the compatibility of the methods
@@ -85,6 +86,7 @@ import org.objectweb.proactive.multiactivity.priority.ThreadManager;
  * 
  */
 public class AnnotationProcessor {
+
 	// text used to define the place and type of an error in the annotations
 	protected static final String LOC_CLASS = "at class";
 	protected static final String LOC_METHOD = "at method";

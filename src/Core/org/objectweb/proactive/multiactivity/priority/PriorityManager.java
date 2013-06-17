@@ -43,6 +43,7 @@ import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
+
 /**
  * Maintains the list {@link PriorityGroup} that have 
  * current requests. Contains the priority strategy to

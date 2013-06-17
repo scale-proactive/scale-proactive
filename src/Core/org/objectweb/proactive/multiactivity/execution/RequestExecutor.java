@@ -36,7 +36,6 @@
  */
 package org.objectweb.proactive.multiactivity.execution;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -61,11 +60,12 @@ import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.ServingController;
-import org.objectweb.proactive.multiactivity.ServingPolicy;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
+import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
 import org.objectweb.proactive.multiactivity.priority.ThreadManager;
+
 
 /**
  * The request executor that constitutes the multi-active service. It contains
@@ -76,18 +76,20 @@ import org.objectweb.proactive.multiactivity.priority.ThreadManager;
  */
 public class RequestExecutor implements FutureWaiter, ServingController {
 
-    public static Logger log = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
+    private static Logger log = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
     /**
      * Number of concurrent threads allowed
      */
     private int THREAD_LIMIT = Integer.MAX_VALUE;
+
     /**
      * If set to true, then the THREAD_LIMIT refers to the total number of
      * serves. If false then it refers to actively executing serves, not the
      * waiting by necessity ones.
      */
     private boolean LIMIT_TOTAL_THREADS = false;
+
     /**
      * If true re-entrant calls will be hosted on the same thread as their
      * source. If false than all serves will be served on separate threads.
@@ -95,7 +97,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     private boolean SAME_THREAD_REENTRANT = false;
 
     private CompatibilityTracker compatibility;
+
     private Body body;
+
     private RequestQueue requestQueue;
 
     /**
@@ -142,19 +146,14 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * 'resume' the waiting when the second request finishes execution
      */
     private ConcurrentHashMap<RunnableRequest, RunnableRequest> hostMap;
-
-    private HashSet<Request> invalid = new HashSet<Request>();
-
-    private HashMap<Request, Set<Request>> invalidates =
-            new HashMap<Request, Set<Request>>();
     
     /** List of the requests that have already been served */
     private LinkedList<Request> servingHistory = new LinkedList<Request>();
 
     /*
      * This counter allows to warn the multiactivity framework that a thread has 
-     * been sent to sleep or awaken from sleep manually such that these state are 
-     * considered in the soft and hard limit of the current multi active object.
+     * been sent to sleep or awaken from sleep manually such that these states are 
+     * considered in the soft and hard limit of the current multi-active object.
      */
     private final AtomicInteger extraActiveRequestCount = new AtomicInteger(0);
 
@@ -231,8 +230,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      *            Whether to serve re-entrant calls on the same thread as their
      *            source
      */
-    public void configure(int activeLimit, boolean hardLimit,
-                          boolean hostReentrant) {
+    public void configure(int activeLimit, boolean hardLimit, boolean hostReentrant) {
         synchronized (this) {
 
             THREAD_LIMIT = activeLimit;
@@ -246,21 +244,19 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                     if (CentralPAPropertyRepository.PA_TAG_DSF.isTrue()) {
                         SAME_THREAD_REENTRANT = hostReentrant;
                         // 'create the map and populate it with tags
-                        requestTags =
-                                new HashMap<String, Set<RunnableRequest>>();
+                        requestTags = new HashMap<String, Set<RunnableRequest>>();
                         for (RunnableRequest r : waiting) {
                             if (isNotAHost(r)) {
                                 if (!requestTags.containsKey(r.getSessionTag())) {
-                                    requestTags.put(
-                                            r.getSessionTag(),
-                                            new HashSet<RunnableRequest>());
+                                    requestTags.put(r.getSessionTag(), new HashSet<RunnableRequest>());
                                 }
                                 requestTags.get(r.getSessionTag()).add(r);
                             }
                         }
                     } else {
                         requestTags = null;
-                        log.error("Same thread re-entrance was requested, but property 'PA_TAG_DSF' is set to false");
+                        log
+                                .error("Same thread re-entrance was requested, but property 'PA_TAG_DSF' is set to false");
                     }
                 } else {
                     // clean up
@@ -270,25 +266,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
             this.notify();
         }
-    }
-
-    /**
-     * This is the heart of the executor. It is an internal scheduling thread
-     * that coordinates wake-ups, and waits and future value arrivals. Before
-     * doing that it also starts a thread for the queue handler.
-     */
-    public void execute() {
-
-        new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                requestQueueHandler();
-
-            }
-        }, "Request listener for " + body).start();
-
-        internalExecute();
     }
 
     /**
@@ -315,64 +292,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     }
 
     /**
-     * Method which schedules requests with the default policy.
-     */
-    private void requestQueueHandler() {
-
-        // register thread, so we can look up the Body if needed
-        LocalBodyStore.getInstance().pushContext(new Context(body, null));
-
-        synchronized (requestQueue) {
-            while (body.isActive()) {
-
-                // get compatible ones from the queue
-                List<Request> rc;
-                rc = runDefaultPolicy();
-
-                if (rc.size() >= 0) {
-                    synchronized (this) {
-                        // add them to the ready set
-                        for (int i = 0; i < rc.size(); i++) {
-                            RunnableRequest runnableRequest =
-                                    wrapRequest(rc.get(i));
-                            priorityManager.register(runnableRequest);
-                        }
-
-                        // if anything can be done, let the other thread know
-                        if (countActive() < THREAD_LIMIT) {
-                            this.notify();
-                        } else {
-                            // same for boosted methods
-                            /*Iterator<List<PriorityConstraint>> it =
-                                    this.priorityManager.getPriorityConstraints()
-                                            .values()
-                                            .iterator();
-
-                            boolean notFound = true;
-                            while (it.hasNext() && notFound) {
-                                for (PriorityConstraint pc : it.next()) {
-                                    if (pc.hasFreeBoostThreads()) {
-                                        notFound = false;
-                                        this.notify();
-                                        break;
-                                    }
-                                }
-                            }*/
-                        }
-                    }
-                }
-
-                try {
-                    requestQueue.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        }
-    }
-
-    /**
      * Method that retrieves the compatible requests from the queue based on a
      * custom policy.
      * 
@@ -387,18 +306,13 @@ public class RequestExecutor implements FutureWaiter, ServingController {
             while (body.isActive()) {
 
                 // get compatible ones from the queue
-                List<Request> rc;
-                rc = policy.runPolicy(compatibility);
+                List<Request> rc = policy.runPolicy(compatibility);
 
                 if (rc.size() >= 0) {
-                    for (int i = 0; i < rc.size(); i++) {
-                        compatibility.addRunning(rc.get(i));
-                    }
                     synchronized (this) {
                         // add them to the ready set
                         for (int i = 0; i < rc.size(); i++) {
-                            RunnableRequest runnableRequest =
-                                    wrapRequest(rc.get(i));
+                            RunnableRequest runnableRequest = wrapRequest(rc.get(i));
                             priorityManager.register(runnableRequest);
                         }
 
@@ -417,58 +331,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
             }
         }
-    }
-
-    /**
-     * Default scheduling policy. <br>
-     * It will take a request from the queue if it is compatible with all
-     * executing ones and also with everyone before it in the queue. If a
-     * request can not be taken out from the queue, the requests it is invalid
-     * with are marked accordingly so that they are not retried until this one
-     * is finally served.
-     * 
-     * @return
-     */
-    private List<Request> runDefaultPolicy() {
-
-        List<Request> reqs = requestQueue.getInternalQueue();
-        List<Request> ret = new ArrayList<Request>();
-
-        int i, lastIndex;
-        for (i = 0; i < reqs.size(); i++) {
-            lastIndex = -2;
-            if (!invalid.contains(reqs.get(i))
-                    && compatibility.isCompatibleWithExecuting(reqs.get(i))
-                    && (lastIndex =
-                            compatibility.getIndexOfLastCompatibleWith(
-                                    reqs.get(i), reqs.subList(0, i))) == i - 1) {
-                Request r = reqs.get(i);
-                ret.add(r);
-
-                compatibility.addRunning(r);
-
-                if (invalidates.containsKey(reqs.get(i))) {
-                    for (Request ok : invalidates.get(reqs.get(i))) {
-                        invalid.remove(ok);
-                    }
-                    invalidates.remove(reqs.get(i));
-                }
-
-                reqs.remove(i);
-                i--;
-
-            } else if (lastIndex > -2 && lastIndex < i) {
-                lastIndex++;
-                if (!invalidates.containsKey(reqs.get(lastIndex))) {
-                    invalidates.put(reqs.get(lastIndex), new HashSet<Request>());
-                }
-
-                invalidates.get(reqs.get(lastIndex)).add(reqs.get(i));
-                invalid.add(reqs.get(i));
-            }
-        }
-
-        return ret;
     }
 
     /**
@@ -500,15 +362,13 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                                         if (host != null && isNotAHost(host)) {
                                             synchronized (host) {
                                                 if (log.isTraceEnabled()) {
-                                                    log.trace("  "
-                                                            + toString(parasite.getRequest()));
+                                                    log.trace("  " + toString(parasite.getRequest()));
                                                 }
 
                                                 i.remove();
                                                 active.add(parasite);
                                                 hostMap.put(host, parasite);
-                                                requestTags.get(tag).remove(
-                                                        host);
+                                                requestTags.get(tag).remove(host);
                                                 parasite.setHostedOn(host);
                                                 host.notify();
                                                 break;
@@ -524,8 +384,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 // WAKE any waiting thread that could resume execution and there
                 // are free resources for it
                 // i = waiting.iterator();
-                Iterator<List<RunnableRequest>> it =
-                        threadUsage.values().iterator();
+                Iterator<List<RunnableRequest>> it = threadUsage.values().iterator();
 
                 while (canResumeOne() && it.hasNext()) {
 
@@ -533,8 +392,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                     RunnableRequest cont = list.get(0);
                     // check if the future has arrived + the request is not
                     // already engaged in a hosted serving
-                    if (hasArrived.contains(cont.getWaitingOn())
-                            && isNotAHost(cont)) {
+                    if (hasArrived.contains(cont.getWaitingOn()) && isNotAHost(cont)) {
 
                         synchronized (cont) {
                             waiting.remove(cont);
@@ -583,13 +441,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         }
     }
 
-    private static String toString(Request request) {
+    public static String toString(Request request) {
         StringBuilder result = new StringBuilder();
 
-        result.append("methodCallName=[");
         result.append(request.getMethodCall().getName());
-        result.append("]");
-        result.append(" ");
+        result.append('(');
 
         for (int i = 0; i < request.getMethodCall().getNumberOfParameter(); i++) {
             result.append(request.getMethodCall().getParameter(i).getClass());
@@ -598,6 +454,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 result.append(" ");
             }
         }
+
+        result.append(')');
 
         return result.toString();
     }
@@ -613,8 +471,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * @return
      */
     private boolean isNotAHost(RunnableRequest r) {
-        return !hostMap.keySet().contains(r)
-                || (!active.contains(hostMap.get(r)) && !waiting.contains(hostMap.get(r)));
+        return !hostMap.keySet().contains(r) ||
+            (!active.contains(hostMap.get(r)) && !waiting.contains(hostMap.get(r)));
     }
 
     /**
@@ -625,8 +483,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      *         an other.
      */
     private boolean canServeOneHosted() {
-        return this.priorityManager.getNbRequestsRegistered() > 0
-                && requestTags.size() > 0 && countActive() < THREAD_LIMIT;
+        return this.priorityManager.getNbRequestsRegistered() > 0 && requestTags.size() > 0 &&
+            countActive() < THREAD_LIMIT;
     }
 
     /**
@@ -637,13 +495,13 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      */
     private boolean canResumeOne() {
         return LIMIT_TOTAL_THREADS
-                // hard limit
-                ? (waiting.size() > 0 && hasArrived.size() > 0)
+        // hard limit
+        ? (waiting.size() > 0 && hasArrived.size() > 0)
                 // soft limit
                 : (waiting.size() > 0 && hasArrived.size() > 0);// &&
-                                                                // countActive()
-                                                                // <
-                                                                // THREAD_LIMIT);
+        // countActive()
+        // <
+        // THREAD_LIMIT);
     }
 
     /**
@@ -655,9 +513,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      */
     private boolean canServeOne() {
         return LIMIT_TOTAL_THREADS
-                // hard limit
-                ? (this.priorityManager.getNbRequestsRegistered() > 0
-                        && threadUsage.keySet().size() < THREAD_LIMIT && countActive() < THREAD_LIMIT)
+        // hard limit
+        ? (this.priorityManager.getNbRequestsRegistered() > 0 && threadUsage.keySet().size() < THREAD_LIMIT && countActive() < THREAD_LIMIT)
                 // soft limit
                 : (this.priorityManager.getNbRequestsRegistered() > 0 && countActive() < THREAD_LIMIT);
     }
@@ -682,8 +539,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
             if (SAME_THREAD_REENTRANT) {
                 if (!requestTags.containsKey(r.getSessionTag())) {
-                    requestTags.put(
-                            r.getSessionTag(), new HashSet<RunnableRequest>());
+                    requestTags.put(r.getSessionTag(), new HashSet<RunnableRequest>());
                 }
                 requestTags.get(r.getSessionTag()).add(r);
             }
@@ -777,11 +633,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
             if (SAME_THREAD_REENTRANT) {
                 if (r.getHostedOn() != null) {
-                    if (!requestTags.containsKey(r.getHostedOn()
-                            .getSessionTag())) {
-                        requestTags.put(
-                                r.getHostedOn().getSessionTag(),
-                                new HashSet<RunnableRequest>());
+                    if (!requestTags.containsKey(r.getHostedOn().getSessionTag())) {
+                        requestTags.put(r.getHostedOn().getSessionTag(), new HashSet<RunnableRequest>());
                     }
                     requestTags.get(r.getSessionTag()).add(r.getHostedOn());
                 }
@@ -793,8 +646,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
     @Override
     public void waitForFuture(Future future) {
-        RunnableRequest thisRequest =
-                threadUsage.get(Thread.currentThread().getId()).get(0);
+        RunnableRequest thisRequest = threadUsage.get(Thread.currentThread().getId()).get(0);
         synchronized (thisRequest) {
             synchronized (future) {
                 if (((FutureProxy) future).isAvailable()) {
@@ -811,8 +663,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                if (hostMap.containsKey(thisRequest)
-                        && hostMap.get(thisRequest) != null) {
+                if (hostMap.containsKey(thisRequest) && hostMap.get(thisRequest) != null) {
                     hostMap.get(thisRequest).run();
                 }
 
@@ -851,8 +702,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
     public int decrementNumberOfConcurrent(int cnt) {
         synchronized (this) {
             if (cnt > 0) {
-                THREAD_LIMIT = (THREAD_LIMIT > cnt)
-                        ? THREAD_LIMIT - cnt : THREAD_LIMIT;
+                THREAD_LIMIT = (THREAD_LIMIT > cnt) ? THREAD_LIMIT - cnt : THREAD_LIMIT;
                 return THREAD_LIMIT;
             } else {
                 return THREAD_LIMIT;

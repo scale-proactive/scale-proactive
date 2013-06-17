@@ -79,12 +79,6 @@ public interface LocalBodyStrategy {
     public Object getReifiedObject();
 
     /**
-     * Returns the name of this body that can be used for displaying information
-     * @return the name of this body
-     */
-    public String getName();
-
-    /**
      * Sends the request <code>request</code> with the future <code>future</code> to the local body
      * <code>body</code>.
      * @param methodCall the methodCall to send
@@ -103,6 +97,14 @@ public interface LocalBodyStrategy {
      * @param request the request to serve
      */
     public void serve(Request request);
+
+    /**
+     * Instead of serving the request <code>request</code>, returns the exception given in parameter to the caller
+     *
+     * @param request the request to serve
+     * @param request the exception to return
+     */
+    public void serveWithException(Request request, Throwable exception);
 
     /**
      * Returns a unique identifier that can be used to tag a future, a request

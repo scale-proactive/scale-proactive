@@ -1,9 +1,7 @@
 package org.objectweb.proactive.multiactivity.priority;
 
 import java.util.HashSet;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
 
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 
@@ -24,15 +22,15 @@ public class PriorityRanking implements PriorityStructure {
 
 	/** The dictionary containing the priorities and their associated groups
 	 * and requests */
-	private TreeMap<Integer, PriorityRank> priorityRanks;
+	private Set<PriorityRank> priorityRanks;
 
 	/**
 	 * Initialize a new ranking and create the default rank with default 
-	 * priority.
+	 * priority.s
 	 */
 	public PriorityRanking() {
-		this.priorityRanks = new TreeMap<Integer, PriorityRank>();
-		this.priorityRanks.put(defaultPriorityLevel, new PriorityRank());
+		this.priorityRanks = new HashSet<PriorityRank>();
+		this.priorityRanks.add(new PriorityRank(defaultPriorityLevel));
 	}
 
 	/**
@@ -41,15 +39,22 @@ public class PriorityRanking implements PriorityStructure {
 	 * @param group The group to add
 	 */
 	public void insert(int level, MethodGroup group) {
+		PriorityRank existingRank = null;
+		for (PriorityRank rank : this.priorityRanks) {
+			if (rank.rankNumber == level) {
+				existingRank = rank;
+				break;
+			}
+		}
 		// The structure already has this priority level
-		if (this.priorityRanks.containsKey(level)) {
-			this.priorityRanks.get(level).addGroup(group);
+		if (existingRank != null) {
+			existingRank.methodGroups.add(group);
 		}
 		// This priority level is a new one
 		else {
-			PriorityRank priorityRank = new PriorityRank();
-			priorityRank.addGroup(group);
-			this.priorityRanks.put(level, priorityRank);
+			PriorityRank priorityRank = new PriorityRank(level);
+			priorityRank.methodGroups.add(group);
+			this.priorityRanks.add(priorityRank);
 		}
 	}
 	
@@ -60,24 +65,24 @@ public class PriorityRanking implements PriorityStructure {
 	public PriorityOvertakeState canOvertake(MethodGroup group1,
 			MethodGroup group2) {
 		PriorityOvertakeState pr = PriorityOvertakeState.UNRELATED;
-		Entry<Integer, PriorityRank> group1Entry = null;
-		Entry<Integer, PriorityRank> group2Entry = null;
-		for (Entry<Integer, PriorityRank> entry : this.priorityRanks.entrySet()) {
-			if (entry.getValue().contains(group1)) {
-				group1Entry = entry;
+		PriorityRank rank1 = null;
+		PriorityRank rank2 = null;
+		for (PriorityRank rank : this.priorityRanks) {
+			if (rank.methodGroups.contains(group1)) {
+				rank1 = rank;
 			}
-			if (entry.getValue().contains(group2)) {
-				group2Entry = entry;
+			if (rank.methodGroups.contains(group2)) {
+				rank2 = rank;
 			}
 		}
-		if (group1Entry != null && group2Entry != null) {
-			if (group1Entry.getKey() > group2Entry.getKey()) {
+		if (rank1 != null && rank2 != null) {
+			if (rank1.rankNumber > rank2.rankNumber) {
 				pr = PriorityOvertakeState.TRUE;
 			}
-			if (group1Entry.getKey() == group2Entry.getKey()) {
+			if (rank1.rankNumber == rank2.rankNumber) {
 				pr = PriorityOvertakeState.UNRELATED;
 			}
-			if (group1Entry.getKey() < group2Entry.getKey()) {
+			if (rank1.rankNumber < rank2.rankNumber) {
 				pr = PriorityOvertakeState.FALSE;
 			}
 		}
@@ -92,19 +97,17 @@ public class PriorityRanking implements PriorityStructure {
 	 */
 	private class PriorityRank {
 
-		private Set<MethodGroup> methodGroups;
-
-		public PriorityRank() {
-			this.methodGroups = new HashSet<MethodGroup>();
-		}
-
-		public void addGroup(MethodGroup group) {
-			this.methodGroups.add(group);
-		}
+		/** Groups of the same priority rank */
+		public Set<MethodGroup> methodGroups;
 		
-		public boolean contains(MethodGroup group) {
-			return this.methodGroups.contains(group);
-		}
+		/** Level of priority of the rank. Note : the higher this number is, 
+		 * the higher the priority is. */
+		public final int rankNumber;
+
+		public PriorityRank(int rankNumber) {
+			this.methodGroups = new HashSet<MethodGroup>();
+			this.rankNumber = rankNumber;
+		}		
 
 	}
 

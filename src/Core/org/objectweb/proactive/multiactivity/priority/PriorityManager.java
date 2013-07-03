@@ -45,21 +45,23 @@ import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
 
 /**
- * Maintains the list {@link PriorityGroup} that have 
- * current requests. Contains the priority strategy to
- * schedule ready requests.
+ * This class aims at reordering the requests in the queue according to the 
+ * priorities that were defined with the priority annotations. For that it 
+ * uses an internal queue from where we can insert new requests and poll 
+ * highest priority requests.
  * 
  * @author The ProActive Team
  */
 public class PriorityManager {
 
-	// The group manager
+	/** Group manager (needed to guess the group of a request) */
 	private final CompatibilityManager compatibility;
 	
+	/** Reordered queue of ready requests */
 	private PriorityQueue priorityQueue;
 	
+	/** Manager of the thread limits per group */
 	private ThreadManager threadManager;
-
 	
 	public PriorityManager(CompatibilityManager compatibility, PriorityStructure priority, ThreadManager threadManager) {
 		this.compatibility = compatibility;
@@ -107,7 +109,7 @@ public class PriorityManager {
 	}
 
 	/**
-	 * Return the {@link PriorityGroup} that have the highest 
+	 * Returns the {@link PriorityGroup} that have the highest 
 	 * priority and that have at least one registered request.
 	 * @return The priority group with the highest priority
 	 */
@@ -125,6 +127,11 @@ public class PriorityManager {
 		return requests;
 	}
 	
+	/**
+	 * Notify the thread manager that a request is executed, to update the 
+	 * thread usage of the group of this request.
+	 * @param request The executed request
+	 */
 	public void notifyRunning(RunnableRequest request) {
 		MethodGroup group = this.compatibility.getGroupOf(request.getRequest());
 		if (group != null) {
@@ -132,6 +139,11 @@ public class PriorityManager {
 		}
 	}
 	
+	/**
+	 * Notify the thread manager that a request is finished, so that it can 
+	 * update the thread usage for the corresponding group.
+	 * @param request The finished request
+	 */
 	public void notifyFinished(RunnableRequest request) {
 		MethodGroup group = this.compatibility.getGroupOf(request.getRequest());
 		if (group != null) {
@@ -140,7 +152,7 @@ public class PriorityManager {
 	}
 	
 	/**
-	 * 
+	 * {@inheritDoc}
 	 */
 	public String toString(int globalUsage, int globalLimit) {
 		String global = "\n\nGlobal usage: " + globalUsage + "/" + globalLimit;

@@ -98,17 +98,15 @@ public class AnnotationProcessor {
 	protected Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
 	// group names -> method groups
-	private Map<String, MethodGroup> groups =
+	private Map<String, MethodGroup> groups = 
 			new HashMap<String, MethodGroup>();
 	// method name -> method group in which it is member
 	private Map<String, MethodGroup> methods =
 			new HashMap<String, MethodGroup>();
 
 	// priority structures
-	private PriorityGraph priorityGraph =
-			new PriorityGraph();
-	private PriorityRanking priorityRanking = 
-			new PriorityRanking();
+	private PriorityGraph priorityGraph = new PriorityGraph();
+	private PriorityRanking priorityRanking = new PriorityRanking();
 	
 	// group -> maximum number of threads used by methods of the group
 	private ThreadManager threadManager = new ThreadManager();

@@ -8,9 +8,19 @@ import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 import org.objectweb.proactive.multiactivity.priority.PriorityStructure.PriorityOvertakeState;
 
+/**
+ * This class represents the structure that is used to reorder the requests 
+ * among the ready to execute request (= compatible ones). It uses a 
+ * PriorityStructure to know the relative priority of incoming requests.
+ * 
+ * @author jrochas
+ */
 public class PriorityQueue {
 
-	private PriorityElement first;	
+	/** Head of the priority queue (= oldest highest priority request) */
+	private PriorityElement first;
+
+	/** Priority representation used to decide where to insert a new request */
 	private PriorityStructure priorityStructure;
 
 	public PriorityQueue(PriorityStructure priorityStructure) {
@@ -18,91 +28,60 @@ public class PriorityQueue {
 	}
 
 	/**
-	 * Pour le moment, ajoute en queue
+	 * Inserts a new request in the priority queue according to its priority 
+	 * defined in the priority structure.
 	 * @param runnableRequest
 	 * @param group
 	 */
 	public void insert(RunnableRequest request, MethodGroup group) {
 		PriorityElement toInsert = new PriorityElement(request, group);
-
+		// The request to insert is the only one in the priority queue
 		if (this.first == null) {
 			this.first = toInsert;
 		}
 		else {
 			PriorityElement currentElement = this.first;
-			boolean falseEncountered = false;
-			while (currentElement.next != null) {
-				currentElement = currentElement.next;
-			}
-			// Here element is the last
-			PriorityElement lastViableElement = currentElement;
-
-			// We continue to overtake if no unovertakable element has been encountered and if there still are previous element in the queue 
-			while (!falseEncountered && currentElement != null) {
-				PriorityOvertakeState overtakable = this.priorityStructure.canOvertake(group, currentElement.belongingGroup);
+			PriorityElement previousElement = null;
+			boolean isOvertakable = false;
+			// Search for the first request that has a lower priority
+			while (!isOvertakable && currentElement != null) {
+				PriorityOvertakeState overtakable = 
+						this.priorityStructure.canOvertake(
+								group, currentElement.belongingGroup);
 				if (overtakable.equals(PriorityOvertakeState.TRUE)) {
-					// This position is viable for sure, save it.
-					lastViableElement = currentElement.previous;
+					// An overtakable element has been found, stop searching
+					isOvertakable = true;
 				}
 				else {
-					if (overtakable.equals(PriorityOvertakeState.FALSE)) {
-						// An unovertakable element has been found, stop searching better position
-						falseEncountered = true;
-					}
+					previousElement = currentElement;
+					currentElement = currentElement.next;
 				}
-				currentElement = currentElement.previous;
 			}
-
-			// the loop stopped, insert to asved element
-			if (lastViableElement != null) {
-				toInsert.previous = lastViableElement;
-				toInsert.next = lastViableElement.next;
-				if (lastViableElement.next != null) {
-					lastViableElement.next.previous = toInsert;
+			// The request must be placed just before the currentElement
+			if (currentElement != null) {
+				toInsert.next = currentElement;
+				toInsert.previous = currentElement.previous;
+				if (currentElement.previous != null) {
+					currentElement.previous.next = toInsert;
+					currentElement.previous = toInsert;
 				}
-				lastViableElement.next = toInsert;
+				// The element to insert must be the first in the queue
+				else {
+					toInsert.next = this.first;
+					this.first.previous = toInsert;
+					this.first = toInsert;
+				}
 			}
-			// Mean that the element to insert must be the first
+			// Means that the element must be inserted at the end
 			else {
-				toInsert.next = this.first;
-				this.first.previous = toInsert;
-				this.first = toInsert;
+				toInsert.previous = previousElement;
+				previousElement.next = toInsert;
 			}
-
-			///////////////////////
-			/*while ((this.priorityStructure.canOvertake(group, currentElement.belongingGroup) == PriorityOvertakeState.TRUE
-					&& currentElement.previous != null)) {
-				currentElement = currentElement.previous;
-			}
-
-			toInsert.previous = currentElement;
-			toInsert.next = currentElement.next;
-			if (currentElement.next != null) {
-				currentElement.next.previous = toInsert;
-			}
-			currentElement.next = toInsert;*/
-			//////////////
-
 		}
-
-		/*if (this.head == null) {
-			this.head = toInsert;
-		}
-		else {
-			PriorityElement previousElement = null;
-			PriorityElement element = this.head;
-			while (element != null) {
-				previousElement = element;
-				element = element.next;
-			}	
-			previousElement.next = toInsert;
-			toInsert.previous = previousElement;
-		}*/
-
 	}
 
 	/**
-	 * Linear
+	 * @return The number of requests that are in the priority queue.
 	 */
 	public int nbRequests() {
 		int size = 0;
@@ -116,7 +95,7 @@ public class PriorityQueue {
 	}
 
 	/**
-	 * Constant
+	 * @return true if there are some requests in the priority queue.
 	 */
 	public boolean hasRequests() {
 		if (this.first == null) {
@@ -128,11 +107,10 @@ public class PriorityQueue {
 	}
 
 	/**
-	 * Linear
-	 * @param runnableRequest
+	 * Removes a request in the queue (according to the equals method).
+	 * @param runnableRequest The request to remove
 	 */
 	public void remove(RunnableRequest request) {
-		System.out.println("Calling remove");
 		PriorityElement element = this.first;
 		// There is only the element to remove in the PriorityQueue
 		if (this.first.request.equals(request) && this.first.next == null) {
@@ -162,7 +140,8 @@ public class PriorityQueue {
 	}
 
 	/**
-	 * @return 
+	 * Returns the list of the highest priority requests that are in the queue.
+	 * @return High priority requests
 	 */
 	public List<RunnableRequest> getHighestPriorityRequests() {	
 		List<RunnableRequest> requests = new LinkedList<RunnableRequest>();
@@ -176,7 +155,7 @@ public class PriorityQueue {
 	}
 
 	/**
-	 * 
+	 * {@inheritDoc}
 	 */
 	public String toString(CompatibilityManager compatibility, ThreadManager threadManager) {
 		StringBuilder sb = new StringBuilder();
@@ -207,7 +186,7 @@ public class PriorityQueue {
 	 */
 	private class PriorityElement {
 
-		/** The request to schedule */
+		/** The request to execute */
 		public final RunnableRequest request;
 
 		/** The group where the request belongs. Warning: it is up to the 

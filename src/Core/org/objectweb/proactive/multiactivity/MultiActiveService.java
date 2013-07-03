@@ -191,6 +191,11 @@ public class MultiActiveService extends Service {
         return executor;
     }
     
+    /**
+     * Returns the list of requests that have been served by this multiactive 
+     * service (from oldest to latest).
+     * @return Served requests
+     */
     public LinkedList<Request> getServingHistory() {
     	return this.executor.getServingHistory();
     }

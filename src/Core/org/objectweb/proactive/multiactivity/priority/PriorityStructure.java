@@ -5,7 +5,7 @@ import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 /**
  * This interface is meant for all classes that want to define a particular 
  * structure for handling priorities. A PriorityStructure is used to reorder 
- * request in a PriorityQueue. Here is also defined enums and constants that 
+ * requests in a PriorityQueue. Here is also defined enums and constants that 
  * are related to priority structures or methods.
  * 
  * @author jrochas

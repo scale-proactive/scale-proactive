@@ -34,54 +34,55 @@
  * ################################################################
  * $$PROACTIVE_INITIAL_DEV$$
  */
-package unitTests.calcium.system;
+package org.objectweb.proactive.utils;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.FileWriter;
 import java.io.PrintWriter;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.objectweb.proactive.utils.OperatingSystem;
-
-import functionalTests.TestDisabler;
+import java.io.StringWriter;
+import java.io.Writer;
 
 
-public class TestHashSum {
+/**
+ * StackTraceUtil
+ *
+ * Simple utilities to return the stack trace of an
+ * exception as a String.
+ *
+ * @author The ProActive Team
+**/
+public final class StackTraceUtil {
 
-    @BeforeClass
-    public static void beforeClass() {
-        TestDisabler.unsupportedOs(OperatingSystem.windows);
+    public static String getStackTrace(Throwable aThrowable) {
+        final Writer result = new StringWriter();
+        final PrintWriter printWriter = new PrintWriter(result);
+        aThrowable.printStackTrace(printWriter);
+        return result.toString();
     }
 
-    @Test
-    public void TestSha1Sum() throws Exception {
-        String shakespeare = "If music be the food of love, play on\n"
-            + "Give me excess of it, that, surfeiting,\n" + "The appetite may sicken, and so die.";
-
-        File testfile = new File(System.getProperty("java.io.tmpdir"), "test-calcium-hashsum-shakespeare");
-
-        if (testfile.exists()) {
-            testfile.delete();
+    public static boolean equalsStackTraces(Throwable a, Throwable b) {
+        if ((a == null) && (b == null)) {
+            return true;
+        }
+        if (a == null) {
+            return false;
+        }
+        if (b == null) {
+            return false;
+        }
+        if (!a.getClass().equals(b.getClass())) {
+            return false;
+        }
+        if ((a.getMessage() == null) && (b.getMessage() != null)) {
+            return false;
+        }
+        if ((b.getMessage() == null) && (a.getMessage() != null)) {
+            return false;
         }
 
-        assertFalse(testfile.exists());
+        if ((a.getMessage() != null) && (b.getMessage() != null) && !a.getMessage().equals(b.getMessage())) {
+            return false;
+        }
+        return equalsStackTraces(a.getCause(), b.getCause());
 
-        PrintWriter out = new PrintWriter(new FileWriter(testfile));
-        out.println(shakespeare);
-        out.close();
-
-        assertTrue(testfile.exists());
-
-        String hexStringHash = org.objectweb.proactive.extensions.calcium.system.HashSum.hashsum(testfile,
-                "SHA-1");
-        assertTrue(hexStringHash.equals("404d69b17da9a666fe8db79eec8483d94a43babc"));
-
-        testfile.delete();
-
-        assertFalse(testfile.exists());
     }
+
 }

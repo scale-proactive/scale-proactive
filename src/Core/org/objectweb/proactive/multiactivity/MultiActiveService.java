@@ -54,9 +54,10 @@ import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 
 
 /**
- * This class extends the  {@link Service}  class and adds the capability of serving more methods in parallel. 
+ * This class extends the {@link Service} class and adds the capability of serving more methods in parallel. 
  * <br> The decision of which methods can run in parallel is made based on annotations set by the user. 
  * These annotations are to be found in the <i> org.objectweb.proactive.annotation.multiactivity</i> package.
+ * 
  * @author  The ProActive Team
  */
 public class MultiActiveService extends Service {
@@ -78,7 +79,8 @@ public class MultiActiveService extends Service {
     /**
      * MultiActiveService that will be able to optionally use a policy, and will deploy each serving request on a 
      * separate physical thread.
-     * @param body
+     * 
+     * @param body The body of the active object.
      */
     public MultiActiveService(Body body) {
         super(body);
@@ -126,12 +128,12 @@ public class MultiActiveService extends Service {
     public void multiActiveServing(int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
         init();
         executor.configure(maxActiveThreads, hardLimit, hostReentrant);
-        executor.execute(new DefaultServingPolicy());
+        executor.execute(createServingPolicy());
     }
 
     /**
      * Service that relies on the default parallel policy to extract requests from the queue.
-     * @param priority constraints to apply
+     * @param priorityConstraints priority constraints to apply
      * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
      * @param hardLimit false if the above limit is applicable only to active (running) threads, but not the waiting ones
      * @param hostReentrant true if re-entrant calls should be hosted on the issuer's thread
@@ -140,7 +142,7 @@ public class MultiActiveService extends Service {
             boolean hardLimit, boolean hostReentrant) {
         init(priorityConstraints);
         executor.configure(maxActiveThreads, hardLimit, hostReentrant);
-        executor.execute(new DefaultServingPolicy());
+        executor.execute(createServingPolicy());
     }
 
     /**
@@ -150,7 +152,7 @@ public class MultiActiveService extends Service {
     public void multiActiveServing(int maxActiveThreads) {
         init();
         executor.configure(maxActiveThreads, false, false);
-        executor.execute(new DefaultServingPolicy());
+        executor.execute(createServingPolicy());
 
     }
 
@@ -160,7 +162,16 @@ public class MultiActiveService extends Service {
     public void multiActiveServing() {
         init();
         executor.configure(Integer.MAX_VALUE, false, false);
-        executor.execute(new DefaultServingPolicy());
+        executor.execute(createServingPolicy());
+    }
+
+    /**
+     * Creates the serving policy to use to schedule requests.
+     * 
+     * @return The serving policy to use to schedule requests.
+     */
+    protected ServingPolicy createServingPolicy() {
+        return new DefaultServingPolicy();
     }
 
     /**
@@ -190,7 +201,7 @@ public class MultiActiveService extends Service {
 
     /**
      * Service that relies on a user-defined policy to extract requests from the queue. Threads are not limited and re-entrance on the same thread is disabled.
-     * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
+     * @param policy Serving policy to use
      */
     public void policyServing(ServingPolicy policy) {
         init();

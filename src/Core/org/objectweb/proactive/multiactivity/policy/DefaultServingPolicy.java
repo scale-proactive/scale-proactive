@@ -43,69 +43,81 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.body.request.Request;
+import org.objectweb.proactive.core.util.log.Loggers;
+import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
 
 
 /**
- * Interface for describing the scheduling policy to be used in a multi-active
- * service.
+ * Default implementation of the scheduling policy to be used in a multi-active service.
  * 
  * @author The ProActive Team
  */
 public class DefaultServingPolicy implements ServingPolicy {
+    protected static final Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
-    private Set<Request> invalid = new HashSet<Request>();
+    protected Set<Request> invalid = new HashSet<Request>();
 
-    private Map<Request, Set<Request>> invalidates = new HashMap<Request, Set<Request>>();
+    protected Map<Request, Set<Request>> invalidates = new HashMap<Request, Set<Request>>();
 
     /**
-     * Default scheduling policy. <br>
+     * Default scheduling policy.
+     * <br>
      * It will take a request from the queue if it is compatible with all
      * executing ones and also with everyone before it in the queue. If a
      * request can not be taken out from the queue, the requests it is invalid
      * with are marked accordingly so that they are not retried until this one
      * is finally served.
      * 
-     * @return compatible requests to serve.
+     * @return The compatible requests to serve.
      */
     public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
         List<Request> reqs = compatibility.getQueueContents();
         List<Request> ret = new ArrayList<Request>();
 
-        int i, lastIndex;
-        for (i = 0; i < reqs.size(); i++) {
-            lastIndex = -2;
-            if (!invalid.contains(reqs.get(i)) &&
-                compatibility.isCompatibleWithExecuting(reqs.get(i)) &&
-                (lastIndex = compatibility.getIndexOfLastCompatibleWith(reqs.get(i), reqs.subList(0, i))) == i - 1) {
-                Request r = reqs.get(i);
-                ret.add(r);
-
-                compatibility.addRunning(r);
-
-                if (invalidates.containsKey(reqs.get(i))) {
-                    for (Request ok : invalidates.get(reqs.get(i))) {
-                        invalid.remove(ok);
-                    }
-                    invalidates.remove(reqs.get(i));
-                }
-
-                reqs.remove(i);
-                i--;
-
-            } else if (lastIndex > -2 && lastIndex < i) {
-                lastIndex++;
-                if (!invalidates.containsKey(reqs.get(lastIndex))) {
-                    invalidates.put(reqs.get(lastIndex), new HashSet<Request>());
-                }
-
-                invalidates.get(reqs.get(lastIndex)).add(reqs.get(i));
-                invalid.add(reqs.get(i));
-            }
+        for (int i = 0; i < reqs.size(); i++) {
+            i = this.runPolicyOnRequest(reqs, i, compatibility, ret);
         }
 
         return ret;
     }
 
+    protected int runPolicyOnRequest(List<Request> requestQueue, int requestIndex,
+            StatefulCompatibilityMap compatibility, List<Request> runnableRequests) {
+        int lastIndex = -2;
+
+        if (!invalid.contains(requestQueue.get(requestIndex)) &&
+            compatibility.isCompatibleWithExecuting(requestQueue.get(requestIndex)) &&
+            (lastIndex = compatibility.getIndexOfLastCompatibleWith(requestQueue.get(requestIndex),
+                    requestQueue.subList(0, requestIndex))) == requestIndex - 1) {
+            Request r = requestQueue.get(requestIndex);
+
+            runnableRequests.add(r);
+            compatibility.addRunning(r);
+
+            if (invalidates.containsKey(requestQueue.get(requestIndex))) {
+                for (Request ok : invalidates.get(requestQueue.get(requestIndex))) {
+                    invalid.remove(ok);
+                }
+                invalidates.remove(requestQueue.get(requestIndex));
+            }
+
+            requestQueue.remove(requestIndex);
+
+            return --requestIndex;
+        } else if (lastIndex > -2 && lastIndex < requestIndex) {
+            lastIndex++;
+
+            if (!invalidates.containsKey(requestQueue.get(lastIndex))) {
+                invalidates.put(requestQueue.get(lastIndex), new HashSet<Request>());
+            }
+
+            invalidates.get(requestQueue.get(lastIndex)).add(requestQueue.get(requestIndex));
+            invalid.add(requestQueue.get(requestIndex));
+        }
+
+        return requestIndex;
+    }
 }

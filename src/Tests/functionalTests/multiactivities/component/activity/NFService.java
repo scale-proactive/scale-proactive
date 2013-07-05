@@ -34,35 +34,7 @@
  * ################################################################
  * $$PROACTIVE_INITIAL_DEV$$
  */
-package functionalTests.component.requestpriority;
+package functionalTests.multiactivities.component.activity;
 
-/**
- * @author The ProActive Team
- *
- */
-public class PriotirizedComponent implements FItf {
-    private String callOrder = "";
-
-    public void functionalCall() {
-        System.err.println("PriotirizedComponent:functionnalCall");
-        callOrder += FItf.F_STR_CALL;
-    }
-
-    public String getCallOrder() {
-        System.err.println("PriotirizedComponent:getCallOrder");
-        return callOrder;
-    }
-
-    public void longFunctionalCall() {
-        functionalCall();
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void addCall(String str) {
-        callOrder += str;
-    }
+public interface NFService {
 }

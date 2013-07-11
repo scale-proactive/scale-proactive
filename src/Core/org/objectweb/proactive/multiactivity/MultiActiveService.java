@@ -224,4 +224,8 @@ public class MultiActiveService extends Service {
         return executor.getPriorityManager();
     }
 
+    public RequestExecutor getRequestExecutor() {
+        return this.executor;
+    }
+
 }

@@ -36,6 +36,7 @@
  */
 package org.objectweb.proactive.multiactivity.policy;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.objectweb.proactive.core.body.request.Request;
@@ -48,7 +49,7 @@ import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibility
  * 
  * @author The ProActive Team
  */
-public interface ServingPolicy {
+public abstract class ServingPolicy {
 
     /**
      * This method will decide which methods get to run given the current state
@@ -68,6 +69,39 @@ public interface ServingPolicy {
      * 
      * @return a sublist of the requests that can be executed in parallel.
      */
-    public List<Request> runPolicy(StatefulCompatibilityMap compatibility);
+    public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
+        List<Request> ret = new ArrayList<Request>();
+
+        for (int i = 0; i < compatibility.getQueueContents().size(); i++) {
+            i = this.runPolicyOnRequest(i, compatibility, ret);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Apply the policy on a request from the request queue.
+     * 
+     * @param requestIndexInRequestQueue
+     *            index of the request in the request queue.
+     * @param compatibility
+     *            the compatibility map to perform compatibility checks, to
+     *            retrieve to the request queue and thus removing requests from
+     *            the request queue.
+     * @param runnableRequests
+     *            the requests that have been removed from the request queue
+     *            should be put in this list to be passed to the executor for
+     *            scheduling.
+     * 
+     * @return the index of the next request to check in the request queue. It
+     *         should be equals to
+     *         {@code requestIndexInRequestQueue - numberOfRequestsRemovedFromRequestQueue}
+     *         .
+     */
+    public int runPolicyOnRequest(int requestIndexInRequestQueue, StatefulCompatibilityMap compatibility,
+            List<Request> runnableRequests) {
+        throw new UnsupportedOperationException(this.getClass().getSimpleName() +
+            "#runPolicyOnRequest must be overriden if you want to use it");
+    }
 
 }

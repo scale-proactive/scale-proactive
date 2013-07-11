@@ -46,6 +46,7 @@ import org.objectweb.proactive.core.component.body.NF3RequestFilter;
 import org.objectweb.proactive.core.component.body.NFRequestFilterImpl;
 import org.objectweb.proactive.core.component.control.PAGCMLifeCycleController;
 import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
+import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 
 
 /**
@@ -60,6 +61,7 @@ import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibility
  * @author The ProActive Team
  */
 public class ComponentPriorityServingPolicy extends ComponentServingPolicy {
+
     private PAGCMLifeCycleController lifeCycleController;
 
     protected PriorityController priorityController;
@@ -73,12 +75,13 @@ public class ComponentPriorityServingPolicy extends ComponentServingPolicy {
     /**
      * Creates a ComponentPriorityServingPolicy.
      * 
+     * @param delegate custom serving policy to wrap.
      * @param lifeCycleController The life cycle controller of the GCM component.
      * @param priorityController The priority controller of the GCM component.
      */
-    public ComponentPriorityServingPolicy(PAGCMLifeCycleController lifeCycleController,
-            PriorityController priorityController) {
-        super(lifeCycleController);
+    public ComponentPriorityServingPolicy(ServingPolicy delegate,
+            PAGCMLifeCycleController lifeCycleController, PriorityController priorityController) {
+        super(delegate, lifeCycleController);
         this.lifeCycleController = lifeCycleController;
         this.priorityController = priorityController;
         this.nfRequestFilter = new NFRequestFilterImpl();
@@ -192,10 +195,11 @@ public class ComponentPriorityServingPolicy extends ComponentServingPolicy {
                     }
                 }
 
-                i = this.runPolicyOnRequest(reqs, i, compatibility, ret);
+                i = this.runPolicyOnRequest(i, compatibility, ret);
             }
         }
 
         return ret;
     }
+
 }

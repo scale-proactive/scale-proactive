@@ -43,7 +43,7 @@ import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.component.body.NFRequestFilterImpl;
 import org.objectweb.proactive.core.component.control.PAGCMLifeCycleController;
 import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
-import org.objectweb.proactive.multiactivity.policy.DefaultServingPolicy;
+import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 
 
 /**
@@ -56,17 +56,31 @@ import org.objectweb.proactive.multiactivity.policy.DefaultServingPolicy;
  * 
  * @author The ProActive Team
  */
-public class ComponentServingPolicy extends DefaultServingPolicy {
-    private PAGCMLifeCycleController lifeCycleController;
+public class ComponentServingPolicy extends ServingPolicy {
 
-    private NFRequestFilterImpl nfRequestFilter;
+    private final PAGCMLifeCycleController lifeCycleController;
+
+    private final NFRequestFilterImpl nfRequestFilter;
+
+    protected final ServingPolicy delegate;
+
+    /**
+     *  
+     * 
+     * @return the delegate
+     */
+    public ServingPolicy getDelegate() {
+        return this.delegate;
+    }
 
     /**
      * Creates a ComponentServingPolicy.
      * 
+     * @param delegate custom serving policy to wrap.
      * @param lifeCycleController The life cycle controller of the GCM component.
      */
-    public ComponentServingPolicy(PAGCMLifeCycleController lifeCycleController) {
+    public ComponentServingPolicy(ServingPolicy delegate, PAGCMLifeCycleController lifeCycleController) {
+        this.delegate = delegate;
         this.lifeCycleController = lifeCycleController;
         this.nfRequestFilter = new NFRequestFilterImpl();
     }
@@ -121,7 +135,7 @@ public class ComponentServingPolicy extends DefaultServingPolicy {
                     }
                 } else {
                     // F request
-                    i = this.runPolicyOnRequest(reqs, i, compatibility, ret);
+                    i = this.delegate.runPolicyOnRequest(i, compatibility, ret);
                 }
             }
         }
@@ -135,4 +149,5 @@ public class ComponentServingPolicy extends DefaultServingPolicy {
         compatibility.addRunning(queue.get(requestIndex));
         queue.remove(requestIndex);
     }
+
 }

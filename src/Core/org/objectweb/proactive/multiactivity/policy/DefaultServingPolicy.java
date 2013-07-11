@@ -36,7 +36,6 @@
  */
 package org.objectweb.proactive.multiactivity.policy;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,20 +50,21 @@ import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibility
 
 
 /**
- * Default implementation of the scheduling policy to be used in a multi-active service.
+ * Default implementation of the scheduling policy to be used in a multi-active
+ * service.
  * 
  * @author The ProActive Team
  */
-public class DefaultServingPolicy implements ServingPolicy {
+public class DefaultServingPolicy extends ServingPolicy {
+
     protected static final Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
-    protected Set<Request> invalid = new HashSet<Request>();
+    protected final Set<Request> invalid = new HashSet<Request>();
 
-    protected Map<Request, Set<Request>> invalidates = new HashMap<Request, Set<Request>>();
+    protected final Map<Request, Set<Request>> invalidates = new HashMap<Request, Set<Request>>();
 
     /**
-     * Default scheduling policy.
-     * <br>
+     * Default scheduling policy. <br>
      * It will take a request from the queue if it is compatible with all
      * executing ones and also with everyone before it in the queue. If a
      * request can not be taken out from the queue, the requests it is invalid
@@ -73,19 +73,11 @@ public class DefaultServingPolicy implements ServingPolicy {
      * 
      * @return The compatible requests to serve.
      */
-    public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
-        List<Request> reqs = compatibility.getQueueContents();
-        List<Request> ret = new ArrayList<Request>();
+    @Override
+    public int runPolicyOnRequest(int requestIndex, StatefulCompatibilityMap compatibility,
+            List<Request> runnableRequests) {
+        List<Request> requestQueue = compatibility.getQueueContents();
 
-        for (int i = 0; i < reqs.size(); i++) {
-            i = this.runPolicyOnRequest(reqs, i, compatibility, ret);
-        }
-
-        return ret;
-    }
-
-    protected int runPolicyOnRequest(List<Request> requestQueue, int requestIndex,
-            StatefulCompatibilityMap compatibility, List<Request> runnableRequests) {
         int lastIndex = -2;
 
         if (!invalid.contains(requestQueue.get(requestIndex)) &&
@@ -120,4 +112,5 @@ public class DefaultServingPolicy implements ServingPolicy {
 
         return requestIndex;
     }
+
 }

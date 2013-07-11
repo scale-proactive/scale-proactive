@@ -44,6 +44,7 @@ import org.objectweb.proactive.core.component.body.MembraneControllerRequestFilt
 import org.objectweb.proactive.core.component.control.PAGCMLifeCycleController;
 import org.objectweb.proactive.core.component.control.PAMembraneController;
 import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
+import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 
 
 /**
@@ -59,6 +60,7 @@ import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibility
  * @author The ProActive Team
  */
 public class ComponentMembraneServingPolicy extends ComponentServingPolicy {
+
     private PAMembraneController membraneController;
 
     private MembraneControllerRequestFilter membraneControllerRequestFilter;
@@ -66,12 +68,13 @@ public class ComponentMembraneServingPolicy extends ComponentServingPolicy {
     /**
      * Creates a ComponentMembraneServingPolicy.
      * 
+     * @param delegate custom serving policy to wrap.
      * @param lifeCycleController The life cycle controller of the GCM component.
      * @param membraneController The membrane controller of the GCM component.
      */
-    public ComponentMembraneServingPolicy(PAGCMLifeCycleController lifeCycleController,
-            PAMembraneController membraneController) {
-        super(lifeCycleController);
+    public ComponentMembraneServingPolicy(ServingPolicy delegate,
+            PAGCMLifeCycleController lifeCycleController, PAMembraneController membraneController) {
+        super(delegate, lifeCycleController);
 
         this.membraneController = membraneController;
         this.membraneControllerRequestFilter = new MembraneControllerRequestFilter();
@@ -119,4 +122,5 @@ public class ComponentMembraneServingPolicy extends ComponentServingPolicy {
             return super.runPolicy(compatibility);
         }
     }
+
 }

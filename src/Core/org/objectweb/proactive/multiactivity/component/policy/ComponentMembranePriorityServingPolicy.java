@@ -45,6 +45,7 @@ import org.objectweb.proactive.core.component.body.MembraneControllerRequestFilt
 import org.objectweb.proactive.core.component.control.PAGCMLifeCycleController;
 import org.objectweb.proactive.core.component.control.PAMembraneController;
 import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
+import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 
 
 /**
@@ -62,6 +63,7 @@ import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibility
  * @author The ProActive Team
  */
 public class ComponentMembranePriorityServingPolicy extends ComponentPriorityServingPolicy {
+
     private PAMembraneController membraneController;
 
     private MembraneControllerRequestFilter membraneControllerRequestFilter;
@@ -69,13 +71,15 @@ public class ComponentMembranePriorityServingPolicy extends ComponentPrioritySer
     /**
      * Creates a ComponentMembranePriorityServingPolicy.
      * 
+     * @param delegate custom serving policy to wrap.
      * @param lifeCycleController The life cycle controller of the GCM component.
      * @param priorityController The priority controller of the GCM component.
      * @param membraneController The membrane controller of the GCM component.
      */
-    public ComponentMembranePriorityServingPolicy(PAGCMLifeCycleController lifeCycleController,
-            PriorityController priorityController, PAMembraneController membraneController) {
-        super(lifeCycleController, priorityController);
+    public ComponentMembranePriorityServingPolicy(ServingPolicy delegate,
+            PAGCMLifeCycleController lifeCycleController, PriorityController priorityController,
+            PAMembraneController membraneController) {
+        super(delegate, lifeCycleController, priorityController);
 
         this.membraneController = membraneController;
         this.membraneControllerRequestFilter = new MembraneControllerRequestFilter();
@@ -141,4 +145,5 @@ public class ComponentMembranePriorityServingPolicy extends ComponentPrioritySer
             return super.runPolicy(compatibility);
         }
     }
+
 }

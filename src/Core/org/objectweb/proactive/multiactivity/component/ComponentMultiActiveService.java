@@ -36,6 +36,8 @@
  */
 package org.objectweb.proactive.multiactivity.component;
 
+import java.util.List;
+
 import org.etsi.uri.gcm.api.control.PriorityController;
 import org.etsi.uri.gcm.util.GCM;
 import org.objectweb.fractal.api.NoSuchInterfaceException;
@@ -51,22 +53,32 @@ import org.objectweb.proactive.multiactivity.component.policy.ComponentMembraneS
 import org.objectweb.proactive.multiactivity.component.policy.ComponentPriorityServingPolicy;
 import org.objectweb.proactive.multiactivity.component.policy.ComponentServingPolicy;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
+import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
 
 
 /**
- * This class extends the  {@link MultiActiveService} class for GCM components by using a
- * specific {@link ServingPolicy} according to the controllers of the GCM components (ie.
- * have a {@link PAMembraneController membrane controller} and/or a
- * {@link PriorityController priority controller} or neither of the two). This extension
- * allows to properly manage the life cycle of the GCM components.
+ * This class extends the {@link MultiActiveService} class for GCM components by
+ * using a specific {@link ServingPolicy} according to the controllers of the
+ * GCM components (ie. have a {@link PAMembraneController membrane controller}
+ * and/or a {@link PriorityController priority controller} or neither of the
+ * two). This extension allows to properly manage the life cycle of the GCM
+ * components.
+ * <p>
+ * By default, all serving policy used with this {@link MultiActiveService} are
+ * wrapped with a {@link ComponentServingPolicy} in order to handle
+ * non-functional method calls properly. This behavior can be redefined by
+ * overriding
+ * {@link ComponentMultiActiveService#wrapServingPolicy(ServingPolicy)}.
  * 
- * @author  The ProActive Team
+ * @author The ProActive Team
  */
 public class ComponentMultiActiveService extends MultiActiveService {
+
     /**
      * Creates a ComponentMultiActiveService.
      * 
-     * @param body The body of the GCM component.
+     * @param body
+     *            The body of the GCM component.
      */
     public ComponentMultiActiveService(Body body) throws IllegalArgumentException {
         super(body);
@@ -77,11 +89,7 @@ public class ComponentMultiActiveService extends MultiActiveService {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected ServingPolicy createServingPolicy() {
+    protected ServingPolicy wrapServingPolicy(ServingPolicy delegate) {
         PAComponentImpl componentImpl = ((ComponentBody) body).getPAComponentImpl();
         PAGCMLifeCycleController lifeCycleController;
         PriorityController priorityController;
@@ -98,22 +106,72 @@ public class ComponentMultiActiveService extends MultiActiveService {
             priorityController = GCM.getPriorityController(componentImpl);
             membraneController = Utils.getPAMembraneController(componentImpl);
 
-            return new ComponentMembranePriorityServingPolicy(lifeCycleController, priorityController,
-                membraneController);
+            return new ComponentMembranePriorityServingPolicy(delegate, lifeCycleController,
+                priorityController, membraneController);
         } catch (NoSuchInterfaceException nsie1) {
             try {
                 priorityController = GCM.getPriorityController(componentImpl);
 
-                return new ComponentPriorityServingPolicy(lifeCycleController, priorityController);
+                return new ComponentPriorityServingPolicy(delegate, lifeCycleController, priorityController);
             } catch (NoSuchInterfaceException nsie2) {
                 try {
                     membraneController = Utils.getPAMembraneController(componentImpl);
 
-                    return new ComponentMembraneServingPolicy(lifeCycleController, membraneController);
+                    return new ComponentMembraneServingPolicy(delegate, lifeCycleController,
+                        membraneController);
                 } catch (NoSuchInterfaceException nsie3) {
-                    return new ComponentServingPolicy(lifeCycleController);
+                    return new ComponentServingPolicy(delegate, lifeCycleController);
                 }
             }
         }
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected ServingPolicy createServingPolicy() {
+        return this.wrapServingPolicy(super.createServingPolicy());
+    }
+
+    /**
+     * The specified policy is automatically wrapped by a
+     * {@link ComponentServingPolicy} to handle non-functional method calls
+     * properly. This wrapping behavior could be redefined (and thus removed) by
+     * overriding the method
+     * {@link ComponentMultiActiveService#wrapServingPolicy(ServingPolicy)}.
+     */
+    @Override
+    public void policyServing(ServingPolicy policy) {
+        policy = this.wrapServingPolicy(policy);
+        super.policyServing(policy);
+    }
+
+    /**
+     * The specified policy is automatically wrapped by a
+     * {@link ComponentServingPolicy} to handle non-functional method calls
+     * properly. This wrapping behavior could be redefined (and thus removed) by
+     * overriding the method
+     * {@link ComponentMultiActiveService#wrapServingPolicy(ServingPolicy)}.
+     */
+    @Override
+    public void policyServing(ServingPolicy policy, int maxActiveThreads) {
+        policy = this.wrapServingPolicy(policy);
+        super.policyServing(policy, maxActiveThreads);
+    }
+
+    /**
+     * The specified policy is automatically wrapped by a
+     * {@link ComponentServingPolicy} to handle non-functional method calls
+     * properly. This wrapping behavior could be redefined (and thus removed) by
+     * overriding the method
+     * {@link ComponentMultiActiveService#wrapServingPolicy(ServingPolicy)}.
+     */
+    @Override
+    public void policyServing(ServingPolicy policy, List<PriorityConstraint> priorityConstraints,
+            int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
+        policy = this.wrapServingPolicy(policy);
+        super.policyServing(policy, priorityConstraints, maxActiveThreads, hardLimit, hostReentrant);
+    }
+
 }

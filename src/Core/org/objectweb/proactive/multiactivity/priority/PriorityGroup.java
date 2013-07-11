@@ -68,8 +68,10 @@ public class PriorityGroup implements Comparator<PriorityGroup>, Iterable<Runnab
         return this.requests.contains(request);
     }
 
-    public void clear() {
+    public Set<RunnableRequest> clear() {
+        Set<RunnableRequest> result = new HashSet<RunnableRequest>(this.requests);
         this.requests.clear();
+        return result;
     }
 
     public int getPriorityLevel() {

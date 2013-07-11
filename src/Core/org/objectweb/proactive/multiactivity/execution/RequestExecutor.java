@@ -277,7 +277,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
      * @param policy
      */
     public void execute(final ServingPolicy policy) {
-
         new Thread(new Runnable() {
 
             @Override
@@ -337,11 +336,47 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                         }
                     }
                 }
+                
+                if (log.isDebugEnabled()) {
+                    StringBuilder buf = new StringBuilder();
+                    buf.append("Dumping Queues Content\nRequest queue=[");
+                    
+                    Iterator<Request> it = this.requestQueue.getInternalQueue().iterator();
+                    while (it.hasNext()) {
+                        buf.append(RequestExecutor.toString(it.next()));
+                        
+                        if (it.hasNext()) {
+                            buf.append(" ");
+                        }
+                    }
+
+                    buf.append("]\nReady queue=[");
+                   
+                    it = this.getPriorityManager().getReadyRequests().iterator();
+                    while (it.hasNext()) {
+                        buf.append(RequestExecutor.toString(it.next()));
+                        if (it.hasNext()) {
+                            buf.append(" ");
+                        }
+                    }
+
+                    buf.append("]\nExecuting queue=[");
+                    
+                    it = compatibility.getExecutingRequests().iterator();
+                   while (it.hasNext()) {
+                        buf.append(RequestExecutor.toString(it.next()));
+                        if (it.hasNext()) {
+                            buf.append(" ");
+                        }
+                    }
+                    buf.append("]");
+
+                    log.trace(buf.toString());
+                }
 
                 try {
                     requestQueue.wait();
                 } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
 
@@ -430,7 +465,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                     i = selectedPriorityGroup.iterator();
 
                     if (i.hasNext()) {
-                        log.trace("Requests served");
+                        log.trace("Requests served " + body.getReifiedObject().toString());
                     }
 
                     while (canServeOne() && i.hasNext()) {
@@ -565,6 +600,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
         for (int i = 0; i < request.getMethodCall().getNumberOfParameter(); i++) {
             result.append(request.getMethodCall().getParameter(i).getClass());
+            result.append("|ihc=");
+            result.append(System.identityHashCode(request));
 
             if (i < request.getMethodCall().getNumberOfParameter() - 1) {
                 result.append(" ");
@@ -877,6 +914,10 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
     public PriorityManager getPriorityManager() {
         return this.priorityManager;
+    }
+
+    public RequestQueue getRequestQueue() {
+        return this.requestQueue;
     }
 
 }

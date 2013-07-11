@@ -40,8 +40,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.objectweb.proactive.core.body.request.Request;
@@ -110,6 +112,16 @@ public class PriorityManager {
 
     private void addToPriorityGroup(int groupLevel, RunnableRequest request) {
         this.priorityGroups.get(groupLevel).add(request);
+    }
+
+    public Set<RunnableRequest> clear() {
+        Set<RunnableRequest> result = new HashSet<RunnableRequest>();
+
+        for (PriorityGroup pg : priorityGroups.values()) {
+            result.addAll(pg.clear());
+        }
+
+        return result;
     }
 
     public boolean hasSomeRequestsRegistered() {
@@ -254,6 +266,18 @@ public class PriorityManager {
         }
 
         return sameNames && sameParameters;
+    }
+
+    public List<Request> getReadyRequests() {
+        List<Request> result = new ArrayList<Request>();
+
+        for (PriorityGroup pg : this.priorityGroups.values()) {
+            for (RunnableRequest request : pg) {
+                result.add(request.getRequest());
+            }
+        }
+
+        return result;
     }
 
     /**

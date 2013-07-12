@@ -339,7 +339,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
                 
                 if (log.isDebugEnabled()) {
                     StringBuilder buf = new StringBuilder();
-                    buf.append("Dumping Queues Content\nRequest queue=[");
+                    buf.append("Dumping Queues Content on ");
+                    buf.append(body.getID());
+                    buf.append("\nRequest queue=[");
                     
                     Iterator<Request> it = this.requestQueue.getInternalQueue().iterator();
                     while (it.hasNext()) {

@@ -26,7 +26,7 @@ public interface PriorityStructure {
 	 * @param group2 The group that might be overtaken
 	 * @return The priority relationship that links group1 with group2
 	 */
-	public abstract PriorityOvertakeState canOvertake(MethodGroup group1, 
+	public abstract boolean canOvertake(MethodGroup group1, 
 			MethodGroup group2);
 	
 	/**
@@ -54,46 +54,6 @@ public interface PriorityStructure {
 				toReturn = "PriorityGraph";
 			}
 			return toReturn;
-		}
-		
-	}
-	
-	/**
-	 * This enum describes the priority relationship that links two groups. It 
-	 * is kind of a boolean value with three states: true, false, and not 
-	 * related. 
-	 * 
-	 * @author jrochas
-	 */
-	public enum PriorityOvertakeState {
-		
-		TRUE, FALSE, UNRELATED;
-		
-		/**
-		 * This method defines kind of a AND operator for values of this enum.
-		 * @param pr1 The first member of the AND operation
-		 * @param pr2 The second member of the AND operation
-		 * @return The enum that is the result of the AND operation
-		 */
-		public static PriorityOvertakeState and(PriorityOvertakeState pr1, PriorityOvertakeState pr2) {
-			PriorityOvertakeState result = UNRELATED;
-			switch (pr1) {
-			case TRUE:
-				if (pr2.equals(FALSE)) {
-					result = FALSE;
-				}
-				else {
-					result = TRUE;
-				}
-				break;
-			case FALSE:
-				result = FALSE;
-				break;
-			case UNRELATED:
-				result = pr2;
-				break;
-			}
-			return result;		
 		}
 		
 	}

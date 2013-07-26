@@ -69,7 +69,7 @@ public class DefaultServingPolicy implements ServingPolicy {
      * 
      * @return compatible requests to serve.
      */
-    public List<Request> runPolicy(CompatibilityTracker compatibility) {
+    public List<Request> runCompatibilityPolicy(CompatibilityTracker compatibility) {
         List<Request> reqs = compatibility.getQueueContents();
         List<Request> ret = new ArrayList<Request>();
 

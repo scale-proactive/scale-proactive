@@ -22,6 +22,11 @@ public class PriorityGraph implements PriorityStructure {
 	 */
 	private Set<PriorityNode> roots;
 
+	private boolean[][] existPathMatrix;
+	private boolean matrixEnabled = true;
+
+	private ArrayList<PriorityNode> nodesList;
+
 	public PriorityGraph() {
 		this.roots = new HashSet<PriorityNode>();
 	}
@@ -50,14 +55,10 @@ public class PriorityGraph implements PriorityStructure {
 					predecessorNode.addSuccessor(groupNode);
 				}
 				else {
-					predecessorNode.addSuccessor(group);
-				}
-				for (PriorityNode node : predecessorNode.successors) {
-					System.out.println("Successor of " + predecessorGroup.name + ": " + node.group.name);
+					predecessorNode.addSuccessor(new PriorityNode(group));
 				}
 				if (this.isRoot(group) && newRoot) {
 					this.removeRoot(group);
-					System.out.println("Root removed for group: " + group.name);
 				}
 			}
 		}
@@ -71,7 +72,7 @@ public class PriorityGraph implements PriorityStructure {
 	private void addRoot(PriorityNode node) {
 		this.roots.add(node);
 	}
-	
+
 	/**
 	 * Removes a root from the graph. Warning: removing the root does not 
 	 * remove the node from the graph if it is referenced by another node 
@@ -188,6 +189,50 @@ public class PriorityGraph implements PriorityStructure {
 	}
 
 	/**
+	 * Search for a particular node in the graph.
+	 * @param group The searched group
+	 * @return The node corresponding to the group in the graph or null if the 
+	 * group does not exist in the graph
+	 */
+	private MethodGroup findGroup(PriorityNode node) {
+		MethodGroup group = null;
+		for (PriorityNode root : this.roots) {
+			group = this.recursiveFindGroup(node, root);
+			if (group != null) {
+				break;
+			}
+		}
+		return group;
+	}
+
+	/**
+	 * Utility method for the findNode method.
+	 * @param group
+	 * @param currentNode
+	 * @return
+	 */
+	private MethodGroup recursiveFindGroup(PriorityNode node, PriorityNode currentNode) {
+		MethodGroup group = null;
+		if (node.equals(currentNode)) {
+			group = currentNode.group;
+		}
+		else {
+			if (!currentNode.hasSuccessors()) {
+				group = null;
+			}
+			else {
+				for (PriorityNode pn : currentNode.successors) {
+					group = recursiveFindGroup(node, pn);
+					if (group != null) {
+						break;
+					}
+				}
+			}
+		}
+		return group;
+	}
+
+	/**
 	 * Search for cycles in the graph.
 	 * @return true if at least one cycle is found in the graph.
 	 */
@@ -259,57 +304,87 @@ public class PriorityGraph implements PriorityStructure {
 		return description;
 	}
 
+	private ArrayList<PriorityNode> listNodes() {
+		ArrayList<PriorityNode> list = new ArrayList<PriorityNode>();
+		for (PriorityNode root : this.roots) {
+			this.recursiveListNodes(list, root);
+		}
+		return list;
+	}
+
+	/**
+	 * Utility method for the containsCycle method.
+	 * @param visitedNodes
+	 * @param currentNode
+	 * @return
+	 */
+	private void recursiveListNodes(ArrayList<PriorityNode> visitedNodes, PriorityNode currentNode) {
+		if (!visitedNodes.contains(currentNode)) {
+			visitedNodes.add(currentNode);
+		}
+		for (PriorityNode pn : currentNode.successors) {
+			recursiveListNodes(visitedNodes, pn);
+		}
+	}
+
+	private boolean existPath(MethodGroup group1,
+			MethodGroup group2) {
+		boolean exist = false;
+		PriorityNode node = null;
+		for (PriorityNode root : this.roots) {
+			node = this.recursiveFindNode(group1, root);
+			if (node != null) {
+				break;
+			}
+		}
+		if (node != null) {
+			for (PriorityNode succ : node.successors) {
+				exist = this.recursiveContains(group2, succ);
+				if (exist) {
+					break;
+				}
+			}
+		}
+		return exist;
+	}
+
+
+
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public PriorityOvertakeState canOvertake(MethodGroup group1,
+	public boolean canOvertake(MethodGroup group1,
 			MethodGroup group2) {
-		PriorityOvertakeState canOvertake = PriorityOvertakeState.UNRELATED;
-		for (PriorityNode root : this.roots) {
-			canOvertake = PriorityOvertakeState.and(canOvertake, this.recursiveCanOvertake(group1, group2, root, false, false));
-		}
-		return canOvertake;
-	}
-
-	/**
-	 * Utility method for the canOvertake method.
-	 * @param group1
-	 * @param group2
-	 * @param currentNode
-	 * @param g1Found
-	 * @param g2Found
-	 * @return
-	 */
-	private PriorityOvertakeState recursiveCanOvertake(MethodGroup group1,
-			MethodGroup group2, PriorityNode currentNode, boolean g1Found, boolean g2Found) {
-
-		PriorityOvertakeState canOvertake = PriorityOvertakeState.UNRELATED;		
-		if (!group1.equals(group2)) {
-
-			if (group1.equals(currentNode.group)) {
-
-				if (g2Found) {
-					canOvertake = PriorityOvertakeState.FALSE;
+		/*if (this.matrixEnabled) {
+			if (this.nodesList == null) {
+				this.nodesList = this.listNodes();
+			}
+			if (this.existPathMatrix == null) {
+				this.existPathMatrix = new boolean[this.nodesList.size()][this.nodesList.size()];
+				for (int i = 0 ; i < this.nodesList.size(); i++) {
+					MethodGroup iGroup = this.findGroup(this.nodesList.get(i));
+					for (int j = 0 ; j < this.nodesList.size(); j++) {
+						MethodGroup jGroup = this.findGroup(this.nodesList.get(j));
+						if (iGroup != jGroup) {
+							boolean existPath = this.existPath(iGroup, jGroup);
+							if (existPath) {
+								existPathMatrix[i][j] = true;
+							}
+							else {
+								existPathMatrix[i][j] = false;
+							}
+						}
+					}
 				}
-				g1Found = true;
 			}
-
-			if (group2.equals(currentNode.group)) {
-
-				if (g1Found) {
-					canOvertake = PriorityOvertakeState.TRUE;
-				}
-				g2Found = true;
-			}
-
-			for (PriorityNode pn : currentNode.successors) {
-				canOvertake = PriorityOvertakeState.and(canOvertake, 
-						recursiveCanOvertake(group1, group2, pn, g1Found, 
-								g2Found));
-			}
+			int group1Index = this.nodesList.indexOf(this.findNode(group1));
+			int group2Index = this.nodesList.indexOf(this.findNode(group2));
+			return this.existPathMatrix[group1Index][group2Index];
 		}
-		return canOvertake;
+		else {*/
+		return this.existPath(group1, group2);
+		//}
 	}
 
 	/**
@@ -339,16 +414,6 @@ public class PriorityGraph implements PriorityStructure {
 		 */
 		public void addSuccessor(PriorityNode groupNode) {
 			this.successors.add(groupNode);
-		}
-
-		/**
-		 * Create a new PriorityNode from a MethodGroup and then add it to the 
-		 * successors of the considered node. The successor node has then a 
-		 * lower priority than the considered node.
-		 * @param group The group to add as a successor
-		 */
-		public void addSuccessor(MethodGroup group) {
-			this.successors.add(new PriorityNode(group));
 		}
 
 		/**
@@ -393,52 +458,52 @@ public class PriorityGraph implements PriorityStructure {
 		graph.insert(g1, null);
 		System.out.println("- " + g1.name + " inserted");
 		System.out.println("- Contains cycle? " +
-						"" + graph.containsCycle());
+				"" + graph.containsCycle());
 		System.out.println("- Graph:\n" + graph);
 
 		graph.insert(g2, g1);
 		System.out.println("- " + g2.name + " inserted");
 		System.out.println("- Contains cycle? " +
-						"" + graph.containsCycle());
+				"" + graph.containsCycle());
 		System.out.println("- Graph:\n" + graph);
 
 		graph.insert(g3, g2);
 		System.out.println("- " + g3.name + " inserted");
 		System.out.println("Contains cycle? " +
-						"" + graph.containsCycle());
+				"" + graph.containsCycle());
 		System.out.println("- Graph:\n" + graph);
 
 		graph.insert(g4, g3);
 		System.out.println(" " + g4.name + " inserted");
 		System.out.println("- Contains cycle? " +
-						"" + graph.containsCycle());
+				"" + graph.containsCycle());
 		System.out.println("- Graph:\n" + graph);
 
 		graph.insert(g2, null);
 		System.out.println("- " + g2.name + "  inserted");
 		System.out.println("- Contains cycle? " +
-						"" + graph.containsCycle());
+				"" + graph.containsCycle());
 		System.out.println("- Graph:\n" + graph);
 
 		graph.insert(g5, g2);
 		System.out.println("- " + g5.name + " inserted");
 		System.out.println("Contains cycle? " +
-						"" + graph.containsCycle());
+				"" + graph.containsCycle());
 		System.out.println("- Graph:\n" + graph);
 
 		graph.insert(g4, g5);
 		System.out.println("- " + g4.name + " inserted");
 		System.out.println("- Contains cycle? " +
-						"" + graph.containsCycle());
+				"" + graph.containsCycle());
 		System.out.println("- Graph:\n" + graph);
-		
+
 		// Creation of predecessor test
 		graph.insert(g1, g0);
 		System.out.println("- " + g1.name + " inserted");
 		System.out.println("- Contains cycle? " +
-						"" + graph.containsCycle());
+				"" + graph.containsCycle());
 		System.out.println("- Graph:\n" + graph);
-		
+
 		// This should introduce a cycle in the graph
 		//graph.insert(g1, g4);
 		//System.out.println("m4 inserted");
@@ -457,6 +522,12 @@ public class PriorityGraph implements PriorityStructure {
 				"" + graph.canOvertake(g1, g2));
 		System.out.println("- Can g3 overtake m5 (not related)? " +
 				"" + graph.canOvertake(g3, g5));
+
+		// Checking node listing functionality
+		ArrayList<PriorityNode> list = graph.listNodes();
+		for (PriorityNode node : list) {
+			System.out.println(node.group.name);
+		}
 	}
 
 }

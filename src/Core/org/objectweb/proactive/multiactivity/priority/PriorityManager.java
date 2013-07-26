@@ -94,7 +94,12 @@ public class PriorityManager {
 	 */
 	public void register(RunnableRequest request) {
 		MethodGroup group = this.compatibility.getGroupOf(request.getRequest());
+		long before = System.nanoTime();
 		this.priorityQueue.insert(request, group);
+		long after = System.nanoTime();
+		PriorityUtils.logMessage("Request: " + request.getRequest().
+				getMethodName() + " - Insertion time with priority: " 
+				+ (after - before));
 	}
 
 	/**

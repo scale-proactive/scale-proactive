@@ -62,9 +62,9 @@ public class PriorityRanking implements PriorityStructure {
 	 * Cannot return unrelated because there exist an order inevitably
 	 */
 	@Override
-	public PriorityOvertakeState canOvertake(MethodGroup group1,
+	public boolean canOvertake(MethodGroup group1,
 			MethodGroup group2) {
-		PriorityOvertakeState pr = PriorityOvertakeState.UNRELATED;
+		boolean overtake = false;
 		PriorityRank rank1 = null;
 		PriorityRank rank2 = null;
 		for (PriorityRank rank : this.priorityRanks) {
@@ -77,16 +77,10 @@ public class PriorityRanking implements PriorityStructure {
 		}
 		if (rank1 != null && rank2 != null) {
 			if (rank1.rankNumber > rank2.rankNumber) {
-				pr = PriorityOvertakeState.TRUE;
-			}
-			if (rank1.rankNumber == rank2.rankNumber) {
-				pr = PriorityOvertakeState.UNRELATED;
-			}
-			if (rank1.rankNumber < rank2.rankNumber) {
-				pr = PriorityOvertakeState.FALSE;
+				overtake = true;
 			}
 		}
-		return pr;
+		return overtake;
 	}
 
 	/**

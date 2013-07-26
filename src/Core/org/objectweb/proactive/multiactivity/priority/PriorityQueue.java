@@ -6,7 +6,6 @@ import java.util.List;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
-import org.objectweb.proactive.multiactivity.priority.PriorityStructure.PriorityOvertakeState;
 
 /**
  * This class represents the structure that is used to reorder the requests 
@@ -45,14 +44,10 @@ public class PriorityQueue {
 			boolean isOvertakable = false;
 			// Search for the first request that has a lower priority
 			while (!isOvertakable && currentElement != null) {
-				PriorityOvertakeState overtakable = 
+				isOvertakable = 
 						this.priorityStructure.canOvertake(
 								group, currentElement.belongingGroup);
-				if (overtakable.equals(PriorityOvertakeState.TRUE)) {
-					// An overtakable element has been found, stop searching
-					isOvertakable = true;
-				}
-				else {
+				if (!isOvertakable) {
 					previousElement = currentElement;
 					currentElement = currentElement.next;
 				}
@@ -90,7 +85,6 @@ public class PriorityQueue {
 			size++;
 			element = element.next;
 		}
-		System.out.println("nbRequests registered: " + size);
 		return size;
 	}
 
@@ -156,6 +150,29 @@ public class PriorityQueue {
 
 	/**
 	 * {@inheritDoc}
+	 */
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		PriorityElement element = this.first;
+
+		sb.append("\n\nPriority queue - from high priority...\n");
+		while (element != null) {
+			sb.append("\t" + element.request.getRequest().getMethodName() + "(");
+			for (int i = 0 ; i < element.request.getRequest().getMethodCall().getNumberOfParameter() ; i++) {
+				sb.append(element.request.getRequest().getParameter(i));
+			}
+			sb.append(")\n");
+			element = element.next;
+		}
+		sb.append("Priority queue - to low priority\n");
+		return sb.toString();
+	}
+	
+	/**
+	 * @param compatibility
+	 * @param threadManager
+	 * @return A string with queue content and thread utilization.
 	 */
 	public String toString(CompatibilityManager compatibility, ThreadManager threadManager) {
 		StringBuilder sb = new StringBuilder();

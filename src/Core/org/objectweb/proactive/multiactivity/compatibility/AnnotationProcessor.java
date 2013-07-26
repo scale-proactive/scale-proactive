@@ -253,19 +253,15 @@ public class AnnotationProcessor {
 			for (PriorityOrder priorityOrder : ((DefineGraphBasedPriorities) priorityGraphDefAnn).value()) {
 				for (Set priority : priorityOrder.value()) {
 					for (String groupName : priority.groupNames()) {
-						System.out.println("Annotation processor - inserting " + groupName);
 						// Get the group object associated with the group name
 						MethodGroup group = this.groups.get(groupName);
 						if (group != null) {
-							System.out.println("AnnotationProcessor - group found " + group.name);
 							if (predecessors.isEmpty()) {
 								priorityGraph.insert(group, null);
 							}
 							else {
 								for(MethodGroup predecessor : predecessors) {
-									System.out.println("AnnotationProcessor - inserting..." );
 									priorityGraph.insert(group, predecessor);
-									System.out.println("AnnotationProcessor - insertion finished");
 								}
 							}
 						}

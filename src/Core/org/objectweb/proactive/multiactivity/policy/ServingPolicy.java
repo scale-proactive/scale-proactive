@@ -68,6 +68,6 @@ public interface ServingPolicy {
      * 
      * @return a sublist of the requests that can be executed in parallel.
      */
-    public List<Request> runPolicy(CompatibilityTracker compatibility);
+    public List<Request> runCompatibilityPolicy(CompatibilityTracker compatibility);
 
 }

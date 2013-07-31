@@ -135,7 +135,7 @@ public class ComponentServingPolicy extends ServingPolicy {
                     }
                 } else {
                     // F request
-                    i = this.delegate.runPolicyOnRequest(i, compatibility, ret);
+                    i = this.runPolicyOnRequest(i, compatibility, ret);
                 }
             }
         }
@@ -143,6 +143,17 @@ public class ComponentServingPolicy extends ServingPolicy {
         return ret;
     }
 
+    /**
+     * {@inheritDoc}
+     */ 
+    @Override
+    public int runPolicyOnRequest(int requestIndexInRequestQueue,
+                                  StatefulCompatibilityMap compatibility,
+                                  List<Request> runnableRequests) {
+        return this.delegate.runPolicyOnRequest(
+                requestIndexInRequestQueue, compatibility, runnableRequests);
+    }
+    
     protected void addRequestToRunnableRequests(List<Request> queue, int requestIndex,
             StatefulCompatibilityMap compatibility, List<Request> runnableRequests) {
         runnableRequests.add(queue.get(requestIndex));

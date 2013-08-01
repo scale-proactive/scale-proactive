@@ -51,7 +51,6 @@ import org.objectweb.fractal.api.NoSuchInterfaceException;
 import org.objectweb.fractal.api.Type;
 import org.objectweb.fractal.api.control.IllegalBindingException;
 import org.objectweb.fractal.api.control.NameController;
-import org.objectweb.fractal.api.factory.InstantiationException;
 import org.objectweb.fractal.api.type.ComponentType;
 import org.objectweb.fractal.api.type.InterfaceType;
 import org.objectweb.proactive.Body;
@@ -73,13 +72,12 @@ import org.objectweb.proactive.core.component.control.PABindingControllerImpl;
 import org.objectweb.proactive.core.component.control.PAContentControllerImpl;
 import org.objectweb.proactive.core.component.control.PAController;
 import org.objectweb.proactive.core.component.control.PAGCMLifeCycleControllerImpl;
+import org.objectweb.proactive.core.component.control.PAInterceptorControllerImpl;
 import org.objectweb.proactive.core.component.control.PAMembraneControllerImpl;
 import org.objectweb.proactive.core.component.control.PANameControllerImpl;
 import org.objectweb.proactive.core.component.exceptions.InterfaceGenerationFailedException;
 import org.objectweb.proactive.core.component.gen.MetaObjectInterfaceClassGenerator;
 import org.objectweb.proactive.core.component.group.PAComponentGroup;
-import org.objectweb.proactive.core.component.interception.InputInterceptor;
-import org.objectweb.proactive.core.component.interception.OutputInterceptor;
 import org.objectweb.proactive.core.component.representative.PAComponentRepresentativeFactory;
 import org.objectweb.proactive.core.component.type.PAComponentType;
 import org.objectweb.proactive.core.component.type.PAGCMInterfaceType;
@@ -110,10 +108,6 @@ public class PAComponentImpl implements PAComponent, Serializable {
     private Map<String, Interface> collectionNfItfsMembers = new HashMap<String, Interface>();
     private Body body;
 
-    // need Vector-specific operations for inserting elements
-    private Vector<Interface> inputInterceptors = new Vector<Interface>();
-    private Vector<Interface> outputInterceptors = new Vector<Interface>();
-
     public PAComponentImpl() {
     }
 
@@ -125,7 +119,6 @@ public class PAComponentImpl implements PAComponent, Serializable {
      *            a reference on the body (required notably to get a reference
      *            on the request queue, used to control the life cycle of the
      *            component)
-     * @throws InstantiationException
      */
     public PAComponentImpl(ComponentParameters componentParameters, Body myBody) {
         this.body = myBody;
@@ -237,7 +230,7 @@ public class PAComponentImpl implements PAComponent, Serializable {
 
             } catch (Exception e) {
                 throw new ProActiveRuntimeException("Could not create NF interface '" + itfName +
-                    "' while instantiating component'" + this.componentParameters.getName() +
+                    "' while instantiating component '" + this.componentParameters.getName() +
                     "'. Check the declared NF type.\n" + e.getMessage(), e);
             }
         }
@@ -247,8 +240,6 @@ public class PAComponentImpl implements PAComponent, Serializable {
 
         // read the Controller Configuration File
         Map<String, String> controllerEntries = null;
-        List<String> inputInterceptorsSignatures = null;
-        List<String> outputInterceptorsSignatures = null;
         if (this.componentParameters.getControllerDescription().configFileIsSpecified()) {
             // Parse controller config file
             String controllersConfigFileLocation = this.componentParameters.getControllerDescription()
@@ -258,10 +249,6 @@ public class PAComponentImpl implements PAComponent, Serializable {
             ComponentConfigurationHandler componentConfiguration = PAComponentImpl
                     .loadControllerConfiguration(controllersConfigFileLocation);
             controllerEntries = componentConfiguration.getControllers();
-            inputInterceptorsSignatures = componentConfiguration.getInputInterceptors();
-            this.inputInterceptors.setSize(inputInterceptorsSignatures.size());
-            outputInterceptorsSignatures = componentConfiguration.getOutputInterceptors();
-            this.outputInterceptors.setSize(outputInterceptorsSignatures.size());
 
             // Create controller objects from the Controller Configuration File
             for (Map.Entry<String, String> controllerEntry : controllerEntries.entrySet()) {
@@ -305,29 +292,6 @@ public class PAComponentImpl implements PAComponent, Serializable {
                     itfRef = MetaObjectInterfaceClassGenerator.instance().generateInterface(controllerName,
                             this, controllerItfType, controllerItfType.isInternal(), false);
                     itfRef.setFcItfImpl(controller);
-
-                    // Add interceptors
-                    if (InputInterceptor.class.isAssignableFrom(controllerClass)) {
-                        // Keep the sequence order of the interceptors
-                        this.inputInterceptors.setElementAt(itfRef, inputInterceptorsSignatures
-                                .indexOf(controllerClass.getName()));
-                    } else if (inputInterceptorsSignatures.contains(controllerClass.getName())) {
-                        logger
-                                .error(controllerClass.getName() +
-                                    " was specified as input interceptor in the configuration file, but it is not an input interceptor since it does not implement the " +
-                                    InputInterceptor.class.getName() + " interface");
-                    }
-
-                    if (OutputInterceptor.class.isAssignableFrom(controllerClass)) {
-                        this.outputInterceptors.setElementAt(itfRef, outputInterceptorsSignatures
-                                .indexOf(controllerClass.getName()));
-                    } else if (outputInterceptorsSignatures.contains(controllerClass.getName())) {
-                        logger
-                                .error(controllerClass.getName() +
-                                    " was specified as output interceptor in the configuration file, but it is not an output interceptor since it does not implement the " +
-                                    OutputInterceptor.class.getName() + " interface");
-                    }
-
                 } catch (Exception e) {
                     throw new ProActiveRuntimeException("Could not create controller '" +
                         controllerClassName +
@@ -363,13 +327,18 @@ public class PAComponentImpl implements PAComponent, Serializable {
             InterfaceType[] f = this.componentParameters.getComponentType().getFcInterfaceTypes();
             InterfaceType[] nf = nfType.toArray(new InterfaceType[] {});
             for (InterfaceType i : nf) {
+                if (!i.getFcItfName().endsWith("-controller")) {
+                    throw new RuntimeException("Could not create NF interface '" + i.getFcItfName() +
+                        "' because the interface name does not end by \"-controller\"");
+                }
                 loggerADL.debug("[PAComponentImpl] Interface: " + i.getFcItfName());
             }
             // Re-Set the real ComponentType
             this.componentParameters.setComponentType(tf.createFcType(f, nf));
         } catch (Exception e) {
             logger.error("NF type could not be set");
-            e.printStackTrace();
+            throw new ProActiveRuntimeException("Could not create NF type while instantiating component '" +
+                this.componentParameters.getName() + " : " + e.getMessage(), e);
         }
 
     }
@@ -444,7 +413,7 @@ public class PAComponentImpl implements PAComponent, Serializable {
                 // ASSERTIONS: controller implements PABindingController, and controllerName is "binding-controller"
             }
 
-            // MEMBRANE Controller
+            // Membrane Controller
             // Must be created if the interface has been defined (generated) and has not been assigned an implementation yet
             // (i.e. no implementation has been defined in the configuration file)
             if (existsNfInterface(Constants.MEMBRANE_CONTROLLER)) {
@@ -460,6 +429,24 @@ public class PAComponentImpl implements PAComponent, Serializable {
 
                 }
                 // ASSERTIONS: controller implements PAMembraneController, and controllerName is "membrane-controller"
+            }
+
+            // Interceptor Controller
+            // Must be created if the interface has been defined (generated) and has not been assigned an implementation yet
+            // (i.e. no implementation has been defined in the configuration file)
+            if (existsNfInterface(Constants.INTERCEPTOR_CONTROLLER)) {
+                PAInterface interceptorItfRef = (PAInterface) this.nfServerItfs
+                        .get(Constants.INTERCEPTOR_CONTROLLER);
+                if (interceptorItfRef.getFcItfImpl() == null) {
+                    // default implementation of PAInterceptorController 
+                    controllerClass = PAInterceptorControllerImpl.class;
+                    itfRef = createObjectController(controllerClass);
+                    // replace the current entry for "interceptor-controller" (null implementation) by the recently created one
+                    this.nfServerItfs.put(itfRef.getFcItfName(), itfRef);
+                    // don't re-add it to the InterfaceType vector again, because it already exists
+
+                }
+                // ASSERTIONS: controller implements PAInterceptorController, and controllerName is "interceptor-controller"
             }
 
         } catch (Exception e) {
@@ -1002,14 +989,6 @@ public class PAComponentImpl implements PAComponent, Serializable {
         String string = "name : " + getFcItfName() + "\n" + getFcItfType() + "\n" + "isInternal : " +
             isFcInternalItf() + "\n";
         return string;
-    }
-
-    public List<Interface> getInputInterceptors() {
-        return this.inputInterceptors;
-    }
-
-    public List<Interface> getOutputInterceptors() {
-        return this.outputInterceptors;
     }
 
     public void migrateControllersDependentActiveObjectsTo(Node node) throws MigrationException {

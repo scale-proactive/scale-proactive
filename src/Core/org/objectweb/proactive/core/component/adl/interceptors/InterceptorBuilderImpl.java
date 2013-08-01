@@ -34,17 +34,41 @@
  * ################################################################
  * $$PROACTIVE_INITIAL_DEV$$
  */
-package functionalTests.component.interceptor;
+package org.objectweb.proactive.core.component.adl.interceptors;
 
-import org.objectweb.proactive.core.component.interception.InputInterceptor;
+import org.objectweb.fractal.api.Component;
+import org.objectweb.fractal.api.NoSuchInterfaceException;
+import org.objectweb.proactive.core.component.Utils;
+import org.objectweb.proactive.core.component.interception.Interceptor;
 
-import functionalTests.component.controller.DummyController;
 
+/**
+ * ProActive based implementation of the {@link InterceptorBuilder} interface.
+ * <br>
+ * Uses the API to add {@link Interceptor interceptors} to functional interfaces.
+ * 
+ * @author The ProActive Team
+ */
+public class InterceptorBuilderImpl implements InterceptorBuilder {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void addInterceptor(Object component, String interfaceName, String interceptorID) throws Exception {
+        try {
+            // The membrane controller must be started to use the interceptor controller
+            Utils.getPAMembraneController((Component) component).startMembrane();
+        } catch (NoSuchInterfaceException nsie) {
+            // No membrane controller, ignore this exception
+        }
 
-public interface InputInterceptor1 extends DummyController, InputInterceptor {
-    public static final String INPUT_INTERCEPTOR1_NAME = "input-interceptor-1";
-    public static final String AFTER_INTERCEPTION = " - after-interception-" + INPUT_INTERCEPTOR1_NAME +
-        " - ";
-    public static final String BEFORE_INTERCEPTION = " - before-interception-" + INPUT_INTERCEPTOR1_NAME +
-        " - ";
+        Utils.getPAInterceptorController((Component) component).addInterceptorOnInterface(interfaceName,
+                interceptorID);
+
+        try {
+            Utils.getPAMembraneController((Component) component).stopMembrane();
+        } catch (NoSuchInterfaceException nsie) {
+            // No membrane controller, ignore this exception
+        }
+    }
 }

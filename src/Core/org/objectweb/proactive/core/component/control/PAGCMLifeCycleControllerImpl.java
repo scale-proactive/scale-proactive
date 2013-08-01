@@ -39,7 +39,6 @@ package org.objectweb.proactive.core.component.control;
 import java.io.Serializable;
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.etsi.uri.gcm.api.control.GCMLifeCycleController;
 import org.etsi.uri.gcm.api.type.GCMInterfaceType;
 import org.etsi.uri.gcm.api.type.GCMTypeFactory;
@@ -62,25 +61,30 @@ import org.objectweb.proactive.core.component.PAInterface;
 import org.objectweb.proactive.core.component.Utils;
 import org.objectweb.proactive.core.component.identity.PAComponent;
 import org.objectweb.proactive.core.component.type.PAGCMTypeFactoryImpl;
-import org.objectweb.proactive.core.util.log.Loggers;
-import org.objectweb.proactive.core.util.log.ProActiveLogger;
 
 
 /**
- * Implementation of the {@link PAGCMLifeCycleController} interface.<br>
+ * Implementation of the {@link PAGCMLifeCycleController life cycle controller}.
  *
  * @author The ProActive Team
  * @see PAGCMLifeCycleController
  */
 public class PAGCMLifeCycleControllerImpl extends AbstractPAController implements PAGCMLifeCycleController,
         Serializable, ControllerStateDuplication {
-    static final Logger logger = ProActiveLogger.getLogger(Loggers.COMPONENTS_CONTROLLERS);
     protected String fcState = LifeCycleController.STOPPED;
 
+    /**
+     * Creates a {@link PAGCMLifeCycleControllerImpl}.
+     * 
+     * @param owner Component owning the controller.
+     */
     public PAGCMLifeCycleControllerImpl(Component owner) {
         super(owner);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void setControllerItfType() {
         try {
@@ -92,16 +96,20 @@ public class PAGCMLifeCycleControllerImpl extends AbstractPAController implement
         }
     }
 
-    /*
-     * @see org.objectweb.fractal.api.control.LifeCycleController#getFcState()
+    /**
+     * {@inheritDoc}
      */
+    @Override
     public String getFcState() {
         return fcState;
     }
 
     /**
-     * @see org.objectweb.fractal.api.control.LifeCycleController#startFc() recursive if composite (
-     *      recursivity is allowed here as we do not implement sharing )
+     * {@inheritDoc}
+     */
+    @Override
+    /*
+     * Recursive if composite (recursivity is allowed here as we do not implement sharing )
      */
     public void startFc() throws IllegalLifeCycleException {
         try {
@@ -217,7 +225,7 @@ public class PAGCMLifeCycleControllerImpl extends AbstractPAController implement
                                                         subComponents[j]).lookupFc(subComponentItfs[k]);
                                             } catch (NoSuchInterfaceException nsie) {
                                                 // should never happen
-                                                logger.error("Interface " + subComponentItfs[k] +
+                                                controllerLogger.error("Interface " + subComponentItfs[k] +
                                                     " in component " + subComponents[j] + " does not exist",
                                                         nsie);
                                             }
@@ -280,19 +288,20 @@ public class PAGCMLifeCycleControllerImpl extends AbstractPAController implement
 
             //getRequestQueue().start();
             fcState = LifeCycleController.STARTED;
-            if (logger.isDebugEnabled()) {
-                logger.debug("started " + GCM.getNameController(owner).getFcName());
+            if (controllerLogger.isDebugEnabled()) {
+                controllerLogger.debug("started " + GCM.getNameController(owner).getFcName());
             }
         } catch (ClassNotFoundException cnfe) {
-            logger.error("class not found : " + cnfe.getMessage(), cnfe);
+            controllerLogger.error("class not found : " + cnfe.getMessage(), cnfe);
         } catch (NoSuchInterfaceException nsie) {
-            logger.error("interface not found : " + nsie.getMessage(), nsie);
+            controllerLogger.error("interface not found : " + nsie.getMessage(), nsie);
         }
     }
 
-    /*
-     * @see org.objectweb.fractal.api.control.LifeCycleController#stopFc() recursive if composite
+    /**
+     * {@inheritDoc}
      */
+    @Override
     public void stopFc() {
         try {
             String hierarchical_type = owner.getComponentParameters().getHierarchicalType();
@@ -322,16 +331,20 @@ public class PAGCMLifeCycleControllerImpl extends AbstractPAController implement
 
             //getRequestQueue().stop();
             fcState = LifeCycleController.STOPPED;
-            if (logger.isDebugEnabled()) {
-                logger.debug("stopped" + GCM.getNameController(owner).getFcName());
+            if (controllerLogger.isDebugEnabled()) {
+                controllerLogger.debug("stopped" + GCM.getNameController(owner).getFcName());
             }
         } catch (NoSuchInterfaceException nsie) {
-            logger.error("interface not found : " + nsie.getMessage());
+            controllerLogger.error("interface not found : " + nsie.getMessage());
         } catch (IllegalLifeCycleException ilce) {
-            logger.error("illegal life cycle operation : " + ilce.getMessage());
+            controllerLogger.error("illegal life cycle operation : " + ilce.getMessage());
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void terminateGCMComponent() throws IllegalLifeCycleException {
         if (fcState.equals(LifeCycleController.STOPPED)) {
             String hierarchical_type = owner.getComponentParameters().getHierarchicalType();
@@ -348,6 +361,10 @@ public class PAGCMLifeCycleControllerImpl extends AbstractPAController implement
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void terminateGCMComponent(boolean immediate) throws IllegalLifeCycleException {
         if (fcState.equals(LifeCycleController.STOPPED)) {
             String hierarchical_type = owner.getComponentParameters().getHierarchicalType();
@@ -365,28 +382,10 @@ public class PAGCMLifeCycleControllerImpl extends AbstractPAController implement
         }
     }
 
-    /*
-     * @see org.objectweb.proactive.core.component.control.PAGCMLifeCycleController#getFcState
-     * (short)
-     */
-    public String getFcState(short priority) {
-        return getFcState();
-    }
-
     /**
-     * @see org.objectweb.proactive.core.component.control.PAGCMLifeCycleController#startFc(short)
+     * {@inheritDoc}
      */
-    public void startFc(short priority) throws IllegalLifeCycleException {
-        startFc();
-    }
-
-    /*
-     * @see org.objectweb.proactive.core.component.control.PAGCMLifeCycleController#stopFc(short)
-     */
-    public void stopFc(short priority) {
-        stopFc();
-    }
-
+    @Override
     public void duplicateController(Object c) {
         if (c instanceof String) {
             fcState = (String) c;
@@ -398,6 +397,10 @@ public class PAGCMLifeCycleControllerImpl extends AbstractPAController implement
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public ControllerState getState() {
         return new ControllerState(fcState);
     }

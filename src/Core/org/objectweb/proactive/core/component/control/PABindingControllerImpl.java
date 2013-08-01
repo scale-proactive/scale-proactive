@@ -70,7 +70,6 @@ import org.objectweb.proactive.core.component.gen.GatherItfAdapterProxy;
 import org.objectweb.proactive.core.component.gen.OutputInterceptorClassGenerator;
 import org.objectweb.proactive.core.component.gen.WSProxyClassGenerator;
 import org.objectweb.proactive.core.component.identity.PAComponent;
-import org.objectweb.proactive.core.component.identity.PAComponentImpl;
 import org.objectweb.proactive.core.component.representative.ItfID;
 import org.objectweb.proactive.core.component.type.PAComponentType;
 import org.objectweb.proactive.core.component.type.PAGCMInterfaceType;
@@ -81,8 +80,7 @@ import org.objectweb.proactive.core.component.webservices.WSInfo;
 
 
 /**
- * Implementation of the
- * {@link org.objectweb.fractal.api.control.BindingController BindingController} interface.
+ * Implementation of the {@link BindingController binding controller}.
  *
  * @author The ProActive Team
  */
@@ -90,14 +88,19 @@ public class PABindingControllerImpl extends AbstractPAController implements PAB
         Serializable, ControllerStateDuplication {
     protected Bindings bindings; // key = clientInterfaceName ; value = Binding
 
-    //    private Map<String, Map<PAComponent, List<String>>> bindingsOnServerItfs = new HashMap<String, Map<ProActiveComponent,List<String>>>(0);
-
-    // Map(serverItfName, Map(owner, clientItfName))
+    /**
+     * Creates a {@link PABindingControllerImpl}.
+     * 
+     * @param owner Component owning the controller.
+     */
     public PABindingControllerImpl(Component owner) {
         super(owner);
         bindings = new Bindings();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void setControllerItfType() {
         try {
@@ -249,10 +252,9 @@ public class PABindingControllerImpl extends AbstractPAController implements PAB
     }
 
     /**
-     * see
-     *
-     * @link org.objectweb.fractal.api.control.BindingController#lookupFc(String)
+     * {@inheritDoc}
      */
+    @Override
     public Object lookupFc(String clientItfName) throws NoSuchInterfaceException {
         Object itf = null;
         if (isPrimitive()) {
@@ -269,9 +271,9 @@ public class PABindingControllerImpl extends AbstractPAController implements PAB
     }
 
     /**
-     * implementation of the interface BindingController see
-     * {@link BindingController#bindFc(java.lang.String, java.lang.Object)}
+     * {@inheritDoc}
      */
+    @Override
     public void bindFc(String clientItfName, Object serverItf) throws NoSuchInterfaceException,
             IllegalBindingException, IllegalLifeCycleException {
         // get value of (eventual) future before casting
@@ -337,9 +339,9 @@ public class PABindingControllerImpl extends AbstractPAController implements PAB
         }
 
         // checks binding from internal client interface of composite component to server interface of subcomponent
-        if (isComposite() && !Utils.isGCMClientItf(clientItfName, getFcItfOwner())) {
+        if (isComposite() && !Utils.isGCMClientItf(clientItfName, owner)) {
             Component sComponent = sItf.getFcItfOwner();
-            Component[] subComponents = GCM.getContentController(getFcItfOwner()).getFcSubComponents();
+            Component[] subComponents = GCM.getContentController(owner).getFcSubComponents();
             boolean isSubComponent = false;
             for (Component subComponent : subComponents) {
                 if (subComponent.equals(sComponent)) {
@@ -357,16 +359,17 @@ public class PABindingControllerImpl extends AbstractPAController implements PAB
             }
         }
 
-        // if output interceptors are defined
-        // TODO check with groups : interception is here done at the beginning
-        // of the group invocation,
-        // not for each element of the group
-        List<Interface> outputInterceptors = ((PAComponentImpl) getFcItfOwner()).getOutputInterceptors();
+        // If output interceptors may be defined (ie the component has an interceptor controller)
+        // TODO check with groups : interception is here done at the beginning of the group invocation,
+        // not for each element of the group.
+        try {
+            PAInterceptorControllerImpl interceptorController = (PAInterceptorControllerImpl) ((PAInterface) Utils
+                    .getPAInterceptorController(owner)).getFcItfImpl();
 
-        if (!outputInterceptors.isEmpty()) {
             try {
                 // replace server itf with an interface of the same type+same proxy, but with interception code
-                sItf = OutputInterceptorClassGenerator.instance().generateInterface(sItf, outputInterceptors);
+                sItf = OutputInterceptorClassGenerator.instance().generateInterface(sItf,
+                        interceptorController, clientItfName);
             } catch (InterfaceGenerationFailedException e) {
                 controllerLogger.error("could not generate output interceptor for client interface " +
                     clientItfName + " : " + e.getMessage());
@@ -377,6 +380,8 @@ public class PABindingControllerImpl extends AbstractPAController implements PAB
                 ibe.initCause(e);
                 throw ibe;
             }
+        } catch (NoSuchInterfaceException nsie) {
+            // No PAInterceptorController, nothing to do
         }
 
         // Multicast bindings are handled here
@@ -527,9 +532,11 @@ public class PABindingControllerImpl extends AbstractPAController implements PAB
         addBinding(new Binding(clientItf, clientItfName, serverItf));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     /*
-     * @see org.objectweb.fractal.api.control.BindingController#unbindFc(String)
-     *
      * CAREFUL : unbinding action on collective interfaces will remove all the bindings to this
      * interface.
      */
@@ -569,12 +576,9 @@ public class PABindingControllerImpl extends AbstractPAController implements PAB
     }
 
     /**
-     * @see org.objectweb.fractal.api.control.BindingController#listFc() In case
-     *      of a client collection interface, only the interfaces generated at
-     *      runtime and members of the collection are returned (a reference on
-     *      the collection interface itself is not returned, because it is just
-     *      a typing artifact and does not exist at runtime).
+     * {@inheritDoc}
      */
+    @Override
     @SuppressWarnings("unchecked")
     public String[] listFc() {
         if (isPrimitive()) {
@@ -651,6 +655,10 @@ public class PABindingControllerImpl extends AbstractPAController implements PAB
         throw new NoSuchInterfaceException(clientItfName);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Boolean isBound() {
         String[] client_itf_names = listFc();
 
@@ -672,6 +680,10 @@ public class PABindingControllerImpl extends AbstractPAController implements PAB
         return bindings;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void duplicateController(Object c) {
         if (c instanceof Bindings) {
             bindings = (Bindings) c;
@@ -682,6 +694,10 @@ public class PABindingControllerImpl extends AbstractPAController implements PAB
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public ControllerState getState() {
         return new ControllerState(bindings);
     }
@@ -696,6 +712,10 @@ public class PABindingControllerImpl extends AbstractPAController implements PAB
         return newListItfs.toArray(new Interface[] {});
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Boolean isBoundTo(Component component) {
         Object[] serverItfsComponent = filterServerItfs(component.getFcInterfaces());
         Object[] itfs = getFcItfOwner().getFcInterfaces();

@@ -46,13 +46,12 @@ import org.objectweb.proactive.core.component.exceptions.NoSuchComponentExceptio
 
 
 /**
- * This interface for the membrane controller.
+ * Controller for the membrane of the component.
  *
  * @author The ProActive Team
  */
 @PublicAPI
 public interface PAMembraneController {
-
     public final static String MEMBRANE_STOPPED = "MEMBRANE_STOPPED";
     public final static String MEMBRANE_STARTED = "MEMBRANE_STARTED";
 

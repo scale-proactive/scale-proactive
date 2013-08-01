@@ -34,17 +34,33 @@
  * ################################################################
  * $$PROACTIVE_INITIAL_DEV$$
  */
-package functionalTests.component.interceptor;
+package org.objectweb.proactive.core.component.exceptions;
 
-import org.objectweb.proactive.core.component.interception.OutputInterceptor;
+import org.objectweb.proactive.annotation.PublicAPI;
+import org.objectweb.proactive.core.component.interception.Interceptor;
 
-import functionalTests.component.controller.DummyController;
 
+/**
+ * Exception thrown when an error occurs while adding/removing an {@link Interceptor interceptor}
+ * to/from an interface.
+ *
+ * @author The ProActive Team
+ */
+@PublicAPI
+public class IllegalInterceptorException extends Exception {
+    public IllegalInterceptorException() {
+        super();
+    }
 
-public interface OutputInterceptor1 extends OutputInterceptor, DummyController {
-    public static final String OUTPUT_INTERCEPTOR_1_NAME = "output-interceptor-1";
-    public static final String AFTER_INTERCEPTION = " - after-interception-" + OUTPUT_INTERCEPTOR_1_NAME +
-        " - ";
-    public static final String BEFORE_INTERCEPTION = " - before-interception-" + OUTPUT_INTERCEPTOR_1_NAME +
-        " - ";
+    public IllegalInterceptorException(String message) {
+        super(message);
+    }
+
+    public IllegalInterceptorException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public IllegalInterceptorException(Throwable cause) {
+        super(cause);
+    }
 }

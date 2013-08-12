@@ -800,10 +800,18 @@ This design can easily be adapted to other implementations of active objects, th
 
 
 \section{Experimental evaluation}\label{sec:experiments}
-In this section, we evaluate the performance of the priority feature from two perspectives: first in terms of gained throughput for high priority requests, and second in terms of performance of a given priority specification. We want to evaluate the gain introduced through priorities compared to their cost.
-In particular, if the cost of priorities, namely, the cost to reorder the queue according to a given data structure, is not high compared to the time needed to serve a request.
+In this section, we evaluate the performance of the priority mechanism we developed through experiment. 
+We show first that our specification is effective: priorities contribute to speed up processing of high priority requests. Secondly, we show that it is efficient: the cost to reorder the queue according to priorities is not high compared to the time needed to serve a request.
+
 \subsection{Environment}
 All experiments were run on a single machine. Indeed, we evaluate priorities in a parallel execution context. But here, we want to evaluate request parallelism, which occurs within a multiactive object. Thus, even though the context of multiactive objects is distributed, we only need to run experiments on one machine, because request parallelism using priorities occurs only within one multiactive object, which lies on one machine. Our mechanism only contribute to the efficiency of local parallelism, not to the efficiency of distributed execution.
+
+The machine has 
+
+When the priority specification that is used is not mentioned, it means that we are using our graph-based specification.
+At the beginning of each experiment, we send one big request per available thread to ensure that all the requests we evaluate are inserted in the queue before we start executing them.
+
+In all experiment, all the considered groups are compatible, otherwise, they would never be in the ready queue at the same time, and we could never apply priorities on the requests belonging to them.
 
 machine config,
 taille des queues,
@@ -811,24 +819,57 @@ duree des methodes,
 compatibility settings,
 graph settings
 
-\subsection{Efficiency on high priority requests}
-definir efficiency 
+\subsection{Speed up of high priority requests}
+In this experiment, we define only two groups: A and B. Each group has only one request that is assigned to them. We send in total 1000 requests to a multiactive object that we have previously defined: alternatively a request of group A and a request of group B. So each group sends 500 requests. We run two executions. In the first execution we do not declare any priority relation between group A and group B. In the second execution, we declare a priority dependency from group A to group B. We evaluate the execution time dynamic of requests of group A and requests of group B. The execution time is composed by the time to insert the request in the ready queue + the waiting time in the ready queue + the service time of the request. To perform this evaluation, we average execution times of requests by batch of 50 consecutive requests of the same group. Figure A depict the results of both executions:
+
+\TODO{figure}
+
+When not using priorities, the execution time of requests increases equally for both groups as the ready queue increases. As expected, when using priorities, the execution time of requests of group A is divided by two and the execution time of requests of group B is doubled. As a comparative evaluation, with no priorities, after 30ms 200 requests of group A have been executed. With priorities, at the same point in time, more than 400 requests of group A have been executed. It means that after only 30ms of request processing, we have already a speed up of 2 for high priority requests. This shows that our priority specification is effective: it successfully speeds up the execution of high priority requests. 
 
 augmenter throughput of high priority requests
 montrer qu'on effectue plus de high priority requests en un temps donne : pour executer ce lot de requetes il me faut Xs et avec priorite il me faut seulement Ys.
 dire : for only X\% of overhead we are able to speedup the execution of the most important requests of X\%. 
-\subsection{Overhead of priority feature}
-definir overhead
-\paragraph{1}
-1000 requests sent in a blocked queue
-The first test case includes: 
-two requests sent in alternate order: for example ABABABA where A have a higher priority than B.
-A graph where A is at the top and B at the bottom
-\paragraph{2}
-1000 requests sent at the same time
-The second test case includes:
-a random graph made of 20 nodes
-one request per node sent in a regular order -> deterministic
+
+
+\subsection{Overhead of the different priority specifications}
+In this section, we perform two experiments that evaluate the overhead of the priority specifications. We define the overhead of a given priority mechanism as the time needed to insert an incoming request in the queue, according to its priority. When no priority mechanism exists, such overhead is quasi null: the request is just put at the end of the queue, which is a constant operation. However, with our priority mechanisms, we have seen that we potentially have to look through the whole ready queue to find the right position of an incoming request. As a consequence, this operation is dependent on the number of requests that already are in the queue. In addition, the structures used to store priorities and to decide on overtakability of requests are also a factor of complexity of the insertion process. In our case, we have two priority specifications that rely on two different structures: a linear structure and a graph structure. We evaluate both of them to see if the overhead of our graph-based specification is not too high. 
+
+\subsubsection{Alternative high and low priority requests}
+For this experiment, we define five groups and their priority. We declare the priorities on one hand using the integer-based specification and on the other hand using the graph-based priority specification. The exact priorities applied are displayed on figure X.
+
+\TODO{figure}
+
+
+
+We send 1000 requests to a multiactive object previously defined. Our goal is to send alternatively a request of highest priority and a request of lowest priority, so that 500 requests for each of the two groups. We perform two runs: one using the integer-based specification and one using the graph-based specification. Figure X shows the results of both priority specifications for both kind of requests:
+
+\TODO{figure}
+
+
+
+
+\subsubsection{Sequential requests belonging to a non-naive graph}
+To illustrate a more realistic case, we create in this usecase nine groups, each of them having a single belonging request. The priority dependencies are expanded in Figure X:
+
+\TODO{figure}
+
+To evaluate the cost of the graph-based specification, we attempt to translate this dependency graph into integer-based priorities. As for this dependency graph it is not possible to have the exact same semantics with integer, we define priorities the closest they can be to the dependency graph. The resulting translation is displayed on Figure X:
+
+\TODO{figure}
+
+We sequentially send a request of each group in a previously defined order. The sequence of requests are sent in the following order:
+\begin{enumerate}
+\item g7
+\item g1
+\end{enumerate}
+This sequence of requests allows us to have deterministic results while experimenting all parts of the graph. In total, 500 requests are sent per group, which makes 4500 requests sent to the multiactive object in total.
+
+The results are displayed on Figure X.
+
+\TODO{figure}
+As the previous usecase, the overhead of the graph-based priority specification is slightly higher than the overhead of the integer-based specification. But in this usecase, the difference between the two specifications is bigger: the overhead is here twice higher, whereas it was only 1.5 higher in the previous usecase.
+This is explained by the fact that the graph is more complex in the later usecase. So we can guess that the more complex the graph is (the more nodes and dependencies it has), the bigger is the overhead of the graph-based priority specification.
+But in practice, the graph has few chances to be highly complex because it would require the multiactive object to have a lot of methods defined, and in a well-designed object-oriented application, objects must have a concise and precise purpose, which is antagonistic with having a lot of methods. Also, receiving more than 4000 requests at the same time is not an usual situation. In this extreme case still, our graph-based priority specification represents only twice the overhead introduced by the integer-based priority specification. Considering the ease of usage that the graph-based priority specification offers, it is a small cost. On the other hand, this overhead represents only X\% of the service time of the request, which is negligible. To conclude, the experiment showed that the graph-based priority specification is adapted to a practical usage, because it is efficient, in addition to be easy to use and very expressive. 
 
 
 \chapter{Conclusion and Future Work} 

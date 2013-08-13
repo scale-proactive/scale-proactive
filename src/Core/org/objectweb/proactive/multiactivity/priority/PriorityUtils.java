@@ -2,6 +2,7 @@ package org.objectweb.proactive.multiactivity.priority;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
@@ -17,7 +18,7 @@ public class PriorityUtils {
 	private static final String FILE_SEP = System.getProperty("file.separator");	
 	private static final String LOGGER_NAME = "PriorityLogger";	
 	public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(
-			"yyyy-MM-dd HH:mm:ss:SSS");
+			"yyyy-MM-dd HH:mm:ss:SSS", Locale.ENGLISH);
 	
 	public static final String LOG_PATH = "/local/home/jrochas/tmp/priority_logs";
 	public static final String LOG_FILE = "priority.log";	
@@ -40,6 +41,9 @@ public class PriorityUtils {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		// The parsed date must have the exact same format, do not apply 
+		// heuristics
+		DATE_FORMAT.setLenient(false);
 	}
 	
 	public static void logMessage(String message) {

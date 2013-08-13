@@ -141,7 +141,6 @@ public class PriorityQueue {
 		List<RunnableRequest> requests = new LinkedList<RunnableRequest>();
 		PriorityElement element = this.first;
 		while (element != null) {
-			// TODO Check here if there are enough thread to schedule the request
 			requests.add(element.request);
 			element = element.next;
 		}
@@ -159,8 +158,12 @@ public class PriorityQueue {
 		sb.append("\n\nPriority queue - from high priority...\n");
 		while (element != null) {
 			sb.append("\t" + element.request.getRequest().getMethodName() + "(");
-			for (int i = 0 ; i < element.request.getRequest().getMethodCall().getNumberOfParameter() ; i++) {
+			int nbParameters = element.request.getRequest().getMethodCall().getNumberOfParameter();
+			for (int i = 0 ; i < nbParameters ; i++) {
 				sb.append(element.request.getRequest().getParameter(i));
+				if (i != nbParameters) {
+					sb.append(", ");
+				}
 			}
 			sb.append(")\n");
 			element = element.next;

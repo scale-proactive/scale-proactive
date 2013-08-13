@@ -97,8 +97,8 @@ public class PriorityManager {
 		long before = System.nanoTime();
 		this.priorityQueue.insert(request, group);
 		long after = System.nanoTime();
-		PriorityUtils.logMessage("Request: " + request.getRequest().
-				getMethodName() + " - Insertion time with priority: " 
+		PriorityUtils.logMessage(request.getRequest().
+				getMethodName() + " insertTime: " 
 				+ (after - before));
 	}
 

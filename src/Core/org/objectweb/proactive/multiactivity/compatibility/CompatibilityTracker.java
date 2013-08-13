@@ -144,7 +144,7 @@ public class CompatibilityTracker extends CompatibilityManager {
         MethodGroup reqGroup = getGroupOf(r);
         if (reqGroup == null) {
             if (log.isTraceEnabled()) {
-                log.trace(toStringCompatibilityWithExecuting(r, this.runningGroups.values(), false));
+                //log.trace(toStringCompatibilityWithExecuting(r, this.runningGroups.values(), false));
             }
             return false;
         }
@@ -157,8 +157,7 @@ public class CompatibilityTracker extends CompatibilityManager {
                     for (Request other : runningGroups.get(otherGroup)) {
                         if (!reqGroup.isCompatible(r, otherGroup, other)) {
                             if (log.isTraceEnabled()) {
-                                log.trace(toStringCompatibilityWithExecuting(r, this.runningGroups.values(),
-                                        false));
+                                //log.trace(toStringCompatibilityWithExecuting(r, this.runningGroups.values(),  false));
                             }
                             return false;
                         }
@@ -166,7 +165,7 @@ public class CompatibilityTracker extends CompatibilityManager {
 
                 } else if (!reqGroup.isCompatibleWith(otherGroup)) {
                     if (log.isTraceEnabled()) {
-                        log.trace(toStringCompatibilityWithExecuting(r, this.runningGroups.values(), false));
+                        //log.trace(toStringCompatibilityWithExecuting(r, this.runningGroups.values(), false));
                     }
                     return false;
                 }
@@ -174,7 +173,7 @@ public class CompatibilityTracker extends CompatibilityManager {
         }
 
         if (log.isTraceEnabled()) {
-            log.trace(toStringCompatibilityWithExecuting(r, this.runningGroups.values(), true));
+            //log.trace(toStringCompatibilityWithExecuting(r, this.runningGroups.values(), true));
         }
         return true;
     }

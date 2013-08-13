@@ -64,7 +64,6 @@ import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
-import org.objectweb.proactive.multiactivity.priority.PriorityUtils;
 import org.objectweb.proactive.multiactivity.priority.ThreadManager;
 
 
@@ -409,7 +408,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
 					i = this.priorityManager.getHighestPriorityRequests().iterator();
 
-					log.trace(this.priorityManager.toString(countActive(), THREAD_LIMIT));
+					//log.trace(this.priorityManager.toString(countActive(), THREAD_LIMIT));
 
 					if (i.hasNext()) {
 						log.trace("Requests served");

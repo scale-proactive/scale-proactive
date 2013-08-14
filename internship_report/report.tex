@@ -817,6 +817,8 @@ In all experiments, we create and deploy a single multiactive object of the defi
 \subsection{Speed up of high priority requests}
 In this experiment, we want to show the effectiveness of our priority specification. We define only two groups: A and B. Each group has only one request that is assigned to them. We send in total 1000 requests to the multiactive object that we have previously defined. More precisely, we send alternatively a request of group A and a request of group B, so 500 requests of each group are sent. We run two executions of this scenario. In the first execution, we do not declare any priority relation between group A and group B. In the second execution, we declare that group A has a higher priority than group B. For both executions, we evaluate the execution time dynamic of requests of group A and requests of group B. We define the execution time as the sum of:
 
+DIRE 3 THREADS
+
 \begin{itemize}
 \item The time to send the request to the multiactive object (registration time)
 \item The time to insert the request in the ready queue (reordering time)
@@ -824,9 +826,18 @@ In this experiment, we want to show the effectiveness of our priority specificat
 \item The time to serve the request (service time)
 \end{itemize}
 
-Actually, the execution time is here the response time of the request. To perform this evaluation, we average execution times of requests by batch of 50 consecutive requests of the same group. Figure X depicts the results of prioritized and not prioritized executions:
+Actually, the execution time is here the response time of the request. To perform this evaluation, we average execution times of requests by batch of 50 consecutive requests of the same group. Figure~\ref{fig:effectivity} depicts the results of prioritized and not prioritized executions:
 
-\TODO{figure}
+\begin{figure}[!ht]
+      \fbox{
+      \begin{minipage}[c]{\textwidth}
+      \centering
+      \includegraphics[scale=1]{pictures/effectivity.pdf}
+      \end{minipage}
+      }
+      \caption{Execution time of A and B requests with and without priority}
+      \label{fig:effectivity} 
+\end{figure}
 
 When not using priorities, the execution time of requests increases equally for both groups as the ready queue increases, because the waiting time of requests of both groups increases equally, and because there is reordering time quasi null. As expected, when using priorities, the execution time of requests of group A grows less quickly than the execution time of requests of group B. for group A this time is divided by two and for group B this time is doubled. As a comparative evaluation, with no priorities, after 30ms 200 requests of group A have been executed. With priorities, at the same point in time, more than 400 requests of group A have been executed. It means that after only 30ms of request processing, we have already speeded up the execution of high priority requests by a factor 2. (Or: int he first case, 30s are needed to execute 200 requests, and in the second case, only 10 sec are needed to execute the same amount of request). This shows that our priority specification is effective: it successfully speeds up the execution of high priority requests. 
 
@@ -869,9 +880,20 @@ This experiment aims at evaluating the overhead of our two priority specificatio
 	\label{fig:alternate}
 \end{figure}
 
-Both declarations are semantically equivalent, although using different definitions and different structures. In this context, we send in total 1000 requests to the multiactive object. As in the previous test case, we send alternatively a request of highest priority and a request of lowest priority. 500 requests are sent per group of highest and lowest priority. No requests are sent for the other groups, they are just meant to create bigger priority structures. We perform two runs: one using the integer-based specification and one using the graph-based specification. For each run, we average the insertion times of requests every 50 consecutive requests sent from the same group. Figure X shows the results of both priority specifications for the two kinds of requests:
+Both declarations are semantically equivalent, although using different definitions and different structures. In this context, we send in total 1000 requests to the multiactive object. As in the previous test case, we send alternatively a request of highest priority and a request of lowest priority. 500 requests are sent per group of highest and lowest priority. No requests are sent for the other groups, they are just meant to create bigger priority structures. We perform two runs: one using the integer-based specification and one using the graph-based specification. For each run, we average the insertion times of requests every 50 consecutive requests sent from the same group. Figure~\ref{fig:alternate} shows the results of both priority specifications for the two kinds of requests:
 
-\TODO{figure}
+\begin{figure}[!ht]
+      \fbox{
+      \begin{minipage}[c]{\textwidth}
+      \centering
+      \includegraphics[scale=1]{pictures/alternate.pdf}
+      \end{minipage}
+      }
+      \caption{Insertion time of alternative low and high priority requests}
+      \label{fig:alternate} 
+\end{figure}
+
+PARLER DU TEMPS D'EXEC The average execution time of an empty request is 1471303 ns, which is 1.4 ms (the time to poll the request and to execute it in a thread
 
 \subsubsection{Sequential requests belonging to a non-naive graph}
 This experiment illustrates a more realistic test case, where the priority dependencies are not linear, and where requests of all groups are evaluated. We define here ten groups, from G1 to G10, each of them having a single belonging request, from g1 to g10. The priority dependencies between them are expanded in Figure~\ref{fig:complex}.
@@ -958,10 +980,48 @@ In this test case, we sequentially send a request of each group in a predefined 
 Using a predefined sequence of requests allows us to have deterministic results while experimenting all parts of the graph. 500 requests are sent per group, so in total, 5000 requests are sent to the multiactive object. 
 We evaluate here the overhead that we pay in general when using the graph-based priority specification compared to the integer-based priority specification. Unlike the previous experiment, we do not look specifically into the overhead impact on a given group, but rather at the global overhead impact. For that, we average insertion times every 50 consecutive requests sent from the same group. We thus have 10 metrics per group, for each stage of consecutive requests. We finally average the metrics of all groups for each stage. The results, displayed on Figure X, correspond to the average insertion time of a request according to the queue length, no matter from which group the request is from.
 
-\TODO{figure}
+\begin{figure}[!ht]
+      \fbox{
+      \begin{minipage}[c]{\textwidth}
+      \centering
+      \includegraphics[scale=1]{pictures/sequential.pdf}
+      \end{minipage}
+      }
+      \caption{Insertion time of sequential requests belonging to all parts of a complex priority graph}
+      \label{fig:sequential} 
+\end{figure}
 
 As the previous usecase, the overhead of the graph-based priority specification is slightly higher than the overhead of the integer-based specification. But in this test case, the difference between the two specifications is bigger: the overhead is here twice higher, whereas it was only roughly 1.5 higher in the previous usecase.
 This is explained by the fact that the graph is more complex in the later test case. So we can guess that the more complex the graph is (the more nodes and dependencies it has), the bigger the overhead of the graph-based priority specification is.
+
+OUI MAIS LA QUEUE EST 5 FOIS PLUS LONGUE A PARCOURIR ET POURTANT CA NE PREND PAS 5 FOIS PLUS DE TEMPS
+
+\begin{figure}[!ht]
+      \fbox{
+      \begin{minipage}[c]{\textwidth}
+      \centering
+      \includegraphics[scale=0.5]{pictures/transitive.pdf}
+      \end{minipage}
+      }
+      \caption{Transitive closure graph of the graph depicted in Figure~\ref{fig:complex}}
+      \label{fig:transitive} 
+\end{figure}
+
+\begin{figure}[!ht]
+      \fbox{
+      \begin{minipage}[c]{\textwidth}
+      \centering
+      \includegraphics[scale=0.5]{pictures/matrix.pdf}
+      \end{minipage}
+      }
+      \caption{Overtakability matrix deduced from the transitive closure graph on Figure~\ref{fig:transitive}}
+      \label{fig:matrix} 
+\end{figure}
+
+With the matrix, we reach the same performance as with the integer based specification, because we reduce the overtakability problem to a fundamental operation.
+
+AVANTAGE RAPIDE
+INCONVENIENT MEMOIRE
 
 But in practice, the graph has few chances to be highly complex because it would require the multiactive object to have a lot of methods defined, and in a well-designed object-oriented application, objects must have a concise and precise purpose, which is antagonistic with having a lot of methods. Also, receiving more than 5000 requests at the same time is not an usual situation. But still, in this extreme case, our graph-based priority specification represents only twice the overhead introduced by the integer-based priority specification. Considering the ease of usage that the graph-based priority specification offers, it is a small cost. Moreover, in this experiment we measured that the overhead of the graph-based specification represents in average only X\% of the service time of a request, which is negligible. To conclude, the experiment showed that the graph-based priority specification is adapted to a practical usage, because it is efficient, in addition to be easy to use and very expressive. 
 
@@ -1003,6 +1063,7 @@ Note : notion de hard priorite
 
 Compilation time verified annotation (example: check that groups exist)
 
+annexe : javadoc annotations
 annexe : JAVA 8 annotations vs JAVA 7 -> much lighter
 
 

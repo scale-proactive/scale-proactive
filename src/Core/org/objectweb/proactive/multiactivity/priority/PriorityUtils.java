@@ -15,13 +15,23 @@ public class PriorityUtils {
 
 	private static final Logger LOGGER;
 	private static final String LINE_SEP = System.getProperty("line.separator");
-	private static final String FILE_SEP = System.getProperty("file.separator");	
+	private static final String FILE_SEP = System.getProperty("file.separator");
 	private static final String LOGGER_NAME = "PriorityLogger";	
+	
 	public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(
 			"yyyy-MM-dd HH:mm:ss:SSS", Locale.ENGLISH);
 	
+	public static final boolean LOG_ENABLED = true;
+	public static final String LOG_SEPARATOR = "\t";
 	public static final String LOG_PATH = "/local/home/jrochas/tmp/priority_logs";
 	public static final String LOG_FILE = "priority.log";	
+	
+	public static final String INSERTION_TIME = "INSERTION-TIME";
+	public static final String SERVICE_TIME = "SERVICE-TIME";
+	public static final String METHOD_TIME = "METHOD-TIME";
+	
+	public static final String VERY_HIGH_PRIORITY_METHOD_NAME = "veryHighPriority";
+	public static final String VERY_LOW_PRIORITY_METHOD_NAME = "veryLowPriority";
 
 	static {
 		// Logger initialization

@@ -64,6 +64,7 @@ import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
+import org.objectweb.proactive.multiactivity.priority.PriorityUtils;
 import org.objectweb.proactive.multiactivity.priority.ThreadManager;
 
 
@@ -303,6 +304,10 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 		LocalBodyStore.getInstance().pushContext(new Context(body, null));
 
 		synchronized (requestQueue) {
+			
+			long insertionTimeBefore;
+			long insertionTimeAfter;
+			
 			while (body.isActive()) {
 
 				// get compatible ones from the queue
@@ -313,7 +318,20 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 						// add them to the ready set
 						for (int i = 0; i < rc.size(); i++) {
 							RunnableRequest runnableRequest = wrapRequest(rc.get(i));
+							
+							if (PriorityUtils.LOG_ENABLED) {
+								insertionTimeBefore = System.nanoTime();
+							}
+							
 							priorityManager.register(runnableRequest);
+							
+							if (PriorityUtils.LOG_ENABLED) {
+								insertionTimeAfter = System.nanoTime();
+								PriorityUtils.logMessage(runnableRequest.getRequest().
+										getMethodName() + PriorityUtils.LOG_SEPARATOR 
+										+ PriorityUtils.INSERTION_TIME + PriorityUtils.LOG_SEPARATOR 
+										+ (insertionTimeAfter - insertionTimeBefore));
+							}
 						}
 
 						// if anything can be done, let the other thread know
@@ -338,7 +356,15 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 */
 	private void internalExecute() {
 		synchronized (this) {
+
+			long serviceTimeAfter;
+			long serviceTimeBefore;
+
 			while (body.isActive()) {
+
+				if (PriorityUtils.LOG_ENABLED) {
+					serviceTimeBefore = System.nanoTime();
+				}
 
 				Iterator<RunnableRequest> i;
 
@@ -420,6 +446,15 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 						priorityManager.notifyRunning(current);
 						active.add(current);
 						executorService.execute(current);
+
+						if (PriorityUtils.LOG_ENABLED) {
+							serviceTimeAfter = System.nanoTime();
+							PriorityUtils.logMessage(current.getRequest().
+									getMethodName() + PriorityUtils.LOG_SEPARATOR 
+									+ PriorityUtils.SERVICE_TIME + PriorityUtils.LOG_SEPARATOR 
+									+ (serviceTimeAfter - serviceTimeBefore));
+						}
+
 						servingHistory.add(current.getRequest());
 
 						if (log.isTraceEnabled()) {

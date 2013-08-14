@@ -1,7 +1,9 @@
 package org.objectweb.proactive.multiactivity.priority;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
@@ -22,8 +24,8 @@ public class PriorityGraph implements PriorityStructure {
 	 */
 	private Set<PriorityNode> roots;
 
-	private boolean[][] existPathMatrix;
-	private boolean matrixEnabled = true;
+	private HashMap<String, HashMap<String, Boolean>> existPathMatrix;
+	private boolean matrixEnabled = false;
 
 	private ArrayList<PriorityNode> nodesList;
 
@@ -356,35 +358,53 @@ public class PriorityGraph implements PriorityStructure {
 	@Override
 	public boolean canOvertake(MethodGroup group1,
 			MethodGroup group2) {
-		/*if (this.matrixEnabled) {
+		if (this.matrixEnabled) {
+			Boolean returnValue = false;
 			if (this.nodesList == null) {
 				this.nodesList = this.listNodes();
-			}
-			if (this.existPathMatrix == null) {
-				this.existPathMatrix = new boolean[this.nodesList.size()][this.nodesList.size()];
-				for (int i = 0 ; i < this.nodesList.size(); i++) {
-					MethodGroup iGroup = this.findGroup(this.nodesList.get(i));
-					for (int j = 0 ; j < this.nodesList.size(); j++) {
-						MethodGroup jGroup = this.findGroup(this.nodesList.get(j));
-						if (iGroup != jGroup) {
-							boolean existPath = this.existPath(iGroup, jGroup);
-							if (existPath) {
-								existPathMatrix[i][j] = true;
-							}
-							else {
-								existPathMatrix[i][j] = false;
-							}
-						}
-					}
+				for (PriorityNode node : this.nodesList) {
+					PriorityUtils.logMessage(node.group.name + " ");
 				}
 			}
-			int group1Index = this.nodesList.indexOf(this.findNode(group1));
-			int group2Index = this.nodesList.indexOf(this.findNode(group2));
-			return this.existPathMatrix[group1Index][group2Index];
+			if (this.existPathMatrix == null) {
+				int size = this.nodesList.size();
+				this.existPathMatrix = new HashMap<String, HashMap<String, Boolean>>(size);
+				for (int i = 0 ; i < size; i++) {
+					PriorityNode pni = this.nodesList.get(i);
+					HashMap<String, Boolean> map = new HashMap<String, Boolean>(size);
+					for (int j = 0 ; j < size; j++) {
+						PriorityNode pnj = this.nodesList.get(j);	
+						map.put(this.nodesList.get(j).group.name, this.existPath(pni.group, pnj.group));						
+					}
+					this.existPathMatrix.put(this.nodesList.get(i).group.name, map);
+				}
+				StringBuilder sb = new StringBuilder();
+				for (Entry<String, HashMap<String,Boolean>> entry :this.existPathMatrix.entrySet()) {
+					sb.append("** " + entry.getKey() + ": ");
+					for (Entry<String, Boolean> entry2 : entry.getValue().entrySet()) {
+						sb.append(entry2.getKey() + ":" + entry2.getValue() + " ");
+					}
+					sb.append("\n");
+				}
+				PriorityUtils.logMessage(sb.toString());
+			}
+			HashMap<String, Boolean> intermediateMatrix = this.existPathMatrix.get(group1.name);
+			if (intermediateMatrix != null) {
+				returnValue = intermediateMatrix.get(group2.name);
+				if (returnValue != null) {
+					return returnValue;
+				}
+				else { 
+					return false;
+				}
+			}
+			else {
+				return false;
+			}
 		}
-		else {*/
-		return this.existPath(group1, group2);
-		//}
+		else {
+			return this.existPath(group1, group2);
+		}
 	}
 
 	/**

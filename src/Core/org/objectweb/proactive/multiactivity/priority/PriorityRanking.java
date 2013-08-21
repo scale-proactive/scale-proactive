@@ -18,7 +18,7 @@ import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
  * 
  * @author jrochas
  */
-public class PriorityRanking implements PriorityStructure {
+public class PriorityRanking implements PriorityMap {
 	
 	private static boolean matrixEnabled = true;
 	private ArrayList<MethodGroup> nodesList;
@@ -72,7 +72,7 @@ public class PriorityRanking implements PriorityStructure {
 	public boolean canOvertake(MethodGroup group1,
 			MethodGroup group2) {
 		boolean overtake = false;
-		if (this.matrixEnabled) {
+		if (matrixEnabled) {
 			Boolean returnValue = false;
 			if (this.nodesList == null) {
 				this.nodesList = new ArrayList<MethodGroup>();

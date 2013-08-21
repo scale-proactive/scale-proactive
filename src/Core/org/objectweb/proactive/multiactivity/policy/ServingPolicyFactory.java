@@ -40,7 +40,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.objectweb.proactive.core.body.request.Request;
-import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 
 
 /**
@@ -55,7 +55,7 @@ public class ServingPolicyFactory {
         return new ServingPolicy() {
 
             @Override
-            public List<Request> runCompatibilityPolicy(CompatibilityTracker compatibility) {
+            public List<Request> runCompatibilityPolicy(CompatibilityManager compatibility) {
                 List<Request> ret = new LinkedList<Request>();
 
                 if (compatibility.getNumberOfExecutingRequests() == 0 &&
@@ -72,7 +72,7 @@ public class ServingPolicyFactory {
         return new ServingPolicy() {
 
             @Override
-            public List<Request> runCompatibilityPolicy(CompatibilityTracker compatibility) {
+            public List<Request> runCompatibilityPolicy(CompatibilityManager compatibility) {
                 List<Request> ret = new LinkedList<Request>();
                 Request current = compatibility.getOldestInTheQueue();
 
@@ -111,7 +111,7 @@ public class ServingPolicyFactory {
         return new ServingPolicy() {
 
             @Override
-            public List<Request> runCompatibilityPolicy(CompatibilityTracker compatibility) {
+            public List<Request> runCompatibilityPolicy(CompatibilityManager compatibility) {
                 List<Request> ret = new LinkedList<Request>();
                 List<Request> queue = compatibility.getQueueContents();
                 for (Request r : queue) {
@@ -164,7 +164,7 @@ public class ServingPolicyFactory {
         return new ServingPolicy() {
 
             @Override
-            public List<Request> runCompatibilityPolicy(CompatibilityTracker compatibility) {
+            public List<Request> runCompatibilityPolicy(CompatibilityManager compatibility) {
 
                 if (compatibility.getExecutingRequests().size() < maxThreads) {
                     ServingPolicy maPolicy = getMultiActivityPolicy();
@@ -180,7 +180,7 @@ public class ServingPolicyFactory {
         return new ServingPolicy() {
 
             @Override
-            public List<Request> runCompatibilityPolicy(CompatibilityTracker compatibility) {
+            public List<Request> runCompatibilityPolicy(CompatibilityManager compatibility) {
 
                 List<Request> ret = new LinkedList<Request>();
                 List<Request> queue = compatibility.getQueueContents();

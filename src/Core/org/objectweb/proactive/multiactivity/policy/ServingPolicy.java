@@ -39,7 +39,7 @@ package org.objectweb.proactive.multiactivity.policy;
 import java.util.List;
 
 import org.objectweb.proactive.core.body.request.Request;
-import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 
 
 /**
@@ -68,6 +68,6 @@ public interface ServingPolicy {
      * 
      * @return a sublist of the requests that can be executed in parallel.
      */
-    public List<Request> runCompatibilityPolicy(CompatibilityTracker compatibility);
+    public List<Request> runCompatibilityPolicy(CompatibilityManager compatibility);
 
 }

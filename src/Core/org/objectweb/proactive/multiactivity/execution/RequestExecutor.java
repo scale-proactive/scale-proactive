@@ -60,12 +60,12 @@ import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.ServingController;
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
+import org.objectweb.proactive.multiactivity.limits.ThreadManager;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
-import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
 import org.objectweb.proactive.multiactivity.priority.PriorityUtils;
-import org.objectweb.proactive.multiactivity.priority.ThreadManager;
 
 
 /**
@@ -96,8 +96,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 * source. If false than all serves will be served on separate threads.
 	 */
 	private boolean SAME_THREAD_REENTRANT = false;
-
-	private CompatibilityTracker compatibility;
 
 	private Body body;
 
@@ -148,33 +146,42 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 */
 	private ConcurrentHashMap<RunnableRequest, RunnableRequest> hostMap;
 
-	/** List of the requests that have already been served */
-	private LinkedList<Request> servingHistory = new LinkedList<Request>();
-
 	/*
 	 * This counter allows to warn the multiactivity framework that a thread has 
 	 * been sent to sleep or awaken from sleep manually such that these states are 
 	 * considered in the soft and hard limit of the current multi-active object.
 	 */
 	private final AtomicInteger extraActiveRequestCount = new AtomicInteger(0);
+	
+	/** Manages the compatibility of incoming requests */
+	private CompatibilityManager compatibilityManager;
 
+	/** Manages the priorities of requests */
 	private final PriorityManager priorityManager;
+	
+	/** Manages the thread limits of groups */
+	private final ThreadManager threadManager;
+	
+	/** List of the requests that have already been served */
+	private LinkedList<Request> servingHistory = new LinkedList<Request>();
 
 	/**
 	 * Default constructor.
 	 * 
 	 * @param body
 	 *            Body of the active object.
-	 * @param compatibility
+	 * @param compatibilityManager
 	 *            Compatibility information of the active object's class
 	 * @param priorityConstraints
 	 *            Priority constraints
 	 */
-	public RequestExecutor(Body body, CompatibilityTracker compatibility, PriorityStructure priority, ThreadManager threadManager) {
-		this.compatibility = compatibility;
+	public RequestExecutor(Body body, CompatibilityTracker compatibilityManager
+			, PriorityManager priorityManager, ThreadManager threadManager) {
+		this.compatibilityManager = compatibilityManager;
 		this.body = body;
 		this.requestQueue = body.getRequestQueue();
-		this.priorityManager = new PriorityManager(compatibility, priority, threadManager);
+		this.priorityManager = priorityManager;
+		this.threadManager = threadManager;
 		executorService = Executors.newCachedThreadPool();
 		active = new HashSet<RunnableRequest>();
 		waiting = new HashSet<RunnableRequest>();
@@ -182,7 +189,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 		threadUsage = new HashMap<Long, List<RunnableRequest>>();
 		waitingList = new HashMap<FutureID, List<RunnableRequest>>();
 		hostMap = new ConcurrentHashMap<RunnableRequest, RunnableRequest>();
-
 		FutureWaiterRegistry.putForBody(body.getID(), this);
 	}
 
@@ -205,7 +211,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 *            source
 	 */
 	public RequestExecutor(Body body, CompatibilityTracker compatibility,
-			PriorityStructure priority, ThreadManager threadManager, int activeLimit, boolean hardLimit, 
+			PriorityManager priority, ThreadManager threadManager, int activeLimit, boolean hardLimit, 
 			boolean hostReentrant) {
 		this(body, compatibility, priority, threadManager);
 
@@ -311,7 +317,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 			while (body.isActive()) {
 
 				// get compatible ones from the queue
-				List<Request> rc = policy.runCompatibilityPolicy(compatibility);
+				List<Request> rc = policy.runCompatibilityPolicy(compatibilityManager);
 
 				if (rc.size() >= 0) {
 					synchronized (this) {
@@ -443,7 +449,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 					while (canServeOne() && i.hasNext()) {
 						RunnableRequest current = i.next();
 						priorityManager.unregister(current);
-						priorityManager.notifyRunning(current);
+						threadManager.increaseUsage(current);
 						active.add(current);
 						executorService.execute(current);
 
@@ -626,8 +632,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 		body.serve(runnableRequest.getRequest());
 		synchronized (this.requestQueue) {
 			serveStopped(runnableRequest);
-			priorityManager.notifyFinished(runnableRequest);
-			compatibility.removeRunning(runnableRequest.getRequest());
+			threadManager.decreaseUsage(runnableRequest);
+			compatibilityManager.removeRunning(runnableRequest.getRequest());
 			requestQueue.notify();
 		}
 	}
@@ -791,10 +797,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
 	public int getExtraActiveRequestCount() {
 		return extraActiveRequestCount.get();
-	}
-
-	public PriorityManager getPriorityManager() {
-		return this.priorityManager;
 	}
 
 }

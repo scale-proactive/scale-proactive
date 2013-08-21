@@ -10,7 +10,7 @@ import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
  * 
  * @author jrochas
  */
-public interface PriorityStructure {
+public interface PriorityMap {
 	
 	/** The current concrete structure used for handling priorities. Calling 
 	 * toString on this will give the concrete class name of the structure 

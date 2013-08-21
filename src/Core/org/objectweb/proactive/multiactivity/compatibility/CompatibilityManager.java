@@ -37,9 +37,7 @@
 package org.objectweb.proactive.multiactivity.compatibility;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.objectweb.proactive.annotation.multiactivity.Compatible;
 import org.objectweb.proactive.core.body.request.Request;
@@ -50,29 +48,13 @@ import org.objectweb.proactive.core.body.request.Request;
  * It uses the {@link AnnotationProcessor} to extract this information.  
  * @author  The ProActive Team
  */
-public class CompatibilityManager {
+public abstract class CompatibilityManager {
+	
+	private CompatibilityMap compatibilityMap;
 
-    private Map<String, MethodGroup> groups = new HashMap<String, MethodGroup>();
-    private Map<String, MethodGroup> membership = new HashMap<String, MethodGroup>();
-
-    /**
-     * Create a compatibility map using an already existing annotation processor.
-     * @param annotProc
-     */
-    public CompatibilityManager(AnnotationProcessor annotProc) {
-        this.groups = annotProc.getMethodGroups();
-        this.membership = annotProc.getMethodMemberships();
-    }
-
-    /**
-     * Create a compatibility map of a class.
-     * @param clazz
-     */
-    public CompatibilityManager(Class<?> clazz) {
-        AnnotationProcessor annotProc = new AnnotationProcessor(clazz);
-        this.groups = annotProc.getMethodGroups();
-        this.membership = annotProc.getMethodMemberships();
-    }
+	public CompatibilityManager(CompatibilityMap compatibilityMap) {
+		this.compatibilityMap = compatibilityMap;
+	}
 
     /**
      * Returns the method group a request belongs to.
@@ -80,7 +62,7 @@ public class CompatibilityManager {
      * @return
      */
     public MethodGroup getGroupOf(Request method) {
-        return membership.get(MethodGroup.getNameOf(method));
+        return this.compatibilityMap.getMembership().get(MethodGroup.getNameOf(method));
     }
 
     /**
@@ -88,7 +70,7 @@ public class CompatibilityManager {
      * @return
      */
     public Collection<MethodGroup> getGroups() {
-        return groups.values();
+        return this.compatibilityMap.getGroups().values();
     }
 
     /**
@@ -97,7 +79,7 @@ public class CompatibilityManager {
      * <br>
      * For details on deciding compatibility see {@link MethodGroup}.
      */
-    public boolean areCompatible(Request request1, Request request2) {
+    private boolean areCompatible(Request request1, Request request2) {
         MethodGroup mg1 = getGroupOf(request1);
         MethodGroup mg2 = getGroupOf(request2);
 
@@ -167,8 +149,25 @@ public class CompatibilityManager {
         return others.size() - 1;
     }
 
-	public boolean isCompatibleWithExecuting(Request r) {
-		// TODO Auto-generated method stub
-		return false;
-	}
+	public abstract boolean isCompatibleWithExecuting(Request r);
+	
+	public abstract Collection<Request> getExecutingRequests();
+
+    public abstract Request getOldestInTheQueue();
+
+    public abstract List<Request> getQueueContents();
+
+    public abstract int getNumberOfExecutingRequests();
+    
+    /**
+     * Adds a request to the set of running requests. Called from a service when a request is started to be served.
+     * @param request
+     */
+    public abstract void addRunning(Request request);
+    
+    /**
+     * Removes a request from the set of running requests. Called from a service when a request has finished serving.
+     * @param request
+     */
+    public abstract void removeRunning(Request request);
 }

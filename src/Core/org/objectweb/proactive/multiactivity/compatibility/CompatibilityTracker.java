@@ -68,8 +68,8 @@ public class CompatibilityTracker extends CompatibilityManager {
     private Set<Request> running = new HashSet<Request>();
     private BlockingRequestQueue queue;
 
-    public CompatibilityTracker(AnnotationProcessor annotProc, BlockingRequestQueue queue) {
-        super(annotProc);
+    public CompatibilityTracker(BlockingRequestQueue queue, CompatibilityMap compatibilityMap) {
+        super(compatibilityMap);
 
         for (MethodGroup group : getGroups()) {
             runningGroups.put(group, new HashSet<Request>());
@@ -81,18 +81,18 @@ public class CompatibilityTracker extends CompatibilityManager {
     }
 
     /**
-     * Adds a request to the set of running requests. Called from a service when a request is started to be served.
-     * @param request
+     * {{@inheritDoc}
      */
+    @Override
     public void addRunning(Request request) {
         running.add(request);
         runningGroups.get(getGroupOf(request)).add(request);
     }
 
     /**
-     * Removes a request from the set of running requests. Called from a service when a request has finished serving.
-     * @param request
+     * {@inheritDoc}
      */
+    @Override
     public void removeRunning(Request request) {
         running.remove(request);
         runningGroups.get(getGroupOf(request)).remove(request);
@@ -178,18 +178,22 @@ public class CompatibilityTracker extends CompatibilityManager {
         return true;
     }
 
+    @Override
     public Collection<Request> getExecutingRequests() {
         return running;
     }
 
+    @Override
     public Request getOldestInTheQueue() {
         return queue.getOldest();
     }
 
+    @Override
     public List<Request> getQueueContents() {
         return queue.getInternalQueue();
     }
 
+    @Override
     public int getNumberOfExecutingRequests() {
         return running.size();
     }

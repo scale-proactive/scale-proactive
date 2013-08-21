@@ -1,3 +1,39 @@
+/*
+ * ################################################################
+ *
+ * ProActive Parallel Suite(TM): The Java(TM) library for
+ *    Parallel, Distributed, Multi-Core Computing for
+ *    Enterprise Grids & Clouds
+ *
+ * Copyright (C) 1997-2012 INRIA/University of
+ *                 Nice-Sophia Antipolis/ActiveEon
+ * Contact: proactive@ow2.org or contact@activeeon.com
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License
+ * as published by the Free Software Foundation; version 3 of
+ * the License.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ * USA
+ *
+ * If needed, contact us to obtain a release under GPL Version 2 or 3
+ * or a different license than the AGPL.
+ *
+ *  Initial developer(s):               The ProActive Team
+ *                        http://proactive.inria.fr/team_members.htm
+ *  Contributor(s):
+ *
+ * ################################################################
+ * $$PROACTIVE_INITIAL_DEV$$
+ */
 package org.objectweb.proactive.multiactivity.priority;
 
 import java.util.LinkedList;
@@ -6,33 +42,37 @@ import java.util.List;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
+import org.objectweb.proactive.multiactivity.limits.ThreadTracker;
+
 
 /**
- * This class represents the structure that is used to reorder the requests 
- * among the ready to execute request (= compatible ones). It uses a 
- * PriorityStructure to know the relative priority of incoming requests.
+ * This class aims at reordering the requests in the queue according to the 
+ * priorities that were defined with the priority annotations. For that it 
+ * uses an internal queue from where we can insert new requests and poll 
+ * highest priority requests.
  * 
- * @author jrochas
+ * @author The ProActive Team
  */
-public class PriorityQueue {
+public class PriorityTracker extends PriorityManager {
 
 	/** Head of the priority queue (= oldest highest priority request) */
 	private PriorityElement first;
-
-	/** Priority representation used to decide where to insert a new request */
-	private PriorityStructure priorityStructure;
-
-	public PriorityQueue(PriorityStructure priorityStructure) {
-		this.priorityStructure = priorityStructure;
+	
+	/** Group manager (needed to find the group of a request) */
+	private final CompatibilityManager compatibility;
+		
+	
+	public PriorityTracker(CompatibilityManager compatibility, PriorityMap priorityMap) {
+		super(priorityMap);
+		this.compatibility = compatibility;
 	}
 
 	/**
-	 * Inserts a new request in the priority queue according to its priority 
-	 * defined in the priority structure.
-	 * @param runnableRequest
-	 * @param group
+	 * {@inheritDoc}
 	 */
-	public void insert(RunnableRequest request, MethodGroup group) {
+	@Override
+	public void register(RunnableRequest request) {
+		MethodGroup group = this.compatibility.getGroupOf(request.getRequest());
 		PriorityElement toInsert = new PriorityElement(request, group);
 		// The request to insert is the only one in the priority queue
 		if (this.first == null) {
@@ -45,7 +85,7 @@ public class PriorityQueue {
 			// Search for the first request that has a lower priority
 			while (!isOvertakable && currentElement != null) {
 				isOvertakable = 
-						this.priorityStructure.canOvertake(
+						this.priorityMap.canOvertake(
 								group, currentElement.belongingGroup);
 				if (!isOvertakable) {
 					previousElement = currentElement;
@@ -76,35 +116,10 @@ public class PriorityQueue {
 	}
 
 	/**
-	 * @return The number of requests that are in the priority queue.
+	 * {@inheritDoc}
 	 */
-	public int nbRequests() {
-		int size = 0;
-		PriorityElement element = this.first;
-		while (element != null) {
-			size++;
-			element = element.next;
-		}
-		return size;
-	}
-
-	/**
-	 * @return true if there are some requests in the priority queue.
-	 */
-	public boolean hasRequests() {
-		if (this.first == null) {
-			return false;
-		}
-		else {
-			return true;
-		}
-	}
-
-	/**
-	 * Removes a request in the queue (according to the equals method).
-	 * @param runnableRequest The request to remove
-	 */
-	public void remove(RunnableRequest request) {
+	@Override
+	public void unregister(RunnableRequest request) {
 		PriorityElement element = this.first;
 		// There is only the element to remove in the PriorityQueue
 		if (this.first.request.equals(request) && this.first.next == null) {
@@ -134,9 +149,36 @@ public class PriorityQueue {
 	}
 
 	/**
-	 * Returns the list of the highest priority requests that are in the queue.
-	 * @return High priority requests
+	 * {@inheritDoc}
 	 */
+	@Override
+	public int getNbRequestsRegistered() {
+		int size = 0;
+		PriorityElement element = this.first;
+		while (element != null) {
+			size++;
+			element = element.next;
+		}
+		return size;
+	}
+
+	/**
+	 * @return true if there is at least one registered request,
+	 * all priority groups combined.
+	 */
+	public boolean hasSomeRequestsRegistered() {
+		if (this.first == null) {
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
 	public List<RunnableRequest> getHighestPriorityRequests() {	
 		List<RunnableRequest> requests = new LinkedList<RunnableRequest>();
 		PriorityElement element = this.first;
@@ -177,7 +219,7 @@ public class PriorityQueue {
 	 * @param threadManager
 	 * @return A string with queue content and thread utilization.
 	 */
-	public String toString(CompatibilityManager compatibility, ThreadManager threadManager) {
+	public String toString(CompatibilityManager compatibility, ThreadTracker threadManager) {
 		StringBuilder sb = new StringBuilder();
 		PriorityElement element = this.first;
 

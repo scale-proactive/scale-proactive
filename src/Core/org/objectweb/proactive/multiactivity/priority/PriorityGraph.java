@@ -16,7 +16,7 @@ import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
  * 
  * @author jrochas
  */
-public class PriorityGraph implements PriorityStructure {
+public class PriorityGraph implements PriorityMap {
 
 	/**
 	 * The roots of the graph, or the highest priority groups. They are the 
@@ -196,7 +196,7 @@ public class PriorityGraph implements PriorityStructure {
 	 * @return The node corresponding to the group in the graph or null if the 
 	 * group does not exist in the graph
 	 */
-	private MethodGroup findGroup(PriorityNode node) {
+	public MethodGroup findGroup(PriorityNode node) {
 		MethodGroup group = null;
 		for (PriorityNode root : this.roots) {
 			group = this.recursiveFindGroup(node, root);

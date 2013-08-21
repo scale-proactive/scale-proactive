@@ -47,8 +47,10 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.compatibility.AnnotationProcessor;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
-import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
-import org.objectweb.proactive.multiactivity.priority.ThreadManager;
+import org.objectweb.proactive.multiactivity.limits.ThreadManager;
+import org.objectweb.proactive.multiactivity.limits.ThreadTracker;
+import org.objectweb.proactive.multiactivity.priority.PriorityManager;
+import org.objectweb.proactive.multiactivity.priority.PriorityTracker;
 import org.objectweb.proactive.multiactivity.policy.DefaultServingPolicy;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 
@@ -93,15 +95,18 @@ public class MultiActiveService extends Service {
 
         AnnotationProcessor annotationProcessor = new AnnotationProcessor(body.getReifiedObject().getClass());
 
-        CompatibilityTracker compatibility = new CompatibilityTracker(annotationProcessor, requestQueue);
+        CompatibilityTracker compatibilityManager = new CompatibilityTracker(
+        		requestQueue, annotationProcessor.getCompatibilityMap());
         
         // Filling priority structures according to what was extracted from annotations
-        PriorityStructure priority = annotationProcessor.getPriorityStructure();
+        PriorityManager priorityManager = new PriorityTracker(
+        		compatibilityManager, annotationProcessor.getPriorityMap());
         
-        ThreadManager threadManager = annotationProcessor.getThreadManager();
+        ThreadManager threadManager = new ThreadTracker(
+        		compatibilityManager, annotationProcessor.getThreadMap());
         
         // Building executor with all required information for scheduling
-        executor = new RequestExecutor(body, compatibility, priority, threadManager);
+        executor = new RequestExecutor(body, compatibilityManager, priorityManager, threadManager);
 
         if (logger.isDebugEnabled()) {
             /*if (executor.getPriorityManager().getPriorityConstraints().size() > 0) {

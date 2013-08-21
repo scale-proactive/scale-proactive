@@ -41,7 +41,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 import org.objectweb.proactive.annotation.PublicAPI;
-import org.objectweb.proactive.multiactivity.priority.ThreadManager;
+import org.objectweb.proactive.multiactivity.limits.ThreadTracker;
 
 
 /**
@@ -71,7 +71,8 @@ public @interface Group {
      */
     public boolean selfCompatible();
     
-    public int threadLimit() default ThreadManager.UNBOUNDED_MAX_THREADS;
+    public int maxThreads() default ThreadTracker.MAX_THREADS_DEFAULT;
+    public int minThreads() default ThreadTracker.MIN_THREADS_DEFAULT;
     
     /**
      * Conditioning function of the self-compatibility.

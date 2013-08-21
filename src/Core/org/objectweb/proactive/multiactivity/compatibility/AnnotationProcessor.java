@@ -39,12 +39,10 @@ package org.objectweb.proactive.multiactivity.compatibility;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.annotation.multiactivity.Compatible;
@@ -59,10 +57,10 @@ import org.objectweb.proactive.annotation.multiactivity.MemberOf;
 import org.objectweb.proactive.annotation.multiactivity.PriorityOrder;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
+import org.objectweb.proactive.multiactivity.limits.ThreadMap;
 import org.objectweb.proactive.multiactivity.priority.PriorityGraph;
 import org.objectweb.proactive.multiactivity.priority.PriorityRanking;
-import org.objectweb.proactive.multiactivity.priority.PriorityStructure;
-import org.objectweb.proactive.multiactivity.priority.ThreadManager;
+import org.objectweb.proactive.multiactivity.priority.PriorityMap;
 
 
 /**
@@ -97,19 +95,15 @@ public class AnnotationProcessor {
 
 	protected Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
-	// group names -> method groups
-	private Map<String, MethodGroup> groups = 
-			new HashMap<String, MethodGroup>();
-	// method name -> method group in which it is member
-	private Map<String, MethodGroup> methods =
-			new HashMap<String, MethodGroup>();
+	// Stores Group names -> group and Method names -> groups
+	private CompatibilityMap compatibilityMap = new CompatibilityMap();
 
 	// priority structures
 	private PriorityGraph priorityGraph = new PriorityGraph();
 	private PriorityRanking priorityRanking = new PriorityRanking();
 	
 	// group -> maximum number of threads used by methods of the group
-	private ThreadManager threadManager = new ThreadManager();
+	private ThreadMap threadMap = new ThreadMap();
 
 	// class that is processed
 	private Class<?> processedClass;
@@ -191,13 +185,13 @@ public class AnnotationProcessor {
 		// if there are groups
 		if (groupDefAnn != null) {
 			for (Group g : ((DefineGroups) groupDefAnn).value()) {
-				if (!groups.containsKey(g.name())) {
+				if (!compatibilityMap.getGroups().containsKey(g.name())) {
 					MethodGroup mg =
 							new MethodGroup(
 									g.name(), g.selfCompatible(),
 									g.parameter(), g.condition());
-					groups.put(g.name(), mg);
-					threadManager.addThreadLimit(mg, g.threadLimit());
+					compatibilityMap.getGroups().put(g.name(), mg);
+					threadMap.setThreadLimits(mg, g.maxThreads(), g.minThreads());
 				} else {
 					addError(
 							LOC_CLASS, processedClass.getCanonicalName(),
@@ -212,26 +206,26 @@ public class AnnotationProcessor {
 				String comparator = c.condition();
 				for (String group : c.value()) {
 					for (String other : c.value()) {
-						if (groups.containsKey(group)
-								&& groups.containsKey(other)
+						if (compatibilityMap.getGroups().containsKey(group)
+								&& compatibilityMap.getGroups().containsKey(other)
 								&& !other.equals(group)) {
-							groups.get(group).addCompatibleWith(
-									groups.get(other));
-							groups.get(group).setComparatorFor(
+							compatibilityMap.getGroups().get(group).addCompatibleWith(
+									compatibilityMap.getGroups().get(other));
+							compatibilityMap.getGroups().get(group).setComparatorFor(
 									other, comparator);
-							groups.get(other).addCompatibleWith(
-									groups.get(group));
-							groups.get(other).setComparatorFor(
+							compatibilityMap.getGroups().get(other).addCompatibleWith(
+									compatibilityMap.getGroups().get(group));
+							compatibilityMap.getGroups().get(other).setComparatorFor(
 									group, comparator);
 
 						} else {
-							if (!groups.containsKey(group)) {
+							if (!compatibilityMap.getGroups().containsKey(group)) {
 								addError(
 										LOC_CLASS,
 										processedClass.getCanonicalName(),
 										UNDEF_GROUP, group);
 							}
-							if (!groups.containsKey(other)) {
+							if (!compatibilityMap.getGroups().containsKey(other)) {
 								addError(
 										LOC_CLASS,
 										processedClass.getCanonicalName(),
@@ -254,7 +248,7 @@ public class AnnotationProcessor {
 				for (Set priority : priorityOrder.value()) {
 					for (String groupName : priority.groupNames()) {
 						// Get the group object associated with the group name
-						MethodGroup group = this.groups.get(groupName);
+						MethodGroup group = this.compatibilityMap.getGroups().get(groupName);
 						if (group != null) {
 							if (predecessors.isEmpty()) {
 								priorityGraph.insert(group, null);
@@ -286,7 +280,7 @@ public class AnnotationProcessor {
 				priorityLevel = priority.level();
 
 				for (String groupName : priority.groupNames()) {
-					MethodGroup group = this.groups.get(groupName);
+					MethodGroup group = this.compatibilityMap.getGroups().get(groupName);
 					if (group != null) {
 						priorityRanking.insert(priorityLevel, group);
 					}
@@ -384,10 +378,10 @@ public class AnnotationProcessor {
 			// check what group is it part of
 			MemberOf group = method.getAnnotation(MemberOf.class);
 			if (group != null) {
-				MethodGroup mg = groups.get(group.value());
+				MethodGroup mg = compatibilityMap.getGroups().get(group.value());
 
 				String methodSignature = method.toString();
-				methods.put(
+				compatibilityMap.getMembership().put(
 						methodSignature.substring(methodSignature.indexOf(method.getName())),
 						mg);
 
@@ -476,23 +470,27 @@ public class AnnotationProcessor {
 		return errorMessages.size() > 0;
 	}
 
+	public CompatibilityMap getCompatibilityMap() {
+		return this.compatibilityMap;
+	}
+	
 	/**
 	 * Returns a map that maps the group names to the method groups.
 	 * 
 	 * @return
 	 */
-	public Map<String, MethodGroup> getMethodGroups() {
-		return groups;
-	}
+	/*public Map<String, MethodGroup> getMethodGroups() {
+		return compatibilityMap.getGroups();
+	}*/
 
 	/**
 	 * Returns a map that pairs each method name with a method group.
 	 * 
 	 * @return
 	 */
-	public Map<String, MethodGroup> getMethodMemberships() {
-		return methods;
-	}
+	/*public Map<String, MethodGroup> getMethodMemberships() {
+		return compatibilityMap.getMembership();
+	}*/
 
 	/*
 	 * Returns true if the processed class has a variable named like the parameter.
@@ -520,9 +518,9 @@ public class AnnotationProcessor {
 		return classMethods.contains(what);
 	}
 
-	public PriorityStructure getPriorityStructure() {
-		PriorityStructure structure = null;
-		switch (PriorityStructure.currentStructure) {
+	public PriorityMap getPriorityMap() {
+		PriorityMap structure = null;
+		switch (PriorityMap.currentStructure) {
 		case RANK_BASED:
 			structure = this.priorityRanking;
 			break;
@@ -533,8 +531,8 @@ public class AnnotationProcessor {
 		return structure;
 	}
 	
-	public ThreadManager getThreadManager() {
-		return this.threadManager;
+	public ThreadMap getThreadMap() {
+		return this.threadMap;
 	}
 
 }

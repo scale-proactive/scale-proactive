@@ -4,11 +4,13 @@ import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 
 /**
  * This interface is meant for all classes that want to define a particular 
- * structure for handling priorities. A PriorityStructure is used to reorder 
- * requests in a PriorityQueue. Here is also defined enums and constants that 
- * are related to priority structures or methods.
+ * structure for handling priorities. Such classes must define the canOvertake 
+ * method. A PriorityMap is used to reorder requests in a queue. Here is also 
+ * defined an enum that aims at fixing a particular structure used to handle 
+ * priorities. It also defines constants that are related to priority 
+ * structures or methods.
  * 
- * @author jrochas
+ * @author The ProActive Team
  */
 public interface PriorityMap {
 	
@@ -29,11 +31,12 @@ public interface PriorityMap {
 	public abstract boolean canOvertake(MethodGroup group1, 
 			MethodGroup group2);
 	
+	
 	/**
-	 * This enum aims to specify which kind of structure is really used to 
+	 * This enum aims to specify which kind of structure is actually used to 
 	 * handle the priorities.
 	 * 
-	 * @author jrochas
+	 * @author The ProActive Team
 	 */
 	public enum PriorityManagement {
 		
@@ -41,8 +44,8 @@ public interface PriorityMap {
 		
 		/**
 		 * {@inheritDoc}
-		 * Note: the returned String is the class name of the concrete structure 
-		 * that corresponds to the given enum.
+		 * Note: the returned String is the class name of the concrete 
+		 * structure that corresponds to the given enum.
 		 */
 		@Override
 		public String toString() {

@@ -3,31 +3,38 @@ package org.objectweb.proactive.multiactivity.priority;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 
 /**
  * This class internally represents the priorities using a dependency graph. 
- * This graph is made of one or several roots that can have successors. The 
- * roots have the highest priority level. This dependency graph is built when 
- * the annotations are processed.
+ * This graph is made of one (= connected graph) or several (= disconnected 
+ * graph) roots that have successors. The roots have the highest priority 
+ * level. This dependency graph is built when the annotations are processed.
  * 
- * @author jrochas
+ * @author The ProActive Team
  */
 public class PriorityGraph implements PriorityMap {
 
-	/**
-	 * The roots of the graph, or the highest priority groups. They are the 
-	 * only entry point of the graph. 
-	 */
+	/** The roots of the graph, or the highest priority groups. They are the 
+	 * only entry point of the graph. */
 	private Set<PriorityNode> roots;
-
+	
+	/** Stores the nodes of the graph = the groups that have a priority */
+	private Set<PriorityNode> nodesList;
+	
+	/** Matrix representation of the graph. This matrix is built by computing 
+	 * the transitive closure of the initial graph. The values of the matrix 
+	 * is true if the first entry has a higher priority than the second one, 
+	 * it is false otherwise. This is an optimization to accelerate the access 
+	 * to the priority information. It is much faster than exploring the graph 
+	 * but building the matrix can be long. */
 	private HashMap<String, HashMap<String, Boolean>> existPathMatrix;
+	
+	/** Specifies whether the matrix optimization should be used or not */
 	private boolean matrixEnabled = false;
 
-	private ArrayList<PriorityNode> nodesList;
 
 	public PriorityGraph() {
 		this.roots = new HashSet<PriorityNode>();
@@ -40,30 +47,61 @@ public class PriorityGraph implements PriorityMap {
 	 * @param predecessorGroup The parent group of the group to be inserted
 	 */
 	public void insert(MethodGroup group, MethodGroup predecessorGroup) {
+		// A new highest priority group is encountered
 		if (!this.contains(group) && predecessorGroup == null) {
 			this.addRoot(new PriorityNode(group));
 		}
 		else {
+			// If the group is already in the graph and if predecessor is null,
+			// there is nothing to do.
 			if (predecessorGroup != null) {
+				
 				boolean newRoot = false;
 				PriorityNode predecessorNode = this.findNode(predecessorGroup);
+				
+				// The predecessor group is not in the graph already, add it
 				if (predecessorNode == null) {
 					predecessorNode = new PriorityNode(predecessorGroup);
 					this.addRoot(predecessorNode);
 					newRoot = true;
 				}
+				
+				// The group is already contained in the graph, just update its 
+				// references
 				if (this.contains(group)) {
 					PriorityNode groupNode = this.findNode(group);
 					predecessorNode.addSuccessor(groupNode);
 				}
+				
+				// The group is not in the graph already
 				else {
 					predecessorNode.addSuccessor(new PriorityNode(group));
 				}
+				
+				// If a predecessor is added to a root, then it is not a root 
+				// any more
 				if (this.isRoot(group) && newRoot) {
 					this.removeRoot(group);
 				}
 			}
 		}
+	}
+	
+	/**
+	 * Search for cycles in the graph.
+	 * @return true if at least one cycle is found in the graph.
+	 */
+	public boolean containsCycle() {
+		boolean contains = false;
+		ArrayList<PriorityNode> visitedNodes = new ArrayList<PriorityNode>();
+		for (PriorityNode root : this.roots) {
+			contains = this.recursiveContainsCycle(visitedNodes, root);
+			if (contains) {
+				break;
+			}
+			visitedNodes.clear();
+		}
+		return contains;
 	}
 
 	/**
@@ -125,7 +163,8 @@ public class PriorityGraph implements PriorityMap {
 	 * @param currentNode
 	 * @return
 	 */
-	private boolean recursiveContains(MethodGroup group, PriorityNode currentNode) {
+	private boolean recursiveContains(MethodGroup group, 
+			PriorityNode currentNode) {
 		boolean contains = false;
 		if (group.equals(currentNode.group)) {
 			contains = true;
@@ -169,7 +208,8 @@ public class PriorityGraph implements PriorityMap {
 	 * @param currentNode
 	 * @return
 	 */
-	private PriorityNode recursiveFindNode(MethodGroup group, PriorityNode currentNode) {
+	private PriorityNode recursiveFindNode(MethodGroup group, 
+			PriorityNode currentNode) {
 		PriorityNode node = null;
 		if (group.equals(currentNode.group)) {
 			node = currentNode;
@@ -191,73 +231,13 @@ public class PriorityGraph implements PriorityMap {
 	}
 
 	/**
-	 * Search for a particular node in the graph.
-	 * @param group The searched group
-	 * @return The node corresponding to the group in the graph or null if the 
-	 * group does not exist in the graph
-	 */
-	public MethodGroup findGroup(PriorityNode node) {
-		MethodGroup group = null;
-		for (PriorityNode root : this.roots) {
-			group = this.recursiveFindGroup(node, root);
-			if (group != null) {
-				break;
-			}
-		}
-		return group;
-	}
-
-	/**
-	 * Utility method for the findNode method.
-	 * @param group
-	 * @param currentNode
-	 * @return
-	 */
-	private MethodGroup recursiveFindGroup(PriorityNode node, PriorityNode currentNode) {
-		MethodGroup group = null;
-		if (node.equals(currentNode)) {
-			group = currentNode.group;
-		}
-		else {
-			if (!currentNode.hasSuccessors()) {
-				group = null;
-			}
-			else {
-				for (PriorityNode pn : currentNode.successors) {
-					group = recursiveFindGroup(node, pn);
-					if (group != null) {
-						break;
-					}
-				}
-			}
-		}
-		return group;
-	}
-
-	/**
-	 * Search for cycles in the graph.
-	 * @return true if at least one cycle is found in the graph.
-	 */
-	public boolean containsCycle() {
-		boolean contains = false;
-		ArrayList<PriorityNode> visitedNodes = new ArrayList<PriorityNode>();
-		for (PriorityNode root : this.roots) {
-			contains = this.recursiveContainsCycle(visitedNodes, root);
-			if (contains) {
-				break;
-			}
-			visitedNodes.clear();
-		}
-		return contains;
-	}
-
-	/**
 	 * Utility method for the containsCycle method.
 	 * @param visitedNodes
 	 * @param currentNode
 	 * @return
 	 */
-	private boolean recursiveContainsCycle(ArrayList<PriorityNode> visitedNodes, PriorityNode currentNode) {
+	private boolean recursiveContainsCycle(ArrayList<PriorityNode> visitedNodes,
+			PriorityNode currentNode) {
 		boolean contains = false;
 		if (visitedNodes.contains(currentNode)) {
 			contains = true;
@@ -275,6 +255,116 @@ public class PriorityGraph implements PriorityMap {
 		return contains;
 	}
 
+	private Set<PriorityNode> listNodes() {
+		Set<PriorityNode> list = new HashSet<PriorityNode>();
+		for (PriorityNode root : this.roots) {
+			this.recursiveListNodes(list, root);
+		}
+		return list;
+	}
+
+	/**
+	 * Utility method for the containsCycle method.
+	 * @param visitedNodes
+	 * @param currentNode
+	 * @return
+	 */
+	private void recursiveListNodes(Set<PriorityNode> visitedNodes, 
+			PriorityNode currentNode) {
+		if (!visitedNodes.contains(currentNode)) {
+			visitedNodes.add(currentNode);
+		}
+		for (PriorityNode pn : currentNode.successors) {
+			recursiveListNodes(visitedNodes, pn);
+		}
+	}
+
+	/**
+	 * @param group1
+	 * @param group2
+	 * @return true if there is a path from group1 to group2 in the graph, 
+	 * according to the successors references.
+	 */
+	private boolean existPath(MethodGroup group1, MethodGroup group2) {
+		
+		boolean exist = false;
+		PriorityNode node = null;
+		
+		// Find the first group
+		for (PriorityNode root : this.roots) {
+			node = this.recursiveFindNode(group1, root);
+			if (node != null) {
+				break;
+			}
+		}
+		
+		// See if the second group is accessible from the first one
+		if (node != null) {
+			for (PriorityNode succ : node.successors) {
+				exist = this.recursiveContains(group2, succ);
+				if (exist) {
+					break;
+				}
+			}
+		}
+		return exist;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean canOvertake(MethodGroup group1, MethodGroup group2) {		
+		// We use the matrix optimization to know about priorities of groups
+		if (this.matrixEnabled) {			
+			Boolean returnValue = false;
+			
+			// If the node list is not yet built, build it
+			if (this.nodesList == null) {
+				this.nodesList = this.listNodes();
+				for (PriorityNode node : this.nodesList) {
+					PriorityUtils.logMessage(node.group.name + " ");
+				}
+			}
+			
+			// If the matrix is not yet built, build it
+			if (this.existPathMatrix == null) {
+				
+				int size = this.nodesList.size();
+				this.existPathMatrix = 
+						new HashMap<String, HashMap<String, Boolean>>(size);
+				
+				for (PriorityNode pni : this.nodesList) {
+					HashMap<String, Boolean> map = 
+							new HashMap<String, Boolean>(size);
+					for (PriorityNode pnj : this.nodesList) {
+						map.put(pnj.group.name, 
+								this.existPath(pni.group, pnj.group));					
+					}
+					this.existPathMatrix.put(pni.group.name, map);
+				}
+			}
+			
+			// The matrix exists, now look for the entry we are interested in
+			HashMap<String, Boolean> intermediateMatrix = 
+					this.existPathMatrix.get(group1.name);
+			
+			if (intermediateMatrix != null) {
+				returnValue = intermediateMatrix.get(group2.name);
+				if (returnValue == null) {
+					returnValue = false;
+				}
+			}
+			return returnValue;
+
+		}
+		
+		// We do not use the matrix optimization; look through the graph
+		else {
+			return this.existPath(group1, group2);
+		}
+	}
+	
 	/**
 	 * {@inheritDoc}
 	 */
@@ -306,112 +396,12 @@ public class PriorityGraph implements PriorityMap {
 		return description;
 	}
 
-	private ArrayList<PriorityNode> listNodes() {
-		ArrayList<PriorityNode> list = new ArrayList<PriorityNode>();
-		for (PriorityNode root : this.roots) {
-			this.recursiveListNodes(list, root);
-		}
-		return list;
-	}
-
+	
 	/**
-	 * Utility method for the containsCycle method.
-	 * @param visitedNodes
-	 * @param currentNode
-	 * @return
-	 */
-	private void recursiveListNodes(ArrayList<PriorityNode> visitedNodes, PriorityNode currentNode) {
-		if (!visitedNodes.contains(currentNode)) {
-			visitedNodes.add(currentNode);
-		}
-		for (PriorityNode pn : currentNode.successors) {
-			recursiveListNodes(visitedNodes, pn);
-		}
-	}
-
-	private boolean existPath(MethodGroup group1,
-			MethodGroup group2) {
-		boolean exist = false;
-		PriorityNode node = null;
-		for (PriorityNode root : this.roots) {
-			node = this.recursiveFindNode(group1, root);
-			if (node != null) {
-				break;
-			}
-		}
-		if (node != null) {
-			for (PriorityNode succ : node.successors) {
-				exist = this.recursiveContains(group2, succ);
-				if (exist) {
-					break;
-				}
-			}
-		}
-		return exist;
-	}
-
-
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean canOvertake(MethodGroup group1,
-			MethodGroup group2) {
-		if (this.matrixEnabled) {
-			Boolean returnValue = false;
-			if (this.nodesList == null) {
-				this.nodesList = this.listNodes();
-				for (PriorityNode node : this.nodesList) {
-					PriorityUtils.logMessage(node.group.name + " ");
-				}
-			}
-			if (this.existPathMatrix == null) {
-				int size = this.nodesList.size();
-				this.existPathMatrix = new HashMap<String, HashMap<String, Boolean>>(size);
-				for (int i = 0 ; i < size; i++) {
-					PriorityNode pni = this.nodesList.get(i);
-					HashMap<String, Boolean> map = new HashMap<String, Boolean>(size);
-					for (int j = 0 ; j < size; j++) {
-						PriorityNode pnj = this.nodesList.get(j);	
-						map.put(this.nodesList.get(j).group.name, this.existPath(pni.group, pnj.group));						
-					}
-					this.existPathMatrix.put(this.nodesList.get(i).group.name, map);
-				}
-				StringBuilder sb = new StringBuilder();
-				for (Entry<String, HashMap<String,Boolean>> entry :this.existPathMatrix.entrySet()) {
-					sb.append("** " + entry.getKey() + ": ");
-					for (Entry<String, Boolean> entry2 : entry.getValue().entrySet()) {
-						sb.append(entry2.getKey() + ":" + entry2.getValue() + " ");
-					}
-					sb.append("\n");
-				}
-				PriorityUtils.logMessage(sb.toString());
-			}
-			HashMap<String, Boolean> intermediateMatrix = this.existPathMatrix.get(group1.name);
-			if (intermediateMatrix != null) {
-				returnValue = intermediateMatrix.get(group2.name);
-				if (returnValue != null) {
-					return returnValue;
-				}
-				else { 
-					return false;
-				}
-			}
-			else {
-				return false;
-			}
-		}
-		else {
-			return this.existPath(group1, group2);
-		}
-	}
-
-	/**
-	 * Represents a node in the PriorityGraph.
-	 * A node is defined by the group that it contains and by a list of 
-	 * successors nodes.
-	 * @author jrochas
+	 * Represents a node in the PriorityGraph. A node is defined by the group 
+	 * that it contains and by a list of successors nodes.
+	 * 
+	 * @author The ProActive Team
 	 */
 	private class PriorityNode {
 
@@ -422,6 +412,7 @@ public class PriorityGraph implements PriorityMap {
 		 * the considered node) */
 		public Set<PriorityNode> successors;
 
+		
 		public PriorityNode(MethodGroup group) {
 			this.successors = new HashSet<PriorityNode>();
 			this.group = group;
@@ -544,7 +535,7 @@ public class PriorityGraph implements PriorityMap {
 				"" + graph.canOvertake(g3, g5));
 
 		// Checking node listing functionality
-		ArrayList<PriorityNode> list = graph.listNodes();
+		Set<PriorityNode> list = graph.listNodes();
 		for (PriorityNode node : list) {
 			System.out.println(node.group.name);
 		}

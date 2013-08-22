@@ -5,10 +5,20 @@ import java.util.List;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
+/**
+ * This class is meant to manage the requests according their priority. It 
+ * provides an interface to store requests and to retrieve the highest 
+ * priority requests. To order requests according to their priority, it uses 
+ * the PriorityMap built when annotations are processed.
+ * 
+ * @author The ProActive Team
+ *
+ */
 public abstract class PriorityManager {
 	
 	/** Priority representation used to decide where to insert a new request */
 	protected PriorityMap priorityMap;
+	
 	
 	protected PriorityManager(PriorityMap priorityMap) {
 		this.priorityMap = priorityMap;

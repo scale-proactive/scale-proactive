@@ -4,25 +4,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.Map.Entry;
 
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 
 /**
- * Internal representation of priorities defined with 
+ * Internal representation of priorities defined with the annotation:
  * {@link DefineRankBasedPriorities}. The structure used here to store groups 
  * and their priority is dictionary-based: for a given priority (that is an 
  * integer), we can access all the groups belonging to it and all the current 
  * registered requests for them. An inner class is defined to represent both 
  * the groups and the requests for a given priority: {@link PriorityRank}.
  * 
- * @author jrochas
+ * @author The ProActive Team
  */
 public class PriorityRanking implements PriorityMap {
-	
-	private static boolean matrixEnabled = true;
-	private ArrayList<MethodGroup> nodesList;
-	private HashMap<String, HashMap<String, Boolean>> existPathMatrix;
 
 	/** The level of priority assigned to requests of default group */
 	public static final int defaultPriorityLevel = 0;
@@ -30,7 +25,20 @@ public class PriorityRanking implements PriorityMap {
 	/** The dictionary containing the priorities and their associated groups
 	 * and requests */
 	private Set<PriorityRank> priorityRanks;
+	
+	/** List of all groups that have a priority */
+	private ArrayList<MethodGroup> groupList;
+	
+	/** 
+	 * Matrix that stores a boolean value that represents whether the first 
+	 * entry can overtake the second. This speeds up the insertion process.
+	 */
+	private HashMap<String, HashMap<String, Boolean>> existPathMatrix;
+	
+	/** Specifies whether the matrix optimization should be used or not */
+	private static boolean matrixEnabled = true;
 
+	
 	/**
 	 * Initialize a new ranking and create the default rank with default 
 	 * priority.s
@@ -66,74 +74,63 @@ public class PriorityRanking implements PriorityMap {
 	}
 
 	/** 
-	 * Cannot return unrelated because there exist an order inevitably
+	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean canOvertake(MethodGroup group1,
-			MethodGroup group2) {
-		boolean overtake = false;
+	public boolean canOvertake(MethodGroup group1, MethodGroup group2) {
+		Boolean canOvertake = false;
+		// We use the matrix optimization
 		if (matrixEnabled) {
-			Boolean returnValue = false;
-			if (this.nodesList == null) {
-				this.nodesList = new ArrayList<MethodGroup>();
+			// The group list does not exist yet, build it
+			if (this.groupList == null) {
+				this.groupList = new ArrayList<MethodGroup>();
 				for (PriorityRank rank : this.priorityRanks) {			
-					this.nodesList.addAll(rank.methodGroups);
+					this.groupList.addAll(rank.methodGroups);
 				}
 			}
+			//The matrix does not exist yet, build it
 			if (this.existPathMatrix == null) {
-				int size = this.nodesList.size();
-				this.existPathMatrix = new HashMap<String, HashMap<String, Boolean>>(size);
-				for (int i = 0 ; i < size; i++) {
-					MethodGroup pni = this.nodesList.get(i);
-					HashMap<String, Boolean> map = new HashMap<String, Boolean>(size);
-					for (int j = 0 ; j < size; j++) {
-						MethodGroup pnj = this.nodesList.get(j);	
-						
-						PriorityRank rank1 = null;
-						PriorityRank rank2 = null;
+				boolean subCanOvertake;
+				PriorityRank rank1;
+				PriorityRank rank2;
+				int size = this.groupList.size();
+				this.existPathMatrix = 
+						new HashMap<String, HashMap<String, Boolean>>(size);
+				for (MethodGroup gi : this.groupList) {
+					HashMap<String, Boolean> map = new HashMap<>(size);
+					for (MethodGroup gj : this.groupList) {		
+						rank1 = null;
+						rank2 = null;
 						for (PriorityRank rank : this.priorityRanks) {
-							if (rank.methodGroups.contains(pni)) {
+							if (rank.methodGroups.contains(gi)) {
 								rank1 = rank;
 							}
-							if (rank.methodGroups.contains(pnj)) {
+							if (rank.methodGroups.contains(gj)) {
 								rank2 = rank;
 							}
 						}
-						boolean canOvert = false;
+						subCanOvertake = false;
 						if (rank1 != null && rank2 != null) {
 							if (rank1.rankNumber > rank2.rankNumber) {
-								canOvert = true;
+								subCanOvertake = true;
 							}
-						}
-						
-						map.put(this.nodesList.get(j).name, canOvert);						
+						}			
+						map.put(gj.name, subCanOvertake);						
 					}
-					this.existPathMatrix.put(this.nodesList.get(i).name, map);
+					this.existPathMatrix.put(gi.name, map);
 				}
-				StringBuilder sb = new StringBuilder();
-				for (Entry<String, HashMap<String,Boolean>> entry :this.existPathMatrix.entrySet()) {
-					sb.append("** " + entry.getKey() + ": ");
-					for (Entry<String, Boolean> entry2 : entry.getValue().entrySet()) {
-						sb.append(entry2.getKey() + ":" + entry2.getValue() + " ");
-					}
-					sb.append("\n");
-				}
-				PriorityUtils.logMessage(sb.toString());
 			}
-			HashMap<String, Boolean> intermediateMatrix = this.existPathMatrix.get(group1.name);
+			// Return the matrix entry of group1->group2
+			HashMap<String, Boolean> intermediateMatrix = 
+					this.existPathMatrix.get(group1.name);
 			if (intermediateMatrix != null) {
-				returnValue = intermediateMatrix.get(group2.name);
-				if (returnValue != null) {
-					return returnValue;
+				canOvertake = intermediateMatrix.get(group2.name);
+				if (canOvertake == null) {
+					canOvertake = false;
 				}
-				else { 
-					return false;
-				}
-			}
-			else {
-				return false;
 			}
 		}
+		// We do not use the matrix optimization: go through all ranks
 		else {
 			PriorityRank rank1 = null;
 			PriorityRank rank2 = null;
@@ -147,28 +144,30 @@ public class PriorityRanking implements PriorityMap {
 			}
 			if (rank1 != null && rank2 != null) {
 				if (rank1.rankNumber > rank2.rankNumber) {
-					overtake = true;
+					canOvertake = true;
 				}
 			}
 		}
-		return overtake;
+		return canOvertake;
 	}
 
+	
 	/**
-	 * Encapsulates a set of groups for a given priority and 
-	 * a set of ready requests belonging to those groups.
+	 * Encapsulates a set of groups for a given priority and a set of ready 
+	 * requests belonging to those groups.
 	 * 
-	 * @author jrochas
+	 * @author The ProActive Team
 	 */
 	private class PriorityRank {
 
-		/** Groups of the same priority rank */
+		/** Groups belonging to the same priority rank */
 		public Set<MethodGroup> methodGroups;
 
 		/** Level of priority of the rank. Note : the higher this number is, 
 		 * the higher the priority is. */
 		public final int rankNumber;
 
+		
 		public PriorityRank(int rankNumber) {
 			this.methodGroups = new HashSet<MethodGroup>();
 			this.rankNumber = rankNumber;

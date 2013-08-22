@@ -39,6 +39,7 @@ package org.objectweb.proactive.multiactivity.priority;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
@@ -49,7 +50,8 @@ import org.objectweb.proactive.multiactivity.limits.ThreadTracker;
  * This class aims at reordering the requests in the queue according to the 
  * priorities that were defined with the priority annotations. For that it 
  * uses an internal queue from where we can insert new requests and poll 
- * highest priority requests.
+ * highest priority requests, as defined in the {@link PriorityManager} super 
+ * class.
  * 
  * @author The ProActive Team
  */
@@ -62,7 +64,8 @@ public class PriorityTracker extends PriorityManager {
 	private final CompatibilityManager compatibility;
 		
 	
-	public PriorityTracker(CompatibilityManager compatibility, PriorityMap priorityMap) {
+	public PriorityTracker(CompatibilityManager compatibility, 
+			PriorityMap priorityMap) {
 		super(priorityMap);
 		this.compatibility = compatibility;
 	}
@@ -72,16 +75,20 @@ public class PriorityTracker extends PriorityManager {
 	 */
 	@Override
 	public void register(RunnableRequest request) {
+		
 		MethodGroup group = this.compatibility.getGroupOf(request.getRequest());
 		PriorityElement toInsert = new PriorityElement(request, group);
+		
 		// The request to insert is the only one in the priority queue
 		if (this.first == null) {
 			this.first = toInsert;
 		}
+		
 		else {
 			PriorityElement currentElement = this.first;
 			PriorityElement previousElement = null;
 			boolean isOvertakable = false;
+			
 			// Search for the first request that has a lower priority
 			while (!isOvertakable && currentElement != null) {
 				isOvertakable = 
@@ -92,14 +99,17 @@ public class PriorityTracker extends PriorityManager {
 					currentElement = currentElement.next;
 				}
 			}
+			
 			// The request must be placed just before the currentElement
 			if (currentElement != null) {
 				toInsert.next = currentElement;
 				toInsert.previous = currentElement.previous;
+				
 				if (currentElement.previous != null) {
 					currentElement.previous.next = toInsert;
 					currentElement.previous = toInsert;
 				}
+				
 				// The element to insert must be the first in the queue
 				else {
 					toInsert.next = this.first;
@@ -107,6 +117,7 @@ public class PriorityTracker extends PriorityManager {
 					this.first = toInsert;
 				}
 			}
+			
 			// Means that the element must be inserted at the end
 			else {
 				toInsert.previous = previousElement;
@@ -120,16 +131,23 @@ public class PriorityTracker extends PriorityManager {
 	 */
 	@Override
 	public void unregister(RunnableRequest request) {
+		
 		PriorityElement element = this.first;
+		
 		// There is only the element to remove in the PriorityQueue
 		if (this.first.request.equals(request) && this.first.next == null) {
 			this.first = null;
 		}
+		
 		else {
+			
 			while (element != null) {
+				
 				if (element.request.equals(request)) {
+					
 					PriorityElement previous = element.previous;
-					PriorityElement next = element.next;
+					PriorityElement next = element.next; 
+					
 					// The element to remove can be the first
 					if (previous != null) {
 						previous.next = next;
@@ -137,12 +155,14 @@ public class PriorityTracker extends PriorityManager {
 					else {
 						this.first = next;
 					}
+					
 					// The element to remove can be the last
 					if (next != null) {
 						next.previous = previous;
 					}
 					break;
 				}
+				
 				element = element.next;
 			}
 		}
@@ -160,19 +180,6 @@ public class PriorityTracker extends PriorityManager {
 			element = element.next;
 		}
 		return size;
-	}
-
-	/**
-	 * @return true if there is at least one registered request,
-	 * all priority groups combined.
-	 */
-	public boolean hasSomeRequestsRegistered() {
-		if (this.first == null) {
-			return false;
-		}
-		else {
-			return true;
-		}
 	}
 	
 	/**
@@ -194,15 +201,19 @@ public class PriorityTracker extends PriorityManager {
 	 */
 	@Override
 	public String toString() {
+		
+		Request request;
+		int nbParameters;
 		StringBuilder sb = new StringBuilder();
 		PriorityElement element = this.first;
 
 		sb.append("\n\nPriority queue - from high priority...\n");
 		while (element != null) {
-			sb.append("\t" + element.request.getRequest().getMethodName() + "(");
-			int nbParameters = element.request.getRequest().getMethodCall().getNumberOfParameter();
+			request = element.request.getRequest();
+			sb.append("\t" + request.getMethodName() + "(");
+			nbParameters = request.getMethodCall().getNumberOfParameter();
 			for (int i = 0 ; i < nbParameters ; i++) {
-				sb.append(element.request.getRequest().getParameter(i));
+				sb.append(request.getParameter(i));
 				if (i != nbParameters) {
 					sb.append(", ");
 				}
@@ -210,6 +221,7 @@ public class PriorityTracker extends PriorityManager {
 			sb.append(")\n");
 			element = element.next;
 		}
+		
 		sb.append("Priority queue - to low priority\n");
 		return sb.toString();
 	}
@@ -219,24 +231,39 @@ public class PriorityTracker extends PriorityManager {
 	 * @param threadManager
 	 * @return A string with queue content and thread utilization.
 	 */
-	public String toString(CompatibilityManager compatibility, ThreadTracker threadManager) {
+	public String toString(CompatibilityManager compatibility, 
+			ThreadTracker threadManager) {
+		
+		Request request;
 		StringBuilder sb = new StringBuilder();
 		PriorityElement element = this.first;
 
 		sb.append("\n\nPriority queue - from high priority...\n");
+		
 		while (element != null) {
-			sb.append("\t" + element.request.getRequest().getMethodName() + "(");
-			for (int i = 0 ; i < element.request.getRequest().getMethodCall().getNumberOfParameter() ; i++) {
-				sb.append(element.request.getRequest().getParameter(i));
+			
+			request = element.request.getRequest();
+			sb.append("\t" + request.getMethodName() + "(");
+			
+			for (int i = 0 ; 
+					i < request.getMethodCall().getNumberOfParameter() ; i++) {
+				sb.append(request.getParameter(i));
 			}
+			
 			sb.append(")");
-			MethodGroup group = compatibility.getGroupOf(element.request.getRequest());
+			MethodGroup group = compatibility.getGroupOf(request);
+			
 			if (group != null) {
-				sb.append((!threadManager.hasFreeThreads(group) ? " cannot be executed (thread limit: " + threadManager.printUsage(group) : "") + "\n");
+				sb.append((!threadManager.hasFreeThreads(group) ? 
+						" cannot be executed (thread limit: " + 
+						threadManager.printUsage(group) : "") + "\n");
 			}
+			
 			element = element.next;
 		}
+		
 		sb.append("Priority queue - to low priority\n");
+		
 		return sb.toString();
 	}
 
@@ -244,7 +271,7 @@ public class PriorityTracker extends PriorityManager {
 	 * Represents an element in the PriorityQueue. Since it is a private class,
 	 * the fields have been declared public for convenience.
 	 * 
-	 * @author jrochas
+	 * @author The ProActive Team
 	 */
 	private class PriorityElement {
 

@@ -44,8 +44,10 @@ import org.objectweb.proactive.core.body.request.Request;
 
 
 /**
- * This class can be used to query information about method groups ({@link Group}) and compatibility relations ({@link Compatible}) in a class. 
- * It uses the {@link AnnotationProcessor} to extract this information.  
+ * This class can be used to query information about method groups 
+ * ({@link Group}) and compatibility relations ({@link Compatible}) in a 
+ * class. It uses the {@link AnnotationProcessor} to extract this information. 
+ * 
  * @author  The ProActive Team
  */
 public abstract class CompatibilityManager {

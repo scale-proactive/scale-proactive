@@ -3,21 +3,29 @@ package org.objectweb.proactive.multiactivity.limits;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
+/**
+ * This class aims at managing the threads according to the thread limits that 
+ * were set in the annotations. In particular, the {@link RequestExecutor} 
+ * must ask this class if a ready-to-execute request has enough threads left 
+ * to actually execute.
+ * 
+ * @author The ProActive Team
+ */
 public abstract class ThreadManager {
 	
+	/** Default thread pool size */
 	public static final int THREAD_POOL_DEFAULT = Integer.MAX_VALUE;
 
+	/** Default maximum number of threads that can be occupied at the same time 
+	 * by one group */
 	public static final int MAX_THREADS_DEFAULT = Integer.MAX_VALUE;
 	
+	/** Default number of reserved threads for a given group */
 	public static final int MIN_THREADS_DEFAULT = 0;
-	
-	/** 
-	 * The minimum size of the thread pool (at least the sum of minThread 
-	 * limit of all the groups 
-	 */
-	private int threadPoolMinSize;
 
+	/** The structure that stores all the limits set for the groups */
 	protected ThreadMap threadMap;
+	
 	
 	protected ThreadManager(ThreadMap threadMap) {
 		this.threadMap = threadMap;

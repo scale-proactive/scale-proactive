@@ -8,10 +8,10 @@ import org.objectweb.proactive.annotation.PublicAPI;
 
 
 /**
- * This annotation represents a priority set to hold groups 
- * of same priority level.
+ * This annotation represents a priority set to hold groups of same priority 
+ * level.
  * 
- * @author jrochas
+ * @author The ProActive Team
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)

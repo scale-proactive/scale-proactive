@@ -9,10 +9,11 @@ import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
 /**
- * This class contains the thread limits and the current number of threads 
- * that are used for all the groups. 
+ * This class records the number of threads currently occupied by one group, 
+ * and uses the {@link ThreadMap} to see if this current number is indeed in 
+ * between the thread limits set in the annotations.
  * 
- * @author jrochas
+ * @author The ProActive Team
  */
 public class ThreadTracker extends ThreadManager {
 
@@ -44,8 +45,7 @@ public class ThreadTracker extends ThreadManager {
 	}
 
 	/**
-	 * Decreases the current number of threads used by the group by 1.
-	 * @param group The group to decrease occupancy
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void decreaseUsage(RunnableRequest request) {
@@ -103,4 +103,5 @@ public class ThreadTracker extends ThreadManager {
 		}
 		return sb.toString();
 	}
+	
 }

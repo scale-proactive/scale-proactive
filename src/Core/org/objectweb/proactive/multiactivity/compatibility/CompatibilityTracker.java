@@ -52,7 +52,7 @@ import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
 
 
 /**
- * This is an implementation of the {@link StatefulCompatibilityMap} abstract class.
+ * This is an implementation of the {@link CompatibilityManager} abstract class.
  * It relies on a BlockingRequestQueue (the one used by default in the body of active objects) to get the
  * list of waiting requests.
  * <br>

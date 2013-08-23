@@ -71,7 +71,16 @@ public @interface Group {
      */
     public boolean selfCompatible();
     
+    /** 
+     * Sets the maximum number of threads that can be occupied at the same 
+     * time by the group.
+     */
     public int maxThreads() default ThreadTracker.MAX_THREADS_DEFAULT;
+    
+    /** 
+     * Sets the minimum number of threads that are reserved to execute only 
+     * requests of this group. 
+     */
     public int minThreads() default ThreadTracker.MIN_THREADS_DEFAULT;
     
     /**

@@ -9,11 +9,10 @@ import java.lang.annotation.Target;
 import org.objectweb.proactive.annotation.PublicAPI;
 
 /**
- * This annotation is used to define a list of 
- * {@link Priority}ies at the header of a
- * class, to model priorities as ranks.
+ * This annotation is used to define a list of {@link Priority}ies at the 
+ * header of a class, to model priorities as ranks.
  * 
- * @author jrochas
+ * @author The ProActive Team
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
@@ -21,6 +20,7 @@ import org.objectweb.proactive.annotation.PublicAPI;
 @PublicAPI
 public @interface DefineRankBasedPriorities {
 
+	/** Represents a priority level */
 	public Priority[] value();
 	
 }

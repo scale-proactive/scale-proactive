@@ -13,7 +13,7 @@ import org.objectweb.proactive.annotation.PublicAPI;
  * {@link PriorityOrder}s at the header of a
  * class, to model priorities as a dependency graph.
  * 
- * @author jrochas
+ * @author The ProActive Team
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
@@ -21,6 +21,7 @@ import org.objectweb.proactive.annotation.PublicAPI;
 @PublicAPI
 public @interface DefineGraphBasedPriorities {
 
+	/** Represents an union of priority orders */
     public PriorityOrder[] value();
 
 }

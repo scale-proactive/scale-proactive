@@ -440,8 +440,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
 					i = this.priorityManager.getHighestPriorityRequests().iterator();
 
-					//log.trace(this.priorityManager.toString(countActive(), THREAD_LIMIT));
-
 					if (i.hasNext()) {
 						log.trace("Requests served");
 					}

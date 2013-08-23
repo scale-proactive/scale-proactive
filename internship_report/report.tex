@@ -184,12 +184,10 @@ In the following we will talk more generally about \emph{requests} instead of me
 The second characteristic of active objects is the absence of local concurrency. Indeed, the active object model ensures that requests that are sent to an active object are executed sequentially, even if several requests are received "at the same time"; at each moment, a single request is active.
 This is possible because an active object embeds a request queue (see Figure~\ref{fig:active_object}).
 \begin{figure}[ht]
-      \fbox{
       \begin{minipage}[c]{\textwidth}
       \centering
       \includegraphics[scale=0.5]{pictures/active_object.pdf}
       \end{minipage}
-      }
       \caption{Anatomy of an active object}
       \label{fig:active_object}
 \end{figure}
@@ -284,7 +282,7 @@ The first step is to use \textbf{@DefineGroups} and \textbf{@Group} annotations 
   @Group(name="monitoring", selfCompatible=true)
 })
  	\end{lstlisting}
-\caption{An example of group definition}
+\caption{An example of group definitions}
 \label{fig:group_annotation}
 \end{figure}
 
@@ -303,7 +301,7 @@ public Serializable lookup(Key k) { ... }
 @MemberOf("monitoring")
 public void monitor() { ... }
  	\end{lstlisting}
-\caption{An example of method assignment to groups}
+\caption{An example of method assignments}
 \label{fig:memberof_annotation}
 \end{figure}
 
@@ -314,11 +312,11 @@ The last step is to specify which group is compatible with which other group (i.
 	\lstset{language=java, numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt, basicstyle=\footnotesize}
 	\begin{lstlisting}[frame=single]
 @DefineRules({
-  @Compatible({"join", "monitoring"),
-  @Compatible({"routing", "monitoring"),
+  @Compatible({"join", "monitoring"}),
+  @Compatible({"routing", "monitoring"}),
 })
  	\end{lstlisting}
-\caption{An example of compatibility definition}
+\caption{An example of compatibility definitions}
 \label{fig:compatible_annotation}
 \end{figure}
 
@@ -351,15 +349,15 @@ public class Peer {
 \label{fig:annotated_peer_class}
 \end{figure}
 
-\subsection{Request service mechanism of multiactive objects}\label{sec:MAOservice}
-To efficiently execute requests according to defined compatibilities, multiactive objects enforce a FIFO policy with possibility to overtake. More precisely, a request that is waiting in the queue is executed if it is compatible with executing requests and with all previous requests in the queue. An example of execution is given on Figure~\ref{fig:multiactive_object}, assuming the annotated Peer class. On this example, the first request in the queue cannot be executed because it is not compatible with executing requests. As the second request in the queue is compatible with both executing requests and the first request in the queue, then the second request can be executed right away in a new thread. Note that, with this rule, it is fair to execute the second request before the first one because the second request will not prevent the first one from executing (since they are compatible), so the first request in the queue will not be starved because the second one overtook it.
+\subsection{Request service policy of multiactive objects}\label{sec:MAOservice}
+To efficiently execute requests according to defined compatibilities, multiactive objects enforce an adapted First In First Out policy with possibility to overtake. More precisely, a request that is waiting in the queue is executed if it is compatible with executing requests \textbf{and} with all previous requests in the queue. According to this definition, this scheduling policy is called First Compatible First Out. An example of execution is given on Figure~\ref{fig:multiactive_object}, assuming the annotated Peer class. On this example, the first request in the queue cannot be executed because it is not compatible with executing requests. As the second request in the queue is compatible with both executing requests and the first request in the queue, then the second request can be executed right away in a new thread. Note that, with this rule, it is fair to execute the second request before the first one because the second request will not prevent the first one from executing (since they are compatible), so the first request in the queue will not be starved because the second one overtook it.
 
 \begin{figure}[ht]
       \begin{minipage}[c]{\textwidth}
       \centering
       \includegraphics[scale=0.5]{pictures/multiactive_object.pdf}
       \end{minipage}
-      \caption{First compatible first out policy of multiactive objects}
+      \caption{First Compatible First Out policy of multiactive objects}
       \label{fig:multiactive_object}
 \end{figure}
 
@@ -453,13 +451,11 @@ The main objective here is to reduce response time of most important requests.
 Currently, in multiactive objects, requests lie in the reception queue in the order they have been received, that is a First In First Out ordering. Requests in the reception queue are then filtered such that compatible requests are pulled out to lie in a new queue that we call ready queue, as explained in Section~\ref{sec:MAOservice}. Requests are then executed according to the order of the ready queue. Currently, in the ready queue, a request is always placed after older requests and before more recent requests. Therefore, if in the ready queue a very important request is placed after a lot of unimportant requests, then the very important request has to wait the completion of all the unimportant requests before being processed. Prioritizing requests at the ready queue level aims at solving this problem by executing most important requests first, and this is what we introduce in this work. Criteria of importance can be of multiple sources. For example, in a storage system where updating the content is critical, we would like to be able to postpone reading requests after modifying requests. Assuming that we are using an object as front end to store and retrieve content in this system, Figure~\ref{fig:priority_principle} displays what could happen in this case with prioritized requests:
 
 \begin{figure}[ht]
-      \fbox{
       \begin{minipage}[c]{\textwidth}
       \centering
       \includegraphics[scale=0.5]{pictures/priority_principle.pdf}
       \end{minipage}
-      }
-      \caption{Principle of priorities: reorder request execution}
+      \caption{Priority principle: reorder request execution}
       \label{fig:priority_principle}
 \end{figure}
 
@@ -528,10 +524,10 @@ Always ordering the requests in a total order can be inconvenient. Even if the p
 	\begin{lstlisting}[frame=single]
 @DefineIntegerBasedPriorities({
   @Priority(groupNames = {"G2"}, level = 2),
-  @Priority(groupNames = {"G1"}, level = 1),
+  @Priority(groupNames = {"G1"}, level = 1)
 })
  	\end{lstlisting}
-\caption{A priority relation involving two groups}
+\caption{A priority definition involving two groups of different priority}
 \label{fig:two_priorities}
 \end{figure}
 
@@ -558,7 +554,7 @@ The new annotations we have developed are based on the following structure. Firs
   })
 })
  	\end{lstlisting}
-\caption{Graph-based priority annotations}
+\caption{An example of priority annotations based on a dependency graph}
 \label{graph_priority_annotation}
 \end{figure}
 
@@ -566,13 +562,11 @@ Here, no value nor particular indication are given. It is only the order in whic
 
 Internally, when processed, this priority definition is stored as a dependency graph pictured on Figure~\ref{fig:graph}.
 \begin{figure}[!ht]
-      \fbox{
       \begin{minipage}[c]{\textwidth}
       \centering
       \includegraphics[scale=0.5]{pictures/graph.pdf}
       \end{minipage}
-      }
-      \caption{Dependency graph corresponding to the definition of Figure~\ref{graph_priority_annotation}}
+      \caption{Dependency graph corresponding to the Figure~\ref{graph_priority_annotation} definition}
       \label{fig:graph} 
 \end{figure}
 This example can be defined using only one \textbf{@PriorityOrder} annotation. But the advantage of the graph-based priority specification is that we can define several branches of the graph separately without impacting the whole meaning. Figure~\ref{graph_priority_definition_2} shows another example of the same graph definition.
@@ -602,13 +596,11 @@ In fact, one \textbf{@PriorityOrder} annotation corresponds to a linear represen
 In the previous example, both the meaning and the impact of the priority definitions is exactly the same as the one defined with integer-based specification. And indeed, an integer-based priority specification can always be translated into a graph-based specification. However, a dependency graph cannot always be translated into a integer-based specification, because of the \emph{unrelated} relation. Indeed, the unrelated relation is expressible with the graph specification but not with the integer specification, because of total order. Consider this particular dependency graph displayed on Figure~\ref{fig:graph_2}.
 
 \begin{figure}[!ht]
-      \fbox{
       \begin{minipage}[c]{\textwidth}
       \centering
       \includegraphics[scale=0.5]{pictures/graph_2.pdf}
       \end{minipage}
-      }
-      \caption{Dependency graph that cannot be translated with integer assignment}}
+      \caption{Dependency graph that cannot be translated using integer assignment}}
       \label{fig:graph_2} 
 \end{figure}
 
@@ -631,7 +623,7 @@ In this graph, there are two unrelated relations. In particular, \textbf{G3} is 
   })
 })
  	\end{lstlisting}
-\caption{Relative priority annotation}
+\caption{Graph-based definition of the graph depicted on Figure~\ref{fig:graph_2}}
 \label{fig:new_priority_annotation}
 \end{figure}
 
@@ -730,7 +722,7 @@ We have covered all the cases to show that the queue is always ordered if the ab
 \paragraph{}
 To conclude, the graph-based priority specification is very convenient to define relative priorities between group of requests of multiactive objects. The programmer only defines dependencies between groups, that are then automatically taken into account as priorities when scheduling requests. This specification internally uses a dependency graph that is not visible from the user. This allows our graph to have strong properties. The only drawback of this specification is that it uses a quite complex structure (a graph) that (1) has to be kept in memory the entire execution time, and (2) might be entirely explored each time a request is inserted in the ready queue. The second point impacts on the scheduling time of requests since the queue must be locked during the whole insertion process to prevent data races. This can be a problem considering our efficiency objective, which stipulate that our priority specification should have a low overhead on the scheduling time. On the other hand, the integer-based specification seems to be well adapted for efficient processing. This is why, despite the convenience of the graph-based specification, we need to validate this specification through experiments that compare it with the integer-based specification. Such experiments will be presented in Section~\ref{sec:experiments}.
 
-Note that from Java version 8 (that is not yet released - planned on early 2014), we will be able to get rid of the container annotations. In our implementation of priority specifications, container annotations are named with the \textbf{@Define} prefix, as in \textbf{@DefineIntegerBasedPriorities} and \textbf{@DefineGraphBasedPriorities}. Indeed, Java 8 will introduce the possibilty to use an annotation more than once on top of a given entity, which is not allowed for the moment. This is why we had to use container annotations to encapsulate several declarations, which makes the priority specification a little bit heavier. The contrast between both versions is emphasized in Appendix A.
+Note that from Java version 8 (that is not yet released - planned on early 2014), we will be able to get rid of the container annotations. In our implementation of priority specifications, container annotations are named with the \textbf{@Define} prefix, as in \textbf{@DefineIntegerBasedPriorities} and \textbf{@DefineGraphBasedPriorities}. Indeed, Java 8 will introduce the possibilty to use an annotation more than once on top of a given entity, which is not allowed for the moment. This is why we had to use container annotations to encapsulate several declarations, which makes the priority specification a little bit heavier. The contrast between both versions is emphasized in Appendix B.
 
 \subsection{Thread management}
 \subsubsection{Problematic}
@@ -748,7 +740,7 @@ To prevent starvation of low priority requests at the programming level, we have
   @Group(name="G2", threadLimit=3, selfCompatible="true")
 })
  	\end{lstlisting}
-\caption{The new group annotation taking into account thread limitation}
+\caption{Enhanced group annotation taking into account thread limitation per group}
 \label{fig:new_groups}
 \end{figure}
 
@@ -766,7 +758,7 @@ The second starvation problem is known as \emph{priority inversion} \cite{Lampso
   @Group(name="G2", threadLimit=3, reservedThreads=1, selfCompatible="true")
 })
  	\end{lstlisting}
-\caption{Enhanced group annotation that takes into account reserved threads}
+\caption{Enhanced group annotation taking into account reserved threads per group}
 \label{fig:new_new_groups}
 \end{figure}
 
@@ -785,12 +777,10 @@ We have introduced mechanisms in multiactive objects that offer to the programme
 A second drawback of the thread management mechanisms that we have developed is that, although practical and required to prevent starvation, they weaken the priority specification. Indeed, even the highest priority request cannot execute if the maximum number of threads authorized for its group is already reached. Figure~\ref{fig:thread_limit} displays an example of such situation.
 
 \begin{figure}[!ht]
-      \fbox{
       \begin{minipage}[c]{\textwidth}
       \centering
       \includegraphics[scale=0.5]{pictures/thread_limit.pdf}
       \end{minipage}
-      }
       \caption{An example of request scheduling considering thread limits}
       \label{fig:thread_limit} 
 \end{figure}
@@ -804,12 +794,10 @@ In this section, we expose the integration of our scheduling mechanisms in the  
 A multiactive object intrinsincally embeds an object of type MultiactiveService. The MultiactiveService has two purposes. Firstly, it relies on an AnnotationProcessor that processes annotations to initialize all the structures required by a multiactive object (structures that store compatibilities, priorities and keep tracks of thread utilization). Secondly, the MultiactiveService has a RequestExecutor, that schedules requests according to compatibilities, priorities and available threads. All manager classes rely on the structures previously established when reading annotations. Figure~\ref{fig:uml} displays an UML diagram describing the class composition of a multiactive object, as well as the most important interfaces.
 
 \begin{figure}[!ht]
-      \fbox{
       \begin{minipage}[c]{\textwidth}
       \centering
       \includegraphics[scale=0.5]{pictures/uml.pdf}
       \end{minipage}
-      }
       \caption{Class diagram of multiactive objects with scheduling controls}
       \label{fig:uml} 
 \end{figure}
@@ -844,7 +832,7 @@ In brief, our experiments test the priority specifications at their limits, and 
 
 
 \subsection{Speed up of high priority requests}
-In this experiment, we want to show the effectiveness of our priority specification. We define only two groups: A and B. Each group has only one assigned method. We send in total 1000 requests to the multiactive object that we have previously defined. More precisely, we send alternatively a request of group A and a request of group B, so 500 requests are sent for each group in total. We set a thread pool that contains four threads. We put no thread limitation for group A, neither for group B.
+In this experiment, we want to show the effectiveness of our priority specification. We define only two groups: A and B. Each group has only one assigned method. We send in total 1000 requests to the multiactive object that we have previously defined. More precisely, we send alternatively a request of group A and a request of group B, so 500 requests are sent for each group in total. We set a thread pool that contains four threads. We set no thread limitation for group A, neither for group B.
 
 We run two executions of this scenario. In the first execution, we do not declare any priority relation between group A and group B. In the second execution, we declare that group A has a higher priority than group B. For both executions, we evaluate the execution time dynamic of requests of group A and requests of group B. Here, we define the execution time as the sum of:
 
@@ -857,12 +845,10 @@ We run two executions of this scenario. In the first execution, we do not declar
 
 To perform this evaluation, we average execution times of requests per batch of 50 consecutive requests of the same group. Figure~\ref{fig:effectivity} depicts the results with prioritized and not prioritized executions.
 \begin{figure}[!ht]
-      \fbox{
       \begin{minipage}[c]{\textwidth}
       \centering
       \includegraphics[scale=1]{pictures/effectivity.pdf}
       \end{minipage}
-      }
       \caption{Execution time of A and B requests with and without priority}
       \label{fig:effectivity} 
 \end{figure}
@@ -871,13 +857,13 @@ When not using priorities, the execution time is the same for both groups. It in
 On the other hand, when using priorities, the execution time of requests of group A grows less quickly than the execution time of requests of group B, as expected. This is due to two facts. First, requests of group A wait less than requests of group B, because they are positioned before in the ready queue. Second, the time to insert requests of group A in the ready queue is smaller than the time to insert requests of group B, because in the first case, only half of the ready queue is examined whereas the entire ready queue is examined when inserting a request of group B. The execution time of requests of group A when using priorities is always smaller than other execution times. This shows that our priority specification is effective: it successfully speeds up the execution of high priority requests. 
 
 \subsection{Overhead of the different priority specifications}
-In this section, we perform two experiments that evaluate the \emph{overhead} of priorities. What we call overhead here is the time needed to insert an incoming request in the ready queue, according to its priority. When no priority mechanism exists, such overhead is quasi null: the request is just put at the end of the queue, which is a constant operation. However, with the priority mechanisms we have developed, we have seen that we potentially have to look through the whole ready queue to find the right position of an incoming request. As a consequence, this operation is dependent on the number of requests that are already in the ready queue. In addition, the structures used to store priorities of requests is also a factor of complexity of the insertion process. In our case, we have two priority specifications: the integer-based specification and the graph-based specification. They rely on two different structures: a linear structure and a graph structure. We evaluate both of them to see if the overhead of our graph-based specification is not too high compared to an efficient specification (the integer-based specification). 
+In this section, we perform two experiments that evaluate the \emph{overhead} of priorities. What we call overhead here is the time needed to insert an incoming request in the ready queue, according to its priority. When no priority mechanism exists, such overhead is quasi null: the request is just put at the end of the queue, which is a constant operation. However, with the priority mechanisms we have developed, we have seen that we potentially have to look through the whole ready queue to find the right position of an incoming request. As a consequence, this operation is dependent on the number of requests that are already in the ready queue. In addition, the structures used to store priorities of requests is also a factor of complexity of the insertion process. In our case, we have two priority specifications: the integer-based specification and the graph-based specification. They rely on two different structures: a linear structure and a graph structure. We evaluate both of them to see if the overhead of our graph-based specification is not too high compared to an efficient specification (the integer-based specification). In the two following experiments, we set a thread pool that contains only one thread, to focus the study on the priority feature. Also we set no thread limitation per group for the same reason.
 
 \subsubsection{Alternate high and low priority requests}
 This experiment aims at evaluating the overhead of our two priority specifications in a simple configuration. In our dedicated multiactive object class, we define five groups from G1 to G5, which have one assigned request each. We declare a linear priority dependency between them: G1 has a higher priority than G2, which has a higher priority than G3, etc. We declare the priorities on one hand using the integer-based specification and on the other hand using the graph-based priority specification. The priority definitions are displayed on Figure~\ref{fig:alternate-decl}.
 
 \begin{figure}[!ht]
-	\lstset{language=java, numberstyle=\tiny, stepnumber=1, numbersep=5pt, basicstyle=\footnotesize}
+	\lstset{language=java, numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt, basicstyle=\footnotesize}
 	\begin{minipage}{0.41\textwidth}
 	\begin{lstlisting}[frame=single]
 @DefineGraphBasedPriorities({
@@ -891,11 +877,10 @@ This experiment aims at evaluating the overhead of our two priority specificatio
 })
  	\end{lstlisting}
  	\end{minipage}
- 	\nointerlineskip
-	\begin{minipage}{0.57\textwidth}
+ 	\hfill
+	\begin{minipage}{0.55\textwidth}
 	\begin{lstlisting}[frame=single]
 @DefineIntegerBasedPriorities({
-
   @Priority(groupNames = {"G1"}, level = 5),
   @Priority(groupNames = {"G2"}, level = 4),
   @Priority(groupNames = {"G3"}, level = 3),
@@ -911,12 +896,10 @@ This experiment aims at evaluating the overhead of our two priority specificatio
 Both declarations are semantically equivalent, although using different definitions and different structures. In this context, we send in total 1000 requests to the multiactive object. As in the previous test case, we send alternatively a request of highest priority and a request of lowest priority, that is alternatively from group G1 and from group G5. 500 requests are sent per group in total. No request from the other groups is sent, other groups are just meant to create bigger priority structures. We perform two runs. The first run uses the integer-based definition. The second run uses the graph-based definition. For each run, we average insertion times of requests every 50 consecutive requests sent from the same group. Figure~\ref{fig:alternate} shows the results of both priority specifications for the two kinds of requests:
 
 \begin{figure}[!ht]
-      \fbox{
       \begin{minipage}[c]{\textwidth}
       \centering
       \includegraphics[scale=1]{pictures/alternate.pdf}
       \end{minipage}
-      }
       \caption{Insertion time of alternative low and high priority requests}
       \label{fig:alternate} 
 \end{figure}
@@ -930,12 +913,10 @@ We measured an average execution time of 1471303 ns, which is 1.4 ms. In compari
 This experiment illustrates a more realistic test case, where the priority dependencies are not linear, and where insertion time of requests of all groups are evaluated (not only of high and low priority). We define here ten groups, from G1 to G10, each of them having a single belonging request, from g1 to g10. The priority dependencies between them are expanded in Figure~\ref{fig:complex}.
 
 \begin{figure}[!ht]
-      \fbox{
       \begin{minipage}[c]{\textwidth}
       \centering
       \includegraphics[scale=0.5]{pictures/complex.pdf}
       \end{minipage}
-      }
       \caption{Dependency graph used for the Sequential test case}
       \label{fig:complex} 
 \end{figure}
@@ -943,7 +924,7 @@ This experiment illustrates a more realistic test case, where the priority depen
 We first declare the corresponding priorities in the code using the graph-based priority specification. We then attempt to declare the same priorities with the integer-based specification. As in this case it is not possible to express the exact same priority relations with the integer-based specification, we declare priorities with integers that have the closest semantic to the dependency graph displayed above. More precisely, this integer-based definition is a \emph{linear extension} of the previous graph-based definition. The two priority declarations that we use are displayed on Figure~\ref{fig:sequential-decl}.
 
 \begin{figure}[!ht]
-	\lstset{language=java, numberstyle=\tiny, stepnumber=1, numbersep=5pt, basicstyle=\footnotesize}
+	\lstset{language=java, numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt, basicstyle=\footnotesize}
 	\begin{minipage}{0.41\textwidth}
 	\begin{lstlisting}[frame=single]
 @DefineGraphBasedPriorities({
@@ -972,11 +953,10 @@ We first declare the corresponding priorities in the code using the graph-based 
 })
  	\end{lstlisting}
  	\end{minipage}
- 	\nointerlineskip
-	\begin{minipage}{0.57\textwidth}
+ 	\hfill
+	\begin{minipage}{0.55\textwidth}
 	\begin{lstlisting}[frame=single]
 @DefineIntegerBasedPriorities({
-
 
   @Priority(groupNames = {"G1"}, level = 4),
   
@@ -1012,13 +992,11 @@ Using a predefined sequence of requests allows us to have deterministic results 
 We evaluate here the overhead that we pay in general when using the graph-based priority specification compared to the integer-based priority specification. Unlike the previous experiment, we do not look specifically into the overhead on a given priority, but rather at the global overhead. For that, we average insertion times every 50 consecutive requests sent from the same group. Thus, we have 10 measurements per group, one for each stage of consecutive requests. We finally average the metrics of all groups for each stage. The results, displayed on Figure~\ref{fig:sequential}, correspond to the average insertion time of a request of any group.
 
 \begin{figure}[!ht]
-      \fbox{
       \begin{minipage}[c]{\textwidth}
       \centering
       \includegraphics[scale=1]{pictures/sequential.pdf}
       \end{minipage}
-      }
-      \caption{Insertion time of sequential requests with a complex priority graph}
+      \caption{Insertion time of sequential requests from a complex priority graph}
       \label{fig:sequential} 
 \end{figure}
 
@@ -1033,25 +1011,21 @@ To address this problem, we developed an enhanced version of the graph-based pri
 The idea is the following. From the dependency graph we build according to the annotations, we build its corresponding graph of \emph{transitive closure}. The transitive closure of a directed graph G is a directed graph G' which has the same nodes and edges as G and where edges are added from any node A that can reach another node B, according to the existing directed edges. In our terminology, we add a directed edge between two nodes A and B if $\LB{A}\longrightarrow^{+}\LB{B}$. Figure~\ref{fig:transitive} displays the graph of transitive closure of our later test case graph.
 
 \begin{figure}[!ht]
-      \fbox{
       \begin{minipage}[c]{\textwidth}
       \centering
       \includegraphics[scale=0.5]{pictures/transitive.pdf}
       \end{minipage}
-      }
-      \caption{Transitive closure graph of the graph depicted in Figure~\ref{fig:complex}}
+      \caption{Transitive closure of the graph depicted in Figure~\ref{fig:complex}}
       \label{fig:transitive} 
 \end{figure}
 
 For simplicity, this graph of transitive closure can be seen as a binary matrix. Indeed, considering a matrix $M$ of size $NxN$ where $N$ is the number of nodes, we store a positive value in M[$n_1$][$n_2$] if it exists an edge from $n_1$ to $n_2$. For example, we can see the corresponding matrix of our test case on Figure~\ref{fig:matrix}.
 \begin{figure}[!ht]
-      \fbox{
       \begin{minipage}[c]{\textwidth}
       \centering
       \includegraphics[scale=0.5]{pictures/matrix.pdf}
       \end{minipage}
-      }
-      \caption{Overtakability matrix deduced from the transitive closure graph on Figure~\ref{fig:transitive}}
+      \caption{Overtakability matrix deduced from the transitive closure on Figure~\ref{fig:transitive}}
       \label{fig:matrix} 
 \end{figure}
 To speed up the insertion process, we store and access the matrix instead of the graph. When a new request must be inserted in the ready queue, for each request of the ready queue we look the corresponding entry in the matrix, that decides if the incoming request can be placed before the considered request. 
@@ -1092,13 +1066,85 @@ In a very long term, the multiactive objects will be the basis of the PhD that I
 \bibliography{biblio}
 
 \appendix
+\chapter{Memento of Annotations}
+
+Here is an exhaustive list of current annotations for multiactive object, regarding groups, membership, compatibilities, and priorities. Repeatable entities are marked with *. Optional attributes are specified in [ ]. Parameters to be defined by the programmer are marked with P. For each attribute, the expected type of P is mentioned.\\
+
+\begin{figure}[!ht]
+	\lstset{language=java, numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt, basicstyle=\footnotesize}
+	\begin{lstlisting}[frame=single]
+@DefineGroups({
+  @Group*(
+    //P: string, name of the group
+    name = P, 
+    //P: boolean, whether requests of this group can be executed at the same time
+    selfCompatible = P, 
+    //P: integer, number of threads occupied at maximum at the same time
+    [threadLimit = P],
+    //P: integer, number of threads devoted to this group
+    [reservedThread = P], 
+    //P: type, parameter of a request to use to decide on compatibility
+    [parameter = P],
+    //P: string, boolean method name to decide on selfCompatibility
+    [condition = P])
+})
+ 	\end{lstlisting}
+\caption{Groups - To be used on class entities}
+\label{fig:group}
+\end{figure}
+
+\newpage
+
+\begin{figure}[t]
+	\lstset{language=java, numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt, basicstyle=\footnotesize}
+	\begin{lstlisting}[frame=single]
+//P: string, must refer to a group name previously defined. 
+//Note: the value statement can be omitted (= @MemberOf(P))
+@MemberOf(value = P)
+ 	\end{lstlisting}
+\caption{Membership - To be used on method entities}
+\label{fig:memebership}
+\end{figure}
+
+\begin{figure}[t]
+	\lstset{language=java, numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt, basicstyle=\footnotesize}
+	\begin{lstlisting}[frame=single]
+@DefineRules({
+  @Compatible*(
+  //P: string[], names of the groups that are compatible together
+  //Note: when condition is not used, the value statement can be omitted
+  value = P,
+  //P: string, boolean method name to decide on compatibility of groups
+  [condition = P])
+})
+ 	\end{lstlisting}
+\caption{Compatibilities - To be used on class entities}
+\label{fig:compatibilities}
+\end{figure}
+
+\begin{figure}[t]
+	\lstset{language=java, numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt, basicstyle=\footnotesize}
+	\begin{lstlisting}[frame=single]
+@DefineGraphBasedPriorities({
+  @PriorityOrder*({
+    @Set*(
+    //P: string[], names of the groups having the same priority relation
+    groupNames = P)
+  })
+})
+ 	\end{lstlisting}
+\caption{Priorities (graph) - To be used on class entities}
+\label{fig:priorities}
+\end{figure}
+
 \chapter{Java 8 Annotations}
 
 Java 8 release is planned on early 2014. It will introduce major updates in the annotation mechanism. In particular, when defining an annotation, it will be possible to mark it as \emph{Repeatable} which stipulates that it might be present more than once above an entity, which is not currently allowed. Regarding our annotations, this will greatly lighten the specifications. As an example, Figure~\ref{fig:java8} displays the former and future version of a multiactive object definition.
 
+
 \begin{figure}[!ht]
-	\lstset{language=java, numberstyle=\tiny, stepnumber=1, numbersep=5pt, basicstyle=\footnotesize}
-	\begin{minipage}[b]{0.48\textwidth}
+	\lstset{language=java, numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt, basicstyle=\footnotesize}
+	\begin{minipage}[c]{0.48\textwidth}
 	\begin{lstlisting}[frame=single]
 @DefineGroups({
   @Group(name="join", ...),
@@ -1107,7 +1153,7 @@ Java 8 release is planned on early 2014. It will introduce major updates in the 
 })
 @DefineRules({
   @Compatible({"join", "monitoring"),
-  @Compatible({"routing", "monitoring"),
+  @Compatible({"routing", "monitoring")
 })
 @DefineGraphBasedPriorities({
   @PriorityOrder({
@@ -1116,7 +1162,7 @@ Java 8 release is planned on early 2014. It will introduce major updates in the 
   }),
   @PriorityOrder({
     @Set(groupNames = {"routing"}),
-    @Set(groupNames ={"monitoring"})
+    @Set(groupNames = {"monitoring"})
   })
 })
 public class Peer {
@@ -1131,21 +1177,23 @@ public class Peer {
 }
  	\end{lstlisting}
  	\end{minipage}
- 	\nointerlineskip
-	\begin{minipage}[b]{0.49\textwidth}
+ 	\hfill
+	\begin{minipage}[c]{0.48\textwidth}
 	\begin{lstlisting}[frame=single]
 @Group(name="join", ...)
 @Group(name="routing", ...)
 @Group(name="monitoring", ...)
+
 @Compatible({"join", "monitoring")
 @Compatible({"routing", "monitoring")
+
 @PriorityOrder({
   @Set(groupNames = {"join"}),
   @Set(groupNames = {"monitoring"})
 })
 @PriorityOrder({
   @Set(groupNames = {"routing"}),
-  @Set(groupNames ={"monitoring"})
+  @Set(groupNames = {"monitoring"})
 })
 public class Peer {
   @MemberOf("join")
@@ -1159,7 +1207,7 @@ public class Peer {
 }
 	\end{lstlisting}
  	\end{minipage}	
-	\caption{Java 7 vs Java 8 annotations weight}
+	\caption{Java 7 vs Java 8 annotations for multiactive objects}
 	\label{fig:java8}
 \end{figure}
 

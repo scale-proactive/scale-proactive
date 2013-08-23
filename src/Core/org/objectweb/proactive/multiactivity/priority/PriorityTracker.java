@@ -254,7 +254,7 @@ public class PriorityTracker extends PriorityManager {
 			MethodGroup group = compatibility.getGroupOf(request);
 			
 			if (group != null) {
-				sb.append((!threadManager.hasFreeThreads(group) ? 
+				sb.append((!threadManager.hasFreeThreads(element.request) ? 
 						" cannot be executed (thread limit: " + 
 						threadManager.printUsage(group) : "") + "\n");
 			}

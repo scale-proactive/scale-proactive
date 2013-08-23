@@ -65,7 +65,6 @@ public class PriorityGraph implements PriorityMap {
 					this.addRoot(predecessorNode);
 					newRoot = true;
 				}
-				
 				// The group is already contained in the graph, just update its 
 				// references
 				if (this.contains(group)) {
@@ -516,10 +515,10 @@ public class PriorityGraph implements PriorityMap {
 		System.out.println("- Graph:\n" + graph);
 
 		// This should introduce a cycle in the graph
-		//graph.insert(g1, g4);
+		graph.insert(g1, g4);
 		//System.out.println("m4 inserted");
-		//System.out.println("Contains cycle? " +
-		//				"" + graph.containsCycle());
+		System.out.println("Contains cycle? " +
+						"" + graph.containsCycle());
 		//System.out.println("- Graph:\n" + graph);
 
 		// Overtake tests

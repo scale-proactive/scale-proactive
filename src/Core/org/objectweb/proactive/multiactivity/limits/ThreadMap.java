@@ -2,6 +2,7 @@ package org.objectweb.proactive.multiactivity.limits;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 
@@ -28,8 +29,8 @@ public class ThreadMap {
 	 * @param maxThreads The maximum number of threads that the group can use 
 	 * at a time
 	 */
-	public void setThreadLimits(MethodGroup group, int maxThreads, int minThreads) {
-		this.threadLimits.put(group, new ThreadPair(maxThreads, minThreads));
+	public void setThreadLimits(MethodGroup group, int minThreads, int maxThreads) {
+		this.threadLimits.put(group, new ThreadPair(minThreads, maxThreads));
 	}
 	
 	/**
@@ -38,5 +39,12 @@ public class ThreadMap {
 	 */
 	public ThreadPair get(MethodGroup group) {
 		return this.threadLimits.get(group);
+	}
+	
+	/**
+	 * @return The set of groups that have thread limits.
+	 */
+	public Set<MethodGroup> getGroups() {
+		return this.threadLimits.keySet();
 	}
 }

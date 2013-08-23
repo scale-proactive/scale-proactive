@@ -2,6 +2,7 @@ package org.objectweb.proactive.multiactivity.limits;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
@@ -19,15 +20,20 @@ public class ThreadTracker extends ThreadManager {
 
 	/** Associate a group with its thread limit and currently used threads */
 	private Map<MethodGroup, Integer> threadUsage;
-	
+
 	/** Group manager (needed to guess the group of a request) */
 	private CompatibilityManager compatibility;
 
-	
-	public ThreadTracker(CompatibilityTracker compatibilityManager, ThreadMap threadMap) {
+
+	public ThreadTracker(CompatibilityTracker compatibilityManager, 
+			ThreadMap threadMap) {
 		super(threadMap);
 		this.compatibility = compatibilityManager;
-		this.threadUsage = new HashMap<>();
+		this.threadUsage = new HashMap<MethodGroup, Integer>();
+		Set<MethodGroup> groups = this.threadMap.getGroups();
+		for (MethodGroup group : groups) {
+			this.threadUsage.put(group, 0);
+		}
 	}
 
 	/**
@@ -35,7 +41,8 @@ public class ThreadTracker extends ThreadManager {
 	 */
 	@Override
 	public void increaseUsage(RunnableRequest request) {
-		MethodGroup group = this.compatibility.getGroupOf(request.getRequest());
+		MethodGroup group = 
+				this.compatibility.getGroupOf(request.getRequest());
 		if (group != null) {
 			Integer i = this.threadUsage.get(group);
 			if (i != null) {
@@ -49,7 +56,8 @@ public class ThreadTracker extends ThreadManager {
 	 */
 	@Override
 	public void decreaseUsage(RunnableRequest request) {
-		MethodGroup group = this.compatibility.getGroupOf(request.getRequest());
+		MethodGroup group = 
+				this.compatibility.getGroupOf(request.getRequest());
 		if (group != null) {
 			Integer i = this.threadUsage.get(group);
 			if (i != null) {
@@ -62,21 +70,57 @@ public class ThreadTracker extends ThreadManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean hasFreeThreads(MethodGroup group) {
-		boolean hasFreeThreads = false;
+	public boolean hasFreeThreads(RunnableRequest request) {
+		boolean hasFreeThreads = true;
+		MethodGroup group = 
+				this.compatibility.getGroupOf(request.getRequest());
+		// A request belonging to no group has no limit
 		if (group != null) {
 			Integer usage = this.threadUsage.get(group);
 			if (usage != null) {
 				ThreadPair groupPair = threadMap.get(group);
 				if (groupPair != null) {
 					int maxThreads = groupPair.getMaxThreads();
-					if (usage < maxThreads) {
-						hasFreeThreads = true;
+					if (usage >= maxThreads) {
+						hasFreeThreads = false;
 					}
 				}
 			}
 		}
 		return hasFreeThreads;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean isThreadReserved(RunnableRequest request, int globalThreadUsage, 
+			int globalThreadLimit) {
+		boolean isReserved = false;
+		MethodGroup requestGroup = 
+				this.compatibility.getGroupOf(request.getRequest());
+		int freeThreads = globalThreadLimit - globalThreadUsage;
+		int reservedAndNotUsedThreads = 0;
+		// Compute the number of threads that are reserved but not currently 
+		// used, minus the ones reserved by the considered request group.
+		for (MethodGroup group : this.threadMap.getGroups()) {
+			if (!group.equals(requestGroup)) {
+				ThreadPair groupPair = this.threadMap.get(group);
+				int groupUsage = this.threadUsage.get(group);
+				if (groupPair.getMinThreads() != 0) {
+					reservedAndNotUsedThreads += 
+							groupPair.getMinThreads() - groupUsage;
+				}
+			}
+		}
+		// If the number of free threads is smaller than the number of threads 
+		// that are reserved by the group and that are not currently used, 
+		// then we cannot use a thread to execute the request, because they 
+		// are reserved.
+		if (freeThreads <= reservedAndNotUsedThreads){
+			isReserved = true;
+		}
+		return isReserved;
 	}
 
 	/**
@@ -103,5 +147,5 @@ public class ThreadTracker extends ThreadManager {
 		}
 		return sb.toString();
 	}
-	
+
 }

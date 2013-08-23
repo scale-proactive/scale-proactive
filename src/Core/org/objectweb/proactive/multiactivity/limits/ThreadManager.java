@@ -1,6 +1,5 @@
 package org.objectweb.proactive.multiactivity.limits;
 
-import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
 /**
@@ -36,7 +35,7 @@ public abstract class ThreadManager {
 	 * @return true if the group has a higher thread limit than the current 
 	 * number of threads occupied by this group.
 	 */
-	public abstract boolean hasFreeThreads(MethodGroup group);
+	public abstract boolean hasFreeThreads(RunnableRequest request);
 	
 	/**
 	 * Increases the current number of threads used by the group by 1.
@@ -49,4 +48,13 @@ public abstract class ThreadManager {
 	 * @param group The group to decrease occupancy
 	 */
 	public abstract void decreaseUsage(RunnableRequest request);
+
+	/**
+	 * @param size
+	 * @param tHREAD_LIMIT
+	 * @return true if all the free current threads belong to reserved threads.
+	 */
+	public abstract boolean isThreadReserved(RunnableRequest request, 
+			int globalThreadUsage, int globalThreadLimit);
+
 }

@@ -152,16 +152,16 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 * considered in the soft and hard limit of the current multi-active object.
 	 */
 	private final AtomicInteger extraActiveRequestCount = new AtomicInteger(0);
-	
+
 	/** Manages the compatibility of incoming requests */
 	private CompatibilityManager compatibilityManager;
 
 	/** Manages the priorities of requests */
 	private final PriorityManager priorityManager;
-	
+
 	/** Manages the thread limits of groups */
 	private final ThreadManager threadManager;
-	
+
 	/** List of the requests that have already been served */
 	private LinkedList<Request> servingHistory = new LinkedList<Request>();
 
@@ -310,10 +310,10 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 		LocalBodyStore.getInstance().pushContext(new Context(body, null));
 
 		synchronized (requestQueue) {
-			
+
 			long insertionTimeBefore;
 			long insertionTimeAfter;
-			
+
 			while (body.isActive()) {
 
 				// get compatible ones from the queue
@@ -324,13 +324,13 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 						// add them to the ready set
 						for (int i = 0; i < rc.size(); i++) {
 							RunnableRequest runnableRequest = wrapRequest(rc.get(i));
-							
+
 							if (PriorityUtils.LOG_ENABLED) {
 								insertionTimeBefore = System.nanoTime();
 							}
-							
+
 							priorityManager.register(runnableRequest);
-							
+
 							if (PriorityUtils.LOG_ENABLED) {
 								insertionTimeAfter = System.nanoTime();
 								PriorityUtils.logMessage(runnableRequest.getRequest().
@@ -363,6 +363,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	private void internalExecute() {
 		synchronized (this) {
 
+			boolean hasThreadGroup;
+			boolean isThreadReserved;
 			long serviceTimeAfter;
 			long serviceTimeBefore;
 
@@ -393,17 +395,22 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 									for (RunnableRequest host : requestTags.get(tag)) {
 										if (host != null && isNotAHost(host)) {
 											synchronized (host) {
-												if (log.isTraceEnabled()) {
-													log.trace("  " + toString(parasite.getRequest()));
+												hasThreadGroup = threadManager.hasFreeThreads(parasite);
+												isThreadReserved = threadManager.isThreadReserved(parasite,
+														threadUsage.keySet().size(), THREAD_LIMIT);
+												if (hasThreadGroup && !isThreadReserved) {
+													priorityManager.unregister(parasite);
+													threadManager.increaseUsage(parasite);
+													if (log.isTraceEnabled()) {
+														log.trace("  " + toString(parasite.getRequest()));
+													}
+													active.add(parasite);
+													hostMap.put(host, parasite);
+													requestTags.get(tag).remove(host);
+													parasite.setHostedOn(host);
+													host.notify();
+													break;
 												}
-
-												i.remove();
-												active.add(parasite);
-												hostMap.put(host, parasite);
-												requestTags.get(tag).remove(host);
-												parasite.setHostedOn(host);
-												host.notify();
-												break;
 											}
 										}
 									}
@@ -446,23 +453,28 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
 					while (canServeOne() && i.hasNext()) {
 						RunnableRequest current = i.next();
-						priorityManager.unregister(current);
-						threadManager.increaseUsage(current);
-						active.add(current);
-						executorService.execute(current);
+						hasThreadGroup = threadManager.hasFreeThreads(current);
+						isThreadReserved = threadManager.isThreadReserved(current,
+								threadUsage.keySet().size(), THREAD_LIMIT);
+						if (hasThreadGroup && !isThreadReserved) {
+							priorityManager.unregister(current);
+							threadManager.increaseUsage(current);
+							active.add(current);
+							executorService.execute(current);
 
-						if (PriorityUtils.LOG_ENABLED) {
-							serviceTimeAfter = System.nanoTime();
-							PriorityUtils.logMessage(current.getRequest().
-									getMethodName() + PriorityUtils.LOG_SEPARATOR 
-									+ PriorityUtils.SERVICE_TIME + PriorityUtils.LOG_SEPARATOR 
-									+ (serviceTimeAfter - serviceTimeBefore));
-						}
+							if (PriorityUtils.LOG_ENABLED) {
+								serviceTimeAfter = System.nanoTime();
+								PriorityUtils.logMessage(current.getRequest().
+										getMethodName() + PriorityUtils.LOG_SEPARATOR 
+										+ PriorityUtils.SERVICE_TIME + PriorityUtils.LOG_SEPARATOR 
+										+ (serviceTimeAfter - serviceTimeBefore));
+							}
 
-						servingHistory.add(current.getRequest());
+							servingHistory.add(current.getRequest());
 
-						if (log.isTraceEnabled()) {
-							log.trace("  " + toString(current.getRequest()));
+							if (log.isTraceEnabled()) {
+								log.trace("  " + toString(current.getRequest()));
+							}
 						}
 					}
 				}

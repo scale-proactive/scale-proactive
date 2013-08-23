@@ -687,7 +687,7 @@ In particular, an incoming request of group $G$ must be inserted in the ready qu
 considering an incoming request $R$ belonging to group $G$, and a ready queue made of $R_1,R_2,...,R_n$ belonging to groups $G_1,G_2,...,G_n$, then $R$ is inserted just before the smallest $R_i$, $1 \le i \le n$, such that $G\longrightarrow^{+}G_i$, or at the end of the queue if~\ \forall $j$,~\ $1 \le j \le n$,  $G_j\longrightarrow^{+}G~\ \vee~\ G~\ //~\ G_j$.
 More formally, we can define the insertion process as defined below:
 \paragraph{Insertion process (graph-based)}
-$group(R)=G \wedge Q=[R_1,...,R_n] \wedge \forall i \in 1,...,n$, $group(R_i)=G_i$
+$group(R)=G~\ \wedge~\ Q=[R_1,...,R_n]~\ \wedge~\ \forall i \in 1,...,n$, $group(R_i)=G_i$
 \begin{enumerate}
 \item $if$ $\forall$ $i$ $G_i\longrightarrow^{+}G~\ \vee~\ G~\ //~\ G_i$, $insert(R,Q)=[R_1,...R_n,R]$
 \item $else$ $let$ $j=min({i|G\longrightarrow^{+}G_i})$, $insert(R, Q)=[R_1,...,R_j_-_1,R,R_j,...,R_n]$
@@ -709,6 +709,7 @@ Suppose that we have an incoming request of group $G$ to insert in queue made of
 	\end{enumerate}
 \end{enumerate}
 We have covered all the cases to show that the queue is always ordered if the above insertion process is applied.
+\end{proof}
 
 %----
 %Let us prove by contradiction that the insertion policy is correct regarding the priority specification.

@@ -20,10 +20,10 @@ public class PriorityGraph implements PriorityMap {
 	/** The roots of the graph, or the highest priority groups. They are the 
 	 * only entry point of the graph. */
 	private Set<PriorityNode> roots;
-	
+
 	/** Stores the nodes of the graph = the groups that have a priority */
 	private Set<PriorityNode> nodesList;
-	
+
 	/** Matrix representation of the graph. This matrix is built by computing 
 	 * the transitive closure of the initial graph. The values of the matrix 
 	 * is true if the first entry has a higher priority than the second one, 
@@ -31,7 +31,7 @@ public class PriorityGraph implements PriorityMap {
 	 * to the priority information. It is much faster than exploring the graph 
 	 * but building the matrix can be long. */
 	private HashMap<String, HashMap<String, Boolean>> existPathMatrix;
-	
+
 	/** Specifies whether the matrix optimization should be used or not */
 	private boolean matrixEnabled = false;
 
@@ -55,10 +55,10 @@ public class PriorityGraph implements PriorityMap {
 			// If the group is already in the graph and if predecessor is null,
 			// there is nothing to do.
 			if (predecessorGroup != null) {
-				
+
 				boolean newRoot = false;
 				PriorityNode predecessorNode = this.findNode(predecessorGroup);
-				
+
 				// The predecessor group is not in the graph already, add it
 				if (predecessorNode == null) {
 					predecessorNode = new PriorityNode(predecessorGroup);
@@ -71,12 +71,12 @@ public class PriorityGraph implements PriorityMap {
 					PriorityNode groupNode = this.findNode(group);
 					predecessorNode.addSuccessor(groupNode);
 				}
-				
+
 				// The group is not in the graph already
 				else {
 					predecessorNode.addSuccessor(new PriorityNode(group));
 				}
-				
+
 				// If a predecessor is added to a root, then it is not a root 
 				// any more
 				if (this.isRoot(group) && newRoot) {
@@ -85,7 +85,7 @@ public class PriorityGraph implements PriorityMap {
 			}
 		}
 	}
-	
+
 	/**
 	 * Search for cycles in the graph.
 	 * @return true if at least one cycle is found in the graph.
@@ -101,6 +101,14 @@ public class PriorityGraph implements PriorityMap {
 			visitedNodes.clear();
 		}
 		return contains;
+	}
+
+	public void suppress(MethodGroup group, MethodGroup predecessorGroup) {
+		PriorityNode groupNode = this.findNode(group);
+		PriorityNode predecessorNode = this.findNode(predecessorGroup);
+		if (groupNode != null && predecessorNode != null) {
+			predecessorNode.removeSuccessor(groupNode);
+		}
 	}
 
 	/**
@@ -238,17 +246,19 @@ public class PriorityGraph implements PriorityMap {
 	private boolean recursiveContainsCycle(ArrayList<PriorityNode> visitedNodes,
 			PriorityNode currentNode) {
 		boolean contains = false;
-		if (visitedNodes.contains(currentNode)) {
+		@SuppressWarnings("unchecked")
+		ArrayList<PriorityNode> visitedNodesCopy = (
+				ArrayList<PriorityNode>) visitedNodes.clone();
+		if (visitedNodesCopy.contains(currentNode)) {
 			contains = true;
 		}
 		else {
-			visitedNodes.add(currentNode);
+			visitedNodesCopy.add(currentNode);
 			for (PriorityNode pn : currentNode.successors) {
-				contains = recursiveContainsCycle(visitedNodes, pn);
+				contains = recursiveContainsCycle(visitedNodesCopy, pn);
 				if (contains) {
 					break;
 				}
-				visitedNodes.clear();
 			}
 		}
 		return contains;
@@ -285,10 +295,10 @@ public class PriorityGraph implements PriorityMap {
 	 * according to the successors references.
 	 */
 	private boolean existPath(MethodGroup group1, MethodGroup group2) {
-		
+
 		boolean exist = false;
 		PriorityNode node = null;
-		
+
 		// Find the first group
 		for (PriorityNode root : this.roots) {
 			node = this.recursiveFindNode(group1, root);
@@ -296,7 +306,7 @@ public class PriorityGraph implements PriorityMap {
 				break;
 			}
 		}
-		
+
 		// See if the second group is accessible from the first one
 		if (node != null) {
 			for (PriorityNode succ : node.successors) {
@@ -317,7 +327,7 @@ public class PriorityGraph implements PriorityMap {
 		// We use the matrix optimization to know about priorities of groups
 		if (this.matrixEnabled) {			
 			Boolean returnValue = false;
-			
+
 			// If the node list is not yet built, build it
 			if (this.nodesList == null) {
 				this.nodesList = this.listNodes();
@@ -325,14 +335,14 @@ public class PriorityGraph implements PriorityMap {
 					PriorityUtils.logMessage(node.group.name + " ");
 				}
 			}
-			
+
 			// If the matrix is not yet built, build it
 			if (this.existPathMatrix == null) {
-				
+
 				int size = this.nodesList.size();
 				this.existPathMatrix = 
 						new HashMap<String, HashMap<String, Boolean>>(size);
-				
+
 				for (PriorityNode pni : this.nodesList) {
 					HashMap<String, Boolean> map = 
 							new HashMap<String, Boolean>(size);
@@ -343,11 +353,11 @@ public class PriorityGraph implements PriorityMap {
 					this.existPathMatrix.put(pni.group.name, map);
 				}
 			}
-			
+
 			// The matrix exists, now look for the entry we are interested in
 			HashMap<String, Boolean> intermediateMatrix = 
 					this.existPathMatrix.get(group1.name);
-			
+
 			if (intermediateMatrix != null) {
 				returnValue = intermediateMatrix.get(group2.name);
 				if (returnValue == null) {
@@ -357,20 +367,20 @@ public class PriorityGraph implements PriorityMap {
 			return returnValue;
 
 		}
-		
+
 		// We do not use the matrix optimization; look through the graph
 		else {
 			return this.existPath(group1, group2);
 		}
 	}
-	
+
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	public String toString() {
 		int level = 0;
-		String description = "";
+		String description = "\n";
 		for (PriorityNode root : this.roots) {
 			description += this.recursiveToString(root, level);
 		}
@@ -395,7 +405,7 @@ public class PriorityGraph implements PriorityMap {
 		return description;
 	}
 
-	
+
 	/**
 	 * Represents a node in the PriorityGraph. A node is defined by the group 
 	 * that it contains and by a list of successors nodes.
@@ -409,9 +419,9 @@ public class PriorityGraph implements PriorityMap {
 
 		/** The successors of this node (successors have lower priority than 
 		 * the considered node) */
-		public Set<PriorityNode> successors;
+		private Set<PriorityNode> successors;
 
-		
+
 		public PriorityNode(MethodGroup group) {
 			this.successors = new HashSet<PriorityNode>();
 			this.group = group;
@@ -424,6 +434,14 @@ public class PriorityGraph implements PriorityMap {
 		 */
 		public void addSuccessor(PriorityNode groupNode) {
 			this.successors.add(groupNode);
+		}
+
+		/**
+		 * Remove a successor node to the considered node.
+		 * @param groupNode
+		 */
+		public void removeSuccessor(PriorityNode groupNode) {
+			this.successors.remove(groupNode);
 		}
 
 		/**
@@ -464,7 +482,6 @@ public class PriorityGraph implements PriorityMap {
 		MethodGroup g4 = new MethodGroup("G4", true);
 		MethodGroup g5 = new MethodGroup("G5", true);
 
-		// G1
 		graph.insert(g1, null);
 		System.out.println("- " + g1.name + " inserted");
 		System.out.println("- Contains cycle? " +
@@ -516,10 +533,14 @@ public class PriorityGraph implements PriorityMap {
 
 		// This should introduce a cycle in the graph
 		graph.insert(g1, g4);
-		//System.out.println("m4 inserted");
-		System.out.println("Contains cycle? " +
-						"" + graph.containsCycle());
-		//System.out.println("- Graph:\n" + graph);
+		System.out.println("m4 inserted");
+		System.out.println("- Contains cycle? " +
+				"" + graph.containsCycle());
+		if (graph.containsCycle()) {
+			System.out.println("- Cycle detected; now removing dependency");
+			graph.suppress(g1, g4);
+		}
+		System.out.println("- Graph:\n" + graph);
 
 		// Overtake tests
 		System.out.println("- Can g4 overtake g3 (no)? " +

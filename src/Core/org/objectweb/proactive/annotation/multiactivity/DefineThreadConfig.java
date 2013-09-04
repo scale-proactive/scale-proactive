@@ -15,9 +15,22 @@ import org.objectweb.proactive.annotation.PublicAPI;
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @PublicAPI
-public @interface DefineThreadLimits {
+public @interface DefineThreadConfig {
 
-	/** The size of the thread pool */
+	/** 
+	 * The size of the thread pool 
+	 */
 	public int threadPoolSize() default Integer.MAX_VALUE;
+	
+	/** 
+	 * Hard or soft limit (whether to limit the total number of threads, or 
+	 * only the ones that are active) 
+	 */
+	public boolean hardLimit() default false;
+	
+	/** 
+	 * Whether to serve re-entrant calls on the same thread as their source 
+	 */
+	public boolean hostReentrant() default false;
 
 }

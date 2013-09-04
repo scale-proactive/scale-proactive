@@ -92,7 +92,8 @@ public class AnnotationProcessor {
 	protected static final String UNDEF_GROUP = "undefined group";
 	protected static final String DUP_GROUP = "duplicate group definition";
 	protected static final String UNDEF_METHOD = "unresolvable method name";
-	protected static final String PRIORITY_CYCLE = "cycle created by node ";
+	protected static final String PRIORITY_CYCLE = "priority cycle detected" +
+			": dependence from ";
 	protected static final String AD_HOC_GROUP = "AD_HOC_";
 
 	protected Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
@@ -193,7 +194,9 @@ public class AnnotationProcessor {
 									g.name(), g.selfCompatible(),
 									g.parameter(), g.condition());
 					compatibilityMap.getGroups().put(g.name(), mg);
-					threadMap.setThreadLimits(mg, g.minThreads(), g.maxThreads());
+					
+					threadMap.setThreadLimits(mg, (g.minThreads() < g.maxThreads() ?
+							g.minThreads() : g.maxThreads()), g.maxThreads());
 				} else {
 					addError(
 							LOC_CLASS, processedClass.getCanonicalName(),
@@ -258,14 +261,14 @@ public class AnnotationProcessor {
 							else {
 								for(MethodGroup predecessor : predecessors) {
 									priorityGraph.insert(group, predecessor);
+									if (priorityGraph.containsCycle()) {
+										addError(
+												LOC_CLASS,
+												processedClass.getCanonicalName(),
+												PRIORITY_CYCLE, predecessor.name + " to " + group.name + " removed");
+										priorityGraph.suppress(group, predecessor);
+									}
 								}
-							}
-							if (priorityGraph.containsCycle()) {
-								addError(
-										LOC_CLASS,
-										processedClass.getCanonicalName(),
-										PRIORITY_CYCLE, group.name);
-								// TODO Add a default behavior when a cycle is found e.g. remove the node
 							}
 						}
 						nextPredecessors.add(group);

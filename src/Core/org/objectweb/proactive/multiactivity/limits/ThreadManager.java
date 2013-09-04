@@ -21,6 +21,14 @@ public abstract class ThreadManager {
 	
 	/** Default number of reserved threads for a given group */
 	public static final int MIN_THREADS_DEFAULT = 0;
+	
+	/** Default value of boolean that says if we limit the number of active 
+	 * threads or the number of total threads. */
+	public static final boolean HARD_LIMIT_DEFAULT = false;
+	
+	/** Default value of boolean that says whether reentrant calls are hosted 
+	 * on the same thread. */
+	public static final boolean HOST_REENTRANT_DEFAULT = false;
 
 	/** The structure that stores all the limits set for the groups */
 	protected ThreadMap threadMap;
@@ -28,6 +36,18 @@ public abstract class ThreadManager {
 	
 	protected ThreadManager(ThreadMap threadMap) {
 		this.threadMap = threadMap;
+	}
+	
+	public int getThreadPoolSize() {
+		return this.threadMap.getThreadPoolSize();
+	}
+	
+	public boolean getHardLimit() {
+		return this.threadMap.getHardLimit();
+	}
+	
+	public boolean getHostReentrant() {
+		return this.threadMap.getHostReentrant();
 	}
 	
 	/**

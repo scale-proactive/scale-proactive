@@ -43,7 +43,6 @@ import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
-import org.objectweb.proactive.multiactivity.limits.ThreadTracker;
 
 
 /**
@@ -223,47 +222,6 @@ public class PriorityTracker extends PriorityManager {
 		}
 		
 		sb.append("Priority queue - to low priority\n");
-		return sb.toString();
-	}
-	
-	/**
-	 * @param compatibility
-	 * @param threadManager
-	 * @return A string with queue content and thread utilization.
-	 */
-	public String toString(CompatibilityManager compatibility, 
-			ThreadTracker threadManager) {
-		
-		Request request;
-		StringBuilder sb = new StringBuilder();
-		PriorityElement element = this.first;
-
-		sb.append("\n\nPriority queue - from high priority...\n");
-		
-		while (element != null) {
-			
-			request = element.request.getRequest();
-			sb.append("\t" + request.getMethodName() + "(");
-			
-			for (int i = 0 ; 
-					i < request.getMethodCall().getNumberOfParameter() ; i++) {
-				sb.append(request.getParameter(i));
-			}
-			
-			sb.append(")");
-			MethodGroup group = compatibility.getGroupOf(request);
-			
-			if (group != null) {
-				sb.append((!threadManager.hasFreeThreads(element.request) ? 
-						" cannot be executed (thread limit: " + 
-						threadManager.printUsage(group) : "") + "\n");
-			}
-			
-			element = element.next;
-		}
-		
-		sb.append("Priority queue - to low priority\n");
-		
 		return sb.toString();
 	}
 

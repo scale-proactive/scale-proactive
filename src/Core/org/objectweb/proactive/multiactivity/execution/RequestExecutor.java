@@ -170,14 +170,14 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 * 
 	 * @param body
 	 *            Body of the active object.
-	 * @param compatibilityManager
+	 * @param compatibilityManager2
 	 *            Compatibility information of the active object's class
 	 * @param priorityConstraints
 	 *            Priority constraints
 	 */
-	public RequestExecutor(Body body, CompatibilityTracker compatibilityManager
+	public RequestExecutor(Body body, CompatibilityManager compatibilityManager2
 			, PriorityManager priorityManager, ThreadManager threadManager) {
-		this.compatibilityManager = compatibilityManager;
+		this.compatibilityManager = compatibilityManager2;
 		this.body = body;
 		this.requestQueue = body.getRequestQueue();
 		this.priorityManager = priorityManager;
@@ -401,13 +401,28 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 												if (hasThreadGroup && !isThreadReserved) {
 													priorityManager.unregister(parasite);
 													threadManager.increaseUsage(parasite);
-													if (log.isTraceEnabled()) {
-														log.trace("  " + toString(parasite.getRequest()));
-													}
 													active.add(parasite);
 													hostMap.put(host, parasite);
 													requestTags.get(tag).remove(host);
 													parasite.setHostedOn(host);
+													
+													if (PriorityUtils.LOG_ENABLED) {
+														PriorityUtils.logMessage(threadManager.toString());
+														PriorityUtils.logMessage("Total threads = " + THREAD_LIMIT);
+														PriorityUtils.logMessage("Used threads = " + countActive());
+														PriorityUtils.logMessage("Available threads = " + (THREAD_LIMIT - countActive()) + "\n");
+													}
+
+													if (PriorityUtils.LOG_ENABLED) {
+														serviceTimeAfter = System.nanoTime();
+														PriorityUtils.logMessage(parasite.getRequest().
+																getMethodName() + PriorityUtils.LOG_SEPARATOR 
+																+ PriorityUtils.SERVICE_TIME + PriorityUtils.LOG_SEPARATOR 
+																+ (serviceTimeAfter - serviceTimeBefore));
+													}
+													
+													servingHistory.add(parasite.getRequest());
+													
 													host.notify();
 													break;
 												}
@@ -461,6 +476,13 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 							threadManager.increaseUsage(current);
 							active.add(current);
 							executorService.execute(current);
+							
+							if (PriorityUtils.LOG_ENABLED) {
+								PriorityUtils.logMessage(threadManager.toString());
+								PriorityUtils.logMessage("Total threads = " + THREAD_LIMIT);
+								PriorityUtils.logMessage("Used threads = " + countActive());
+								PriorityUtils.logMessage("Available threads = " + (THREAD_LIMIT - countActive()) + "\n");
+							}
 
 							if (PriorityUtils.LOG_ENABLED) {
 								serviceTimeAfter = System.nanoTime();

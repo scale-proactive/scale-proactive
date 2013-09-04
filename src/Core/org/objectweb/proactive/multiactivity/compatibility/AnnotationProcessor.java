@@ -50,6 +50,7 @@ import org.objectweb.proactive.annotation.multiactivity.DefineGroups;
 import org.objectweb.proactive.annotation.multiactivity.DefineGraphBasedPriorities;
 import org.objectweb.proactive.annotation.multiactivity.DefineRankBasedPriorities;
 import org.objectweb.proactive.annotation.multiactivity.DefineRules;
+import org.objectweb.proactive.annotation.multiactivity.DefineThreadConfig;
 import org.objectweb.proactive.annotation.multiactivity.Group;
 import org.objectweb.proactive.annotation.multiactivity.Priority;
 import org.objectweb.proactive.annotation.multiactivity.Set;
@@ -154,6 +155,7 @@ public class AnnotationProcessor {
 		Annotation compDefAnn = null;
 		Annotation priorityGraphDefAnn = null;
 		Annotation priorityRankDefAnn = null;
+		Annotation threadConfigDefAnn = null;
 
 		for (Annotation a : declaredAnns) {
 			if (groupDefAnn == null
@@ -177,10 +179,18 @@ public class AnnotationProcessor {
 							DefineRankBasedPriorities.class)) {
 				priorityRankDefAnn = a;
 			}
+			
+			if (threadConfigDefAnn == null
+					&& a.annotationType().equals(
+							DefineThreadConfig.class)) {
+				threadConfigDefAnn = a;
+				threadMap.setConfiguredThroughAnnot();
+			}
 
 			if (compDefAnn != null && groupDefAnn != null
 					&& priorityGraphDefAnn != null 
-					&& priorityRankDefAnn != null) {
+					&& priorityRankDefAnn != null && 
+					threadConfigDefAnn != null) {
 				break;
 			}
 		}
@@ -194,7 +204,7 @@ public class AnnotationProcessor {
 									g.name(), g.selfCompatible(),
 									g.parameter(), g.condition());
 					compatibilityMap.getGroups().put(g.name(), mg);
-					
+					// Set the group thread limit
 					threadMap.setThreadLimits(mg, (g.minThreads() < g.maxThreads() ?
 							g.minThreads() : g.maxThreads()), g.maxThreads());
 				} else {
@@ -299,6 +309,19 @@ public class AnnotationProcessor {
 						priorityRanking.insert(priorityLevel, group);
 					}
 				}
+			}
+		}
+		
+		// if there are configuration for threads defined
+		if (threadConfigDefAnn != null) {
+			DefineThreadConfig threadConfig = ((DefineThreadConfig) threadConfigDefAnn);
+			threadMap.configure(threadConfig.threadPoolSize(), threadConfig.hardLimit(),
+					threadConfig.hostReentrant());
+			if (PriorityUtils.LOG_ENABLED) {
+				PriorityUtils.logMessage(
+						"Configuration of threads: thread pool size = " + threadConfig.threadPoolSize() + "" +
+								", hard limit = " + threadConfig.hardLimit() + ", host reentrant = " +
+										"" + threadConfig.hostReentrant());
 			}
 		}
 	}

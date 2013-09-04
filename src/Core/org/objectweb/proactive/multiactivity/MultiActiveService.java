@@ -38,13 +38,11 @@ package org.objectweb.proactive.multiactivity;
 
 import java.util.LinkedList;
 
-import org.apache.log4j.Logger;
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.Service;
 import org.objectweb.proactive.core.body.request.Request;
-import org.objectweb.proactive.core.util.log.Loggers;
-import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.compatibility.AnnotationProcessor;
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
 import org.objectweb.proactive.multiactivity.limits.ThreadManager;
@@ -72,9 +70,10 @@ public class MultiActiveService extends Service {
     public LinkedList<Integer> serveHistory = new LinkedList<Integer>();
     public LinkedList<Integer> serveTsts = new LinkedList<Integer>();
     
-    private static final Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
-
+    private boolean isConfiguredThroughAnnot = false;
+    
     RequestExecutor executor;
+    
 
     /**
      * MultiActiveService that will be able to optionally use a policy, and will deploy each serving request on a 
@@ -95,27 +94,23 @@ public class MultiActiveService extends Service {
 
         AnnotationProcessor annotationProcessor = new AnnotationProcessor(body.getReifiedObject().getClass());
 
-        CompatibilityTracker compatibilityManager = new CompatibilityTracker(
+        // Setting the compatibility manager from what was extracted from annotations
+        CompatibilityManager compatibilityManager = new CompatibilityTracker(
         		requestQueue, annotationProcessor.getCompatibilityMap());
         
         // Filling priority structures according to what was extracted from annotations
         PriorityManager priorityManager = new PriorityTracker(
         		compatibilityManager, annotationProcessor.getPriorityMap());
         
+        // Setting thread configuration from what was extracted from annotations
+        isConfiguredThroughAnnot = annotationProcessor.getThreadMap().isConfiguredThroughAnnot();
         ThreadManager threadManager = new ThreadTracker(
         		compatibilityManager, annotationProcessor.getThreadMap());
         
-        // Building executor with all required information for scheduling
+        // Building executor and configuring it with all required information for scheduling
         executor = new RequestExecutor(body, compatibilityManager, priorityManager, threadManager);
-
-        if (logger.isDebugEnabled()) {
-            /*if (executor.getPriorityManager().getPriorityConstraints().size() > 0) {
-                logger.debug("Priority constraints for " + body.getReifiedObject().getClass());
-                logger.debug(executor.getPriorityManager());
-            } else {
-                logger.debug("No priority constraint defined for " + body.getReifiedObject().getClass());
-            }*/
-        }
+        executor.configure(threadManager.getThreadPoolSize(), 
+        		threadManager.getHardLimit(), threadManager.getHostReentrant());
     }
 
     /**
@@ -126,7 +121,9 @@ public class MultiActiveService extends Service {
      */
     public void multiActiveServing(int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
         init();
-        executor.configure(maxActiveThreads, hardLimit, hostReentrant);
+        if (!isConfiguredThroughAnnot) {
+        	executor.configure(maxActiveThreads, hardLimit, hostReentrant);
+        }
         executor.execute(new DefaultServingPolicy());
     }
 
@@ -136,7 +133,9 @@ public class MultiActiveService extends Service {
      */
     public void multiActiveServing(int maxActiveThreads) {
         init();
-        executor.configure(maxActiveThreads, false, false);
+        if (!isConfiguredThroughAnnot) {
+        	executor.configure(maxActiveThreads, false, false);
+        }
         executor.execute(new DefaultServingPolicy());
 
     }
@@ -146,7 +145,9 @@ public class MultiActiveService extends Service {
      */
     public void multiActiveServing() {
         init();
-        executor.configure(Integer.MAX_VALUE, false, false);
+        if (!isConfiguredThroughAnnot) {
+        	executor.configure(Integer.MAX_VALUE, false, false);
+        }
         executor.execute(new DefaultServingPolicy());
     }
 
@@ -161,7 +162,9 @@ public class MultiActiveService extends Service {
     public void policyServing(ServingPolicy policy, int maxActiveThreads, boolean hardLimit,
             boolean hostReentrant) {
         init();
-        executor.configure(maxActiveThreads, hardLimit, hostReentrant);
+        if (!isConfiguredThroughAnnot) {
+        	executor.configure(maxActiveThreads, hardLimit, hostReentrant);
+        }
         executor.execute(policy);
     }
 
@@ -171,7 +174,9 @@ public class MultiActiveService extends Service {
      */
     public void policyServing(ServingPolicy policy, int maxActiveThreads) {
         init();
-        executor.configure(maxActiveThreads, false, false);
+        if (!isConfiguredThroughAnnot) {
+        	executor.configure(maxActiveThreads, false, false);
+        }
         executor.execute(policy);
     }
 
@@ -181,7 +186,9 @@ public class MultiActiveService extends Service {
      */
     public void policyServing(ServingPolicy policy) {
         init();
-        executor.configure(Integer.MAX_VALUE, false, false);
+        if (!isConfiguredThroughAnnot) {
+        	executor.configure(Integer.MAX_VALUE, false, false);
+        }
         executor.execute(policy);
     }
 

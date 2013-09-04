@@ -2,10 +2,10 @@ package org.objectweb.proactive.multiactivity.limits;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
-import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 
@@ -25,7 +25,7 @@ public class ThreadTracker extends ThreadManager {
 	private CompatibilityManager compatibility;
 
 
-	public ThreadTracker(CompatibilityTracker compatibilityManager, 
+	public ThreadTracker(CompatibilityManager compatibilityManager, 
 			ThreadMap threadMap) {
 		super(threadMap);
 		this.compatibility = compatibilityManager;
@@ -129,22 +129,19 @@ public class ThreadTracker extends ThreadManager {
 	 * @param group
 	 * @return
 	 */
-	public String printUsage(MethodGroup group) {
+	@Override
+	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		if (group != null) {
-			Integer usage = this.threadUsage.get(group);
-			if (usage != null) {
-				ThreadPair groupPair = threadMap.get(group);
-				if (groupPair != null) {
-					int maxThreads = groupPair.getMaxThreads();
-					int minThreads = groupPair.getMaxThreads();
-					sb.append("Group: ").append(group.name).
-					append("; minThreads: ").append(minThreads).
-					append("; maxThreads: ").append(maxThreads).
-					append("; utilization: ").append(usage);
-				}
+		int totalUsed = 0;
+		for (Entry<MethodGroup, Integer> groupEntry : this.threadUsage.entrySet()) {
+			sb.append(groupEntry.getKey().name).append(" usage=").append(
+					groupEntry.getValue()).append(" reserved=").append(this.threadMap.get(groupEntry.getKey()).getMinThreads()).
+					append(" maximum=").append(this.threadMap.get(groupEntry.getKey()).getMaxThreads()).append("\n");
+			if (groupEntry.getValue() > 0) {
+				totalUsed += groupEntry.getValue();
 			}
 		}
+		sb.append("Used threads = ").append(totalUsed);
 		return sb.toString();
 	}
 

@@ -146,7 +146,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 */
 	private ConcurrentHashMap<RunnableRequest, RunnableRequest> hostMap;
 
-	/*
+	/**
 	 * This counter allows to warn the multiactivity framework that a thread has 
 	 * been sent to sleep or awaken from sleep manually such that these states are 
 	 * considered in the soft and hard limit of the current multi-active object.
@@ -175,9 +175,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 * @param priorityConstraints
 	 *            Priority constraints
 	 */
-	public RequestExecutor(Body body, CompatibilityManager compatibilityManager2
+	public RequestExecutor(Body body, CompatibilityManager compatibilityManager
 			, PriorityManager priorityManager, ThreadManager threadManager) {
-		this.compatibilityManager = compatibilityManager2;
+		this.compatibilityManager = compatibilityManager;
 		this.body = body;
 		this.requestQueue = body.getRequestQueue();
 		this.priorityManager = priorityManager;
@@ -211,8 +211,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 *            source
 	 */
 	public RequestExecutor(Body body, CompatibilityTracker compatibility,
-			PriorityManager priority, ThreadManager threadManager, int activeLimit, boolean hardLimit, 
-			boolean hostReentrant) {
+			PriorityManager priority, ThreadManager threadManager, 
+			int activeLimit, boolean hardLimit, boolean hostReentrant) {
 		this(body, compatibility, priority, threadManager);
 
 		THREAD_LIMIT = activeLimit;
@@ -237,7 +237,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 *            Whether to serve re-entrant calls on the same thread as their
 	 *            source
 	 */
-	public void configure(int activeLimit, boolean hardLimit, boolean hostReentrant) {
+	public void configure(int activeLimit, boolean hardLimit, 
+			boolean hostReentrant) {
 		synchronized (this) {
 
 			THREAD_LIMIT = activeLimit;
@@ -397,8 +398,12 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 											synchronized (host) {
 												hasThreadGroup = threadManager.hasFreeThreads(parasite);
 												isThreadReserved = threadManager.isThreadReserved(parasite,
-														threadUsage.keySet().size(), THREAD_LIMIT);
+														THREAD_LIMIT - countActive());
+												
+												// All the condition are satisfied to execute the request,
+												// update all tracking structures and execute the request.
 												if (hasThreadGroup && !isThreadReserved) {
+													
 													priorityManager.unregister(parasite);
 													threadManager.increaseUsage(parasite);
 													active.add(parasite);
@@ -470,8 +475,12 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 						RunnableRequest current = i.next();
 						hasThreadGroup = threadManager.hasFreeThreads(current);
 						isThreadReserved = threadManager.isThreadReserved(current,
-								threadUsage.keySet().size(), THREAD_LIMIT);
+								THREAD_LIMIT - countActive());
+						
+						// All the condition are satisfied to execute the request,
+						// update all tracking structures and execute the request.
 						if (hasThreadGroup && !isThreadReserved) {
+							
 							priorityManager.unregister(current);
 							threadManager.increaseUsage(current);
 							active.add(current);

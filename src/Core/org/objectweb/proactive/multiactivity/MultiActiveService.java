@@ -71,6 +71,7 @@ public class MultiActiveService extends Service {
     public LinkedList<Integer> serveTsts = new LinkedList<Integer>();
     
     private boolean isConfiguredThroughAnnot = false;
+    private int totalReservedThreads;
     
     RequestExecutor executor;
     
@@ -104,6 +105,7 @@ public class MultiActiveService extends Service {
         
         // Setting thread configuration from what was extracted from annotations
         isConfiguredThroughAnnot = annotationProcessor.getThreadMap().isConfiguredThroughAnnot();
+        totalReservedThreads = annotationProcessor.getThreadMap().getTotalConfiguredThread();
         ThreadManager threadManager = new ThreadTracker(
         		compatibilityManager, annotationProcessor.getThreadMap());
         
@@ -122,7 +124,8 @@ public class MultiActiveService extends Service {
     public void multiActiveServing(int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
         init();
         if (!isConfiguredThroughAnnot) {
-        	executor.configure(maxActiveThreads, hardLimit, hostReentrant);
+        	executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
+        			ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, hardLimit, hostReentrant);
         }
         executor.execute(new DefaultServingPolicy());
     }
@@ -134,7 +137,8 @@ public class MultiActiveService extends Service {
     public void multiActiveServing(int maxActiveThreads) {
         init();
         if (!isConfiguredThroughAnnot) {
-        	executor.configure(maxActiveThreads, false, false);
+        	executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
+        			ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, false, false);
         }
         executor.execute(new DefaultServingPolicy());
 
@@ -163,7 +167,8 @@ public class MultiActiveService extends Service {
             boolean hostReentrant) {
         init();
         if (!isConfiguredThroughAnnot) {
-        	executor.configure(maxActiveThreads, hardLimit, hostReentrant);
+        	executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
+        			ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, hardLimit, hostReentrant);
         }
         executor.execute(policy);
     }
@@ -175,7 +180,8 @@ public class MultiActiveService extends Service {
     public void policyServing(ServingPolicy policy, int maxActiveThreads) {
         init();
         if (!isConfiguredThroughAnnot) {
-        	executor.configure(maxActiveThreads, false, false);
+        	executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
+        			ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, false, false);
         }
         executor.execute(policy);
     }

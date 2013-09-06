@@ -32,6 +32,9 @@ public class ThreadMap {
 	/** Whether the thread config is specified through annotations */
 	private boolean isConfiguredThroughAnnot;
 	
+	/** Holds eventually the total number of reserved threads for all groups */
+	private int totalReservedThreads;
+	
 	
 	public ThreadMap() {
 		this.threadLimits = new HashMap<>();
@@ -57,12 +60,19 @@ public class ThreadMap {
 	 * @param threadPoolSize Size of thread pool
 	 * @param hardLimit Whether the limit applies on active threads or not 
 	 * @param hostReentrant Whether to use the same thread for reentrant calls
+	 * @param totalReservedThreads 
 	 */
 	public void configure(int threadPoolSize, boolean hardLimit, 
 			boolean hostReentrant) {
 		this.threadPoolSize = threadPoolSize;
 		this.hardLimit = hardLimit;
 		this.hostReentrant = hostReentrant;
+	}
+	
+	public void setTotalReservedThreads(int totalReservedThreads) {
+		if (totalReservedThreads > 0) {
+			this.totalReservedThreads = totalReservedThreads;
+		}
 	}
 	
 	/**
@@ -113,6 +123,13 @@ public class ThreadMap {
 	 */
 	public boolean isConfiguredThroughAnnot() {
 		return this.isConfiguredThroughAnnot;
+	}
+	
+	/**
+	 * @return The total of reserved threads for all groups.
+	 */
+	public int getTotalConfiguredThread() {
+		return this.totalReservedThreads;
 	}
 	
 }

@@ -94,31 +94,40 @@ public class ThreadTracker extends ThreadManager {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean isThreadReserved(RunnableRequest request, int globalThreadUsage, 
-			int globalThreadLimit) {
+	public boolean isThreadReserved(RunnableRequest request, int freeThreads) {
 		boolean isReserved = false;
 		MethodGroup requestGroup = 
 				this.compatibility.getGroupOf(request.getRequest());
-		int freeThreads = globalThreadLimit - globalThreadUsage;
-		int reservedAndNotUsedThreads = 0;
-		// Compute the number of threads that are reserved but not currently 
-		// used, minus the ones reserved by the considered request group.
-		for (MethodGroup group : this.threadMap.getGroups()) {
-			if (!group.equals(requestGroup)) {
-				ThreadPair groupPair = this.threadMap.get(group);
-				int groupUsage = this.threadUsage.get(group);
-				if (groupPair.getMinThreads() != 0) {
-					reservedAndNotUsedThreads += 
-							groupPair.getMinThreads() - groupUsage;
+		boolean superPriority = false;
+		if (requestGroup != null) {
+			superPriority = requestGroup.hasSuperPriority();
+		}
+		// If request is of utmost priority, we can skip this part since it 
+		// has to be executed anyway.
+		if (!superPriority){
+			int reservedAndNotUsedThreads = 0;
+			// Compute the number of threads that are reserved but not 
+			// currently used, minus the ones reserved by the considered 
+			// request group.
+			for (MethodGroup group : this.threadMap.getGroups()) {
+				if (!group.equals(requestGroup)) {
+					ThreadPair groupPair = this.threadMap.get(group);
+					int groupUsage = this.threadUsage.get(group);
+					if (groupPair.getMinThreads() != 0) {
+						reservedAndNotUsedThreads += 
+								groupPair.getMinThreads() - groupUsage > 0 ? 
+										groupPair.getMinThreads() - groupUsage 
+										: 0;
+					}
 				}
 			}
-		}
-		// If the number of free threads is smaller than the number of threads 
-		// that are reserved by the group and that are not currently used, 
-		// then we cannot use a thread to execute the request, because they 
-		// are reserved.
-		if (freeThreads <= reservedAndNotUsedThreads){
-			isReserved = true;
+			// If the number of free threads is smaller than the number of 
+			// threads that are reserved by the group and that are not 
+			// currently used, then we cannot use a thread to execute the 
+			// request, because they are reserved.
+			if (freeThreads <= reservedAndNotUsedThreads){
+				isReserved = true;
+			}
 		}
 		return isReserved;
 	}
@@ -133,10 +142,14 @@ public class ThreadTracker extends ThreadManager {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		int totalUsed = 0;
-		for (Entry<MethodGroup, Integer> groupEntry : this.threadUsage.entrySet()) {
-			sb.append(groupEntry.getKey().name).append(" usage=").append(
-					groupEntry.getValue()).append(" reserved=").append(this.threadMap.get(groupEntry.getKey()).getMinThreads()).
-					append(" maximum=").append(this.threadMap.get(groupEntry.getKey()).getMaxThreads()).append("\n");
+		for (Entry<MethodGroup, Integer> groupEntry : threadUsage.entrySet()) {
+			sb.append(
+					groupEntry.getKey().name).append(" usage=").
+					append(groupEntry.getValue()).append(" reserved=").
+					append(threadMap.get(groupEntry.getKey()).getMinThreads()).
+					append(" maximum=").
+					append(threadMap.get(groupEntry.getKey()).getMaxThreads()).
+					append("\n");
 			if (groupEntry.getValue() > 0) {
 				totalUsed += groupEntry.getValue();
 			}

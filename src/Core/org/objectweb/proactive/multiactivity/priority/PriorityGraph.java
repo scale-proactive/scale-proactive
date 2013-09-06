@@ -475,12 +475,12 @@ public class PriorityGraph implements PriorityMap {
 
 		PriorityGraph graph = new PriorityGraph();
 
-		MethodGroup g0 = new MethodGroup("G0", true);
-		MethodGroup g1 = new MethodGroup("G1", true);
-		MethodGroup g2 = new MethodGroup("G2", true);
-		MethodGroup g3 = new MethodGroup("G3", true);
-		MethodGroup g4 = new MethodGroup("G4", true);
-		MethodGroup g5 = new MethodGroup("G5", true);
+		MethodGroup g0 = new MethodGroup("G0", true, false);
+		MethodGroup g1 = new MethodGroup("G1", true, false);
+		MethodGroup g2 = new MethodGroup("G2", true, false);
+		MethodGroup g3 = new MethodGroup("G3", true, false);
+		MethodGroup g4 = new MethodGroup("G4", true, false);
+		MethodGroup g5 = new MethodGroup("G5", true, false);
 
 		graph.insert(g1, null);
 		System.out.println("- " + g1.name + " inserted");

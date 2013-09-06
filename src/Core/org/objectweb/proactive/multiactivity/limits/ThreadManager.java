@@ -14,6 +14,11 @@ public abstract class ThreadManager {
 	
 	/** Default thread pool size */
 	public static final int THREAD_POOL_DEFAULT = Integer.MAX_VALUE;
+	
+	/** Number of threads added to the thread pool in case the size of the 
+	 * thread pool = the sum of reserved threads (this variable should not 
+	 * be 0 to prevent deadlocks) */
+	public static final int THREAD_POOL_MARGIN = 1;
 
 	/** Default maximum number of threads that can be occupied at the same time 
 	 * by one group */
@@ -75,6 +80,6 @@ public abstract class ThreadManager {
 	 * @return true if all the free current threads belong to reserved threads.
 	 */
 	public abstract boolean isThreadReserved(RunnableRequest request, 
-			int globalThreadUsage, int globalThreadLimit);
+			int freeThreads);
 
 }

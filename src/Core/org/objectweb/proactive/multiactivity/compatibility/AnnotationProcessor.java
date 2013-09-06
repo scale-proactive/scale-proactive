@@ -58,6 +58,7 @@ import org.objectweb.proactive.annotation.multiactivity.MemberOf;
 import org.objectweb.proactive.annotation.multiactivity.PriorityOrder;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
+import org.objectweb.proactive.multiactivity.limits.ThreadManager;
 import org.objectweb.proactive.multiactivity.limits.ThreadMap;
 import org.objectweb.proactive.multiactivity.priority.PriorityGraph;
 import org.objectweb.proactive.multiactivity.priority.PriorityRanking;
@@ -156,6 +157,8 @@ public class AnnotationProcessor {
 		Annotation priorityGraphDefAnn = null;
 		Annotation priorityRankDefAnn = null;
 		Annotation threadConfigDefAnn = null;
+		int reservedThreads;
+		int totalReservedThreads = 0;
 
 		for (Annotation a : declaredAnns) {
 			if (groupDefAnn == null
@@ -199,20 +202,26 @@ public class AnnotationProcessor {
 		if (groupDefAnn != null) {
 			for (Group g : ((DefineGroups) groupDefAnn).value()) {
 				if (!compatibilityMap.getGroups().containsKey(g.name())) {
+					// Set the group compatibility
 					MethodGroup mg =
 							new MethodGroup(
 									g.name(), g.selfCompatible(),
-									g.parameter(), g.condition());
+									g.parameter(), g.condition(), g.superPriority());
 					compatibilityMap.getGroups().put(g.name(), mg);
-					// Set the group thread limit
-					threadMap.setThreadLimits(mg, (g.minThreads() < g.maxThreads() ?
-							g.minThreads() : g.maxThreads()), g.maxThreads());
+					
+					// Set the group thread limits
+					reservedThreads = g.minThreads() < g.maxThreads() ? 
+							g.minThreads() : g.maxThreads();
+					threadMap.setThreadLimits(mg, reservedThreads, g.maxThreads());
+					totalReservedThreads += reservedThreads;
+					
 				} else {
 					addError(
 							LOC_CLASS, processedClass.getCanonicalName(),
 							DUP_GROUP, g.name());
 				}
 			}
+			threadMap.setTotalReservedThreads(totalReservedThreads);
 		}
 
 		// if there are rules defined
@@ -315,13 +324,15 @@ public class AnnotationProcessor {
 		// if there are configuration for threads defined
 		if (threadConfigDefAnn != null) {
 			DefineThreadConfig threadConfig = ((DefineThreadConfig) threadConfigDefAnn);
-			threadMap.configure(threadConfig.threadPoolSize(), threadConfig.hardLimit(),
+			int poolSize = totalReservedThreads > threadConfig.threadPoolSize() ? 
+					totalReservedThreads + ThreadManager.THREAD_POOL_MARGIN : threadConfig.threadPoolSize();
+			threadMap.configure(poolSize, threadConfig.hardLimit(),
 					threadConfig.hostReentrant());
 			if (PriorityUtils.LOG_ENABLED) {
 				PriorityUtils.logMessage(
-						"Configuration of threads: thread pool size = " + threadConfig.threadPoolSize() + "" +
-								", hard limit = " + threadConfig.hardLimit() + ", host reentrant = " +
-										"" + threadConfig.hostReentrant());
+						"Configuration of threads: thread pool size = " + poolSize + "" +
+								", hard limit = " + threadConfig.hardLimit() + "" +
+										", host reentrant = " + threadConfig.hostReentrant());
 			}
 		}
 	}

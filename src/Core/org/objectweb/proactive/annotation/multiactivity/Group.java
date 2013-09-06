@@ -96,5 +96,14 @@ public @interface Group {
      * @return
      */
     public String parameter() default "";
+    
+    /**
+     * Whether requests of this group have a super priority, i.e. are executed 
+     * regardless of the reserved threads.
+     * TODO add regardless of the other priorities (always insert at the head) 
+     * + regardless of free threads (create thread for it).
+     * @return
+     */
+    public boolean superPriority() default false;
 
 }

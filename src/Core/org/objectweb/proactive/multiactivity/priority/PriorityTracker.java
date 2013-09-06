@@ -58,11 +58,11 @@ public class PriorityTracker extends PriorityManager {
 
 	/** Head of the priority queue (= oldest highest priority request) */
 	private PriorityElement first;
-	
+
 	/** Group manager (needed to find the group of a request) */
 	private final CompatibilityManager compatibility;
-		
-	
+
+
 	public PriorityTracker(CompatibilityManager compatibility, 
 			PriorityMap priorityMap) {
 		super(priorityMap);
@@ -74,20 +74,21 @@ public class PriorityTracker extends PriorityManager {
 	 */
 	@Override
 	public void register(RunnableRequest request) {
-		
+
 		MethodGroup group = this.compatibility.getGroupOf(request.getRequest());
 		PriorityElement toInsert = new PriorityElement(request, group);
-		
+
 		// The request to insert is the only one in the priority queue
 		if (this.first == null) {
 			this.first = toInsert;
 		}
-		
+
 		else {
+
 			PriorityElement currentElement = this.first;
 			PriorityElement previousElement = null;
 			boolean isOvertakable = false;
-			
+
 			// Search for the first request that has a lower priority
 			while (!isOvertakable && currentElement != null) {
 				isOvertakable = 
@@ -98,17 +99,17 @@ public class PriorityTracker extends PriorityManager {
 					currentElement = currentElement.next;
 				}
 			}
-			
+
 			// The request must be placed just before the currentElement
 			if (currentElement != null) {
 				toInsert.next = currentElement;
 				toInsert.previous = currentElement.previous;
-				
+
 				if (currentElement.previous != null) {
 					currentElement.previous.next = toInsert;
 					currentElement.previous = toInsert;
 				}
-				
+
 				// The element to insert must be the first in the queue
 				else {
 					toInsert.next = this.first;
@@ -116,7 +117,7 @@ public class PriorityTracker extends PriorityManager {
 					this.first = toInsert;
 				}
 			}
-			
+
 			// Means that the element must be inserted at the end
 			else {
 				toInsert.previous = previousElement;
@@ -130,23 +131,23 @@ public class PriorityTracker extends PriorityManager {
 	 */
 	@Override
 	public void unregister(RunnableRequest request) {
-		
+
 		PriorityElement element = this.first;
-		
+
 		// There is only the element to remove in the PriorityQueue
 		if (this.first.request.equals(request) && this.first.next == null) {
 			this.first = null;
 		}
-		
+
 		else {
-			
+
 			while (element != null) {
-				
+
 				if (element.request.equals(request)) {
-					
+
 					PriorityElement previous = element.previous;
 					PriorityElement next = element.next; 
-					
+
 					// The element to remove can be the first
 					if (previous != null) {
 						previous.next = next;
@@ -154,14 +155,14 @@ public class PriorityTracker extends PriorityManager {
 					else {
 						this.first = next;
 					}
-					
+
 					// The element to remove can be the last
 					if (next != null) {
 						next.previous = previous;
 					}
 					break;
 				}
-				
+
 				element = element.next;
 			}
 		}
@@ -180,7 +181,7 @@ public class PriorityTracker extends PriorityManager {
 		}
 		return size;
 	}
-	
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -200,7 +201,7 @@ public class PriorityTracker extends PriorityManager {
 	 */
 	@Override
 	public String toString() {
-		
+
 		Request request;
 		int nbParameters;
 		StringBuilder sb = new StringBuilder();
@@ -220,7 +221,7 @@ public class PriorityTracker extends PriorityManager {
 			sb.append(")\n");
 			element = element.next;
 		}
-		
+
 		sb.append("Priority queue - to low priority\n");
 		return sb.toString();
 	}

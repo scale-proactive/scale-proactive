@@ -75,7 +75,7 @@ public class ThreadTracker extends ThreadManager {
 		MethodGroup group = 
 				this.compatibility.getGroupOf(request.getRequest());
 		// A request belonging to no group has no limit
-		if (group != null) {
+		if (group != null && !group.hasSuperPriority()) {
 			Integer usage = this.threadUsage.get(group);
 			if (usage != null) {
 				ThreadPair groupPair = threadMap.get(group);

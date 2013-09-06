@@ -25,20 +25,20 @@ public class PriorityRanking implements PriorityMap {
 	/** The dictionary containing the priorities and their associated groups
 	 * and requests */
 	private Set<PriorityRank> priorityRanks;
-	
+
 	/** List of all groups that have a priority */
 	private ArrayList<MethodGroup> groupList;
-	
+
 	/** 
 	 * Matrix that stores a boolean value that represents whether the first 
 	 * entry can overtake the second. This speeds up the insertion process.
 	 */
 	private HashMap<String, HashMap<String, Boolean>> existPathMatrix;
-	
+
 	/** Specifies whether the matrix optimization should be used or not */
 	private static boolean matrixEnabled = true;
 
-	
+
 	/**
 	 * Initialize a new ranking and create the default rank with default 
 	 * priority.s
@@ -79,6 +79,11 @@ public class PriorityRanking implements PriorityMap {
 	@Override
 	public boolean canOvertake(MethodGroup group1, MethodGroup group2) {
 		Boolean canOvertake = false;
+		// group1 has a super priority, it can overtake group2 if group2 does 
+		// not have a super priority
+		if (group1.hasSuperPriority()) {
+			return !group2.hasSuperPriority();
+		}
 		// We use the matrix optimization
 		if (matrixEnabled) {
 			// The group list does not exist yet, build it
@@ -151,7 +156,7 @@ public class PriorityRanking implements PriorityMap {
 		return canOvertake;
 	}
 
-	
+
 	/**
 	 * Encapsulates a set of groups for a given priority and a set of ready 
 	 * requests belonging to those groups.
@@ -167,7 +172,7 @@ public class PriorityRanking implements PriorityMap {
 		 * the higher the priority is. */
 		public final int rankNumber;
 
-		
+
 		public PriorityRank(int rankNumber) {
 			this.methodGroups = new HashSet<MethodGroup>();
 			this.rankNumber = rankNumber;

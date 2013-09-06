@@ -323,7 +323,12 @@ public class PriorityGraph implements PriorityMap {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean canOvertake(MethodGroup group1, MethodGroup group2) {		
+	public boolean canOvertake(MethodGroup group1, MethodGroup group2) {	
+		// group1 has a super priority, it can overtake group2 if group2 does 
+		// not have a super priority
+		if (group1.hasSuperPriority()) {
+			return !group2.hasSuperPriority();
+		}
 		// We use the matrix optimization to know about priorities of groups
 		if (this.matrixEnabled) {			
 			Boolean returnValue = false;

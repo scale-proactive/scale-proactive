@@ -58,16 +58,12 @@ public @interface Group {
     /**
      * A representative name of the group. This has to be unique for a class and
      * its predecessors.
-     * 
-     * @return
      */
     public String name();
 
     /**
      * Flag that shows if the methods contained in this group can run in
      * parallel or not.
-     * 
-     * @return
      */
     public boolean selfCompatible();
     
@@ -85,24 +81,21 @@ public @interface Group {
     
     /**
      * Conditioning function of the self-compatibility.
-     * 
-     * @return
      */
     public String condition() default "";
 
     /**
      * Class name of the common argument of all methods belonging to this group.
-     * 
-     * @return
      */
     public String parameter() default "";
     
     /**
      * Whether requests of this group have a super priority, i.e. are executed 
-     * regardless of the reserved threads.
-     * TODO add regardless of the other priorities (always insert at the head) 
-     * + regardless of free threads (create thread for it).
-     * @return
+     * regardless of other priorities (inserted at the head of the queue if no 
+     * other super priority request lies there), and regardless of the 
+     * reserved threads (a super priority request can borrow the reserved 
+     * thread of another group). A super priority group cannot have a limited 
+     * number of threads (not taken into account).
      */
     public boolean superPriority() default false;
 

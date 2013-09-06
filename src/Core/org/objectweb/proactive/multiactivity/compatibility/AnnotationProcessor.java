@@ -324,7 +324,7 @@ public class AnnotationProcessor {
 		// if there are configuration for threads defined
 		if (threadConfigDefAnn != null) {
 			DefineThreadConfig threadConfig = ((DefineThreadConfig) threadConfigDefAnn);
-			int poolSize = totalReservedThreads > threadConfig.threadPoolSize() ? 
+			int poolSize = totalReservedThreads >= threadConfig.threadPoolSize() ? 
 					totalReservedThreads + ThreadManager.THREAD_POOL_MARGIN : threadConfig.threadPoolSize();
 			threadMap.configure(poolSize, threadConfig.hardLimit(),
 					threadConfig.hostReentrant());

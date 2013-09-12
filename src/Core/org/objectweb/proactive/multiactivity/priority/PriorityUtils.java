@@ -30,7 +30,7 @@ public class PriorityUtils {
 	
 	// Location and format of logs
 	public static final String LOG_SEPARATOR = "\t";
-	public static final String LOG_PATH = "/local/home/jrochas/tmp/priority_logs";
+	public static final String LOG_PATH = "/tmp/priority_logs";
 	public static final String LOG_FILE = "priority.log";
 	public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(
 			"yyyy-MM-dd HH:mm:ss:SSS", Locale.ENGLISH);
@@ -51,7 +51,9 @@ public class PriorityUtils {
 		
 		try {
 			File file = new File(LOG_PATH);
-			file.mkdirs();
+			if (!file.exists()) {
+				file.mkdirs();
+			}
 			file = new File(LOG_PATH + FILE_SEP + LOG_FILE);
 			FileAppender appender = new FileAppender(
 					layout, file.getAbsolutePath(), false);

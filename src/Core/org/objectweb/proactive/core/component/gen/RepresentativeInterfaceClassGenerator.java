@@ -84,15 +84,15 @@ public class RepresentativeInterfaceClassGenerator extends AbstractInterfaceClas
     // this boolean for deciding of a possible indirection for the functionnal calls
     protected boolean isPrimitive = false;
 
-    public RepresentativeInterfaceClassGenerator() {
+    private RepresentativeInterfaceClassGenerator() {
     }
 
-    public static RepresentativeInterfaceClassGenerator instance() {
+    public synchronized static RepresentativeInterfaceClassGenerator instance() {
         if (instance == null) {
-            return new RepresentativeInterfaceClassGenerator();
-        } else {
-            return instance;
+            instance = new RepresentativeInterfaceClassGenerator();
         }
+
+        return instance;
     }
 
     @Override
@@ -116,7 +116,8 @@ public class RepresentativeInterfaceClassGenerator extends AbstractInterfaceClas
         }
     }
 
-    public Class<?> generateInterfaceClass(PAGCMInterfaceType itfType, boolean isFunctionalInterface) {
+    public synchronized Class<?> generateInterfaceClass(PAGCMInterfaceType itfType,
+            boolean isFunctionalInterface) {
         if (GCMTypeFactory.GATHERCAST_CARDINALITY.equals(itfType.getGCMCardinality())) {
             // modify signature in type
             try {
@@ -133,7 +134,7 @@ public class RepresentativeInterfaceClassGenerator extends AbstractInterfaceClas
         String representativeClassName = org.objectweb.proactive.core.component.gen.Utils
                 .getMetaObjectComponentRepresentativeClassName(itfType.getFcItfName(), itfType
                         .getFcItfSignature());
-        Class<?> generated_class;
+        Class<?> generated_class = null;
 
         // check whether class has already been generated
         try {

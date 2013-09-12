@@ -49,7 +49,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.management.Notification;
 import javax.management.NotificationListener;
 
-import org.apache.log4j.Logger;
 import org.etsi.uri.gcm.api.control.MonitorController;
 import org.etsi.uri.gcm.api.type.GCMInterfaceType;
 import org.etsi.uri.gcm.util.GCM;
@@ -71,14 +70,15 @@ import org.objectweb.proactive.core.jmx.notification.NotificationType;
 import org.objectweb.proactive.core.jmx.notification.RequestNotificationData;
 import org.objectweb.proactive.core.jmx.util.JMXNotificationManager;
 import org.objectweb.proactive.core.runtime.ProActiveRuntimeImpl;
-import org.objectweb.proactive.core.util.log.Loggers;
-import org.objectweb.proactive.core.util.log.ProActiveLogger;
 
 
+/**
+ * Implementation of the {@link MonitorController monitor controller}.
+ * 
+ * @author The ProActive Team
+ */
 public class PAMonitorControllerImpl extends AbstractPAController implements MonitorController,
         NotificationListener {
-    private static final Logger logger = ProActiveLogger.getLogger(Loggers.COMPONENTS_CONTROLLERS);
-
     private transient JMXNotificationManager jmxNotificationManager;
 
     private boolean started;
@@ -87,11 +87,20 @@ public class PAMonitorControllerImpl extends AbstractPAController implements Mon
 
     private Map<String, String> keysList;
 
+    /**
+     * Creates a {@link PAMonitorControllerImpl}.
+     * 
+     * @param owner Component owning the controller.
+     */
     public PAMonitorControllerImpl(Component owner) {
         super(owner);
         jmxNotificationManager = JMXNotificationManager.getInstance();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected void setControllerItfType() {
         try {
             setItfType(PAGCMTypeFactoryImpl.instance().createFcItfType(Constants.MONITOR_CONTROLLER,
@@ -172,8 +181,8 @@ public class PAMonitorControllerImpl extends AbstractPAController implements Mon
                             statistics.put(key, new MethodStatisticsCompositeImpl(itf.getFcItfName(), m
                                     .getName(), parametersTypes, subcomponentMonitors));
                         }
-                        logger.debug(m.getName() + " (server) added to monitoring on component " + name +
-                            "!!!");
+                        controllerLogger.debug(m.getName() + " (server) added to monitoring on component " +
+                            name + "!!!");
                     }
                 }
             } catch (ClassNotFoundException e) {
@@ -182,6 +191,10 @@ public class PAMonitorControllerImpl extends AbstractPAController implements Mon
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isGCMMonitoringStarted() {
         return started;
     }
@@ -193,6 +206,10 @@ public class PAMonitorControllerImpl extends AbstractPAController implements Mon
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void startGCMMonitoring() {
         if (statistics == null) {
             registerMethods();
@@ -211,6 +228,10 @@ public class PAMonitorControllerImpl extends AbstractPAController implements Mon
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void stopGCMMonitoring() {
         if (started) {
             jmxNotificationManager.unsubscribe(FactoryName.createActiveObjectName(PAActiveObject
@@ -219,11 +240,19 @@ public class PAMonitorControllerImpl extends AbstractPAController implements Mon
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void resetGCMMonitoring() {
         stopGCMMonitoring();
         startGCMMonitoring();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Object getGCMStatistics(String itfName, String methodName, Class<?>[] parameterTypes)
             throws NoSuchMethodException {
         String supposedCorrespondingKey = PAMonitorControllerHelper.generateKey(itfName, methodName,
@@ -263,6 +292,10 @@ public class PAMonitorControllerImpl extends AbstractPAController implements Mon
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Map<String, Object> getAllGCMStatistics() {
         return statistics;
     }

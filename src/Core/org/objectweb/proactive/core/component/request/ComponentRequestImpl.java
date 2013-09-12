@@ -59,8 +59,9 @@ import org.objectweb.proactive.core.component.Utils;
 import org.objectweb.proactive.core.component.body.ComponentBody;
 import org.objectweb.proactive.core.component.body.ComponentBodyImpl;
 import org.objectweb.proactive.core.component.control.PAGathercastControllerImpl;
+import org.objectweb.proactive.core.component.control.PAInterceptorControllerImpl;
 import org.objectweb.proactive.core.component.identity.PAComponentImpl;
-import org.objectweb.proactive.core.component.interception.InputInterceptor;
+import org.objectweb.proactive.core.component.interception.Interceptor;
 import org.objectweb.proactive.core.component.representative.ItfID;
 import org.objectweb.proactive.core.component.type.PAGCMInterfaceType;
 import org.objectweb.proactive.core.mop.MethodCall;
@@ -185,7 +186,7 @@ public class ComponentRequestImpl extends RequestImpl implements ComponentReques
                     }
                     result = methodCall.execute(targetBody.getReifiedObject());
                 }
-                interceptAfterInvocation(targetBody);
+                interceptAfterInvocation(targetBody, result);
             }
         } catch (NoSuchInterfaceException nsie) {
             throw new ServeException("cannot serve request : problem accessing a component controller", nsie);
@@ -208,36 +209,52 @@ public class ComponentRequestImpl extends RequestImpl implements ComponentReques
     // intercept and delegate for preprocessing from the inputInterceptors 
     private void interceptBeforeInvocation(Body targetBody) {
         if (methodCall.getReifiedMethod() != null) {
-            List<Interface> inputInterceptors = ((ComponentBody) targetBody).getPAComponentImpl()
-                    .getInputInterceptors();
-            Iterator<Interface> it = inputInterceptors.iterator();
-            while (it.hasNext()) {
-                try {
-                    InputInterceptor interceptor = (InputInterceptor) it.next();
-                    interceptor.beforeInputMethodInvocation(methodCall);
-                } catch (NullPointerException e) {
-                    logger.error("could not intercept invocation : " + e.getMessage());
+            try {
+                PAInterceptorControllerImpl interceptorControllerImpl = (PAInterceptorControllerImpl) ((PAInterface) Utils
+                        .getPAInterceptorController(((ComponentBody) targetBody).getPAComponentImpl()))
+                        .getFcItfImpl();
+                List<Interceptor> inputInterceptors = interceptorControllerImpl.getInterceptors(methodCall
+                        .getComponentMetadata().getComponentInterfaceName());
+                Iterator<Interceptor> it = inputInterceptors.iterator();
+
+                while (it.hasNext()) {
+                    try {
+                        it.next().beforeMethodInvocation(
+                                methodCall.getComponentMetadata().getComponentInterfaceName(), methodCall);
+                    } catch (NullPointerException e) {
+                        logger.error("could not intercept invocation : " + e.getMessage());
+                    }
                 }
+            } catch (NoSuchInterfaceException nsie) {
+                // No PAInterceptorController, nothing to do
             }
         }
     }
 
     // intercept and delegate for postprocessing from the inputInterceptors 
-    private void interceptAfterInvocation(Body targetBody) {
+    private void interceptAfterInvocation(Body targetBody, Object result) {
         if (methodCall.getReifiedMethod() != null) {
             if (((ComponentBody) targetBody).getPAComponentImpl() != null) {
-                List<Interface> interceptors = ((ComponentBody) targetBody).getPAComponentImpl()
-                        .getInputInterceptors();
+                try {
+                    PAInterceptorControllerImpl interceptorControllerImpl = (PAInterceptorControllerImpl) ((PAInterface) Utils
+                            .getPAInterceptorController(((ComponentBody) targetBody).getPAComponentImpl()))
+                            .getFcItfImpl();
+                    List<Interceptor> inputInterceptors = interceptorControllerImpl
+                            .getInterceptors(methodCall.getComponentMetadata().getComponentInterfaceName());
+                    // use inputInterceptors in reverse order after invocation
+                    ListIterator<Interceptor> it = inputInterceptors.listIterator();
 
-                // use inputInterceptors in reverse order after invocation
-                ListIterator<Interface> it = interceptors.listIterator();
-
-                // go to the end of the list first
-                while (it.hasNext()) {
-                    it.next();
-                }
-                while (it.hasPrevious()) {
-                    ((InputInterceptor) it.previous()).afterInputMethodInvocation(methodCall);
+                    // go to the end of the list first
+                    while (it.hasNext()) {
+                        it.next();
+                    }
+                    while (it.hasPrevious()) {
+                        it.previous().afterMethodInvocation(
+                                methodCall.getComponentMetadata().getComponentInterfaceName(), methodCall,
+                                result);
+                    }
+                } catch (NoSuchInterfaceException nsie) {
+                    // No PAInterceptorController, nothing to do
                 }
             }
         }

@@ -34,35 +34,49 @@
  * ################################################################
  * $$PROACTIVE_INITIAL_DEV$$
  */
-package functionalTests.component.requestpriority;
+package org.objectweb.proactive.core.component.adl.interfaces;
+
+import static org.objectweb.fractal.adl.error.ErrorTemplateValidator.validErrorTemplate;
+
+import org.objectweb.fractal.adl.error.ErrorTemplate;
+import org.objectweb.fractal.adl.interfaces.InterfaceErrors;
+
 
 /**
+ * {@link ErrorTemplate} group for the interfaces package.
+ * 
  * @author The ProActive Team
- *
  */
-public class PriotirizedComponent implements FItf {
-    private String callOrder = "";
+public enum PAInterfaceErrors implements ErrorTemplate {
+    WRONG_INTERCEPTOR_NAME("Wrong interceptor name \"%s\" for interface \"%s\"", "interfaceName",
+            "interceptorName");
 
-    public void functionalCall() {
-        System.err.println("PriotirizedComponent:functionnalCall");
-        callOrder += FItf.F_STR_CALL;
+    /** The groupId of ErrorTemplates defined in this enumeration. */
+    public static final String GROUP_ID = InterfaceErrors.GROUP_ID;
+
+    private int id;
+    private String format;
+
+    private PAInterfaceErrors(final String format, final Object... args) {
+        this.id = ordinal();
+        this.format = format;
+
+        assert validErrorTemplate(this, args);
     }
 
-    public String getCallOrder() {
-        System.err.println("PriotirizedComponent:getCallOrder");
-        return callOrder;
+    public int getErrorId() {
+        return id;
     }
 
-    public void longFunctionalCall() {
-        functionalCall();
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+    public String getGroupId() {
+        return GROUP_ID;
     }
 
-    public void addCall(String str) {
-        callOrder += str;
+    public String getFormatedMessage(final Object... args) {
+        return String.format(format, args);
+    }
+
+    public String getFormat() {
+        return format;
     }
 }

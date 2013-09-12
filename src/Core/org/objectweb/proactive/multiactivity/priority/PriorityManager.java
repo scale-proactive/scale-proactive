@@ -14,6 +14,7 @@ import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
  * @author The ProActive Team
  *
  */
+
 public abstract class PriorityManager {
 	
 	/** Priority representation used to decide where to insert a new request */
@@ -50,4 +51,5 @@ public abstract class PriorityManager {
 	 * @return The number of requests that are in the priority queue.
 	 */
 	public abstract int getNbRequestsRegistered();
+
 }

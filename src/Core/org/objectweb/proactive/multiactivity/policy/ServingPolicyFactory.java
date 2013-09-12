@@ -55,7 +55,7 @@ public class ServingPolicyFactory {
         return new ServingPolicy() {
 
             @Override
-            public List<Request> runCompatibilityPolicy(CompatibilityManager compatibility) {
+            public List<Request> runPolicy(CompatibilityManager compatibility) {
                 List<Request> ret = new LinkedList<Request>();
 
                 if (compatibility.getNumberOfExecutingRequests() == 0 &&
@@ -72,7 +72,7 @@ public class ServingPolicyFactory {
         return new ServingPolicy() {
 
             @Override
-            public List<Request> runCompatibilityPolicy(CompatibilityManager compatibility) {
+            public List<Request> runPolicy(CompatibilityManager compatibility) {
                 List<Request> ret = new LinkedList<Request>();
                 Request current = compatibility.getOldestInTheQueue();
 
@@ -111,7 +111,7 @@ public class ServingPolicyFactory {
         return new ServingPolicy() {
 
             @Override
-            public List<Request> runCompatibilityPolicy(CompatibilityManager compatibility) {
+            public List<Request> runPolicy(CompatibilityManager compatibility) {
                 List<Request> ret = new LinkedList<Request>();
                 List<Request> queue = compatibility.getQueueContents();
                 for (Request r : queue) {
@@ -164,11 +164,11 @@ public class ServingPolicyFactory {
         return new ServingPolicy() {
 
             @Override
-            public List<Request> runCompatibilityPolicy(CompatibilityManager compatibility) {
+            public List<Request> runPolicy(CompatibilityManager compatibility) {
 
                 if (compatibility.getExecutingRequests().size() < maxThreads) {
                     ServingPolicy maPolicy = getMultiActivityPolicy();
-                    return maPolicy.runCompatibilityPolicy(compatibility);
+                    return maPolicy.runPolicy(compatibility);
                 }
 
                 return null;
@@ -180,7 +180,7 @@ public class ServingPolicyFactory {
         return new ServingPolicy() {
 
             @Override
-            public List<Request> runCompatibilityPolicy(CompatibilityManager compatibility) {
+            public List<Request> runPolicy(CompatibilityManager compatibility) {
 
                 List<Request> ret = new LinkedList<Request>();
                 List<Request> queue = compatibility.getQueueContents();

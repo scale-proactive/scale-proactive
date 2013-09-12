@@ -210,7 +210,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 *            Whether to serve re-entrant calls on the same thread as their
 	 *            source
 	 */
-	public RequestExecutor(Body body, CompatibilityTracker compatibility,
+	public RequestExecutor(Body body, CompatibilityTracker compatibility, 
 			PriorityManager priority, ThreadManager threadManager, 
 			int activeLimit, boolean hardLimit, boolean hostReentrant) {
 		this(body, compatibility, priority, threadManager);
@@ -318,7 +318,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 			while (body.isActive()) {
 
 				// get compatible ones from the queue
-				List<Request> rc = policy.runCompatibilityPolicy(compatibilityManager);
+				List<Request> rc = policy.runPolicy(compatibilityManager);
 
 				if (rc.size() >= 0) {
 					synchronized (this) {
@@ -362,7 +362,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 * Serving and Thread management.
 	 */
 	private void internalExecute() {
-		synchronized (this) {
+		synchronized (this) { 
 
 			boolean hasThreadGroup;
 			boolean isThreadReserved;
@@ -839,5 +839,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	public int getExtraActiveRequestCount() {
 		return extraActiveRequestCount.get();
 	}
+
+    public RequestQueue getRequestQueue() {
+        return this.requestQueue;
+    }
 
 }

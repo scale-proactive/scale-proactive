@@ -84,8 +84,7 @@ public class Test extends ComponentTest {
                 FItf.ITF_NAME, FItf.class.getName(), TypeFactory.SERVER, TypeFactory.MANDATORY,
                 TypeFactory.SINGLE), });
 
-        p1 = cf.newFcInstance(pc_type, myController, new ContentDescription(PriotirizedComponent.class
-                .getName(), new Object[] {}));
+        p1 = newFcInstance(cf, pc_type, myController);
 
         assertEquals(GCM.getNameController(p1).getFcName(), P1_NAME);
 
@@ -123,6 +122,12 @@ public class Test extends ComponentTest {
 
         pc.setGCMPriority(NF3Itf.CONTROLLER_NAME, "NF3Call", new Class<?>[] {}, RequestPriority.NF3);
         assertEquals(RequestPriority.NF3, pc.getGCMPriority(NF3Itf.CONTROLLER_NAME, "NF3Call", null));
+    }
+
+    protected Component newFcInstance(GenericFactory gf, ComponentType type,
+            ControllerDescription controllerDescription) throws Exception {
+        return gf.newFcInstance(type, controllerDescription, new ContentDescription(
+            PrioritizedComponent.class.getName(), new Object[] {}));
     }
 
     /**

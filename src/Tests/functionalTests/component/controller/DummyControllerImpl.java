@@ -46,18 +46,10 @@ import org.objectweb.proactive.core.component.type.PAGCMTypeFactoryImpl;
 
 /**
  * @author The ProActive Team
- *
  */
 public class DummyControllerImpl extends AbstractPAController implements DummyController {
-
-    /**
-     *
-     */
     private String dummyValue = null;
 
-    /**
-     * @param owner
-     */
     public DummyControllerImpl(Component owner) {
         super(owner);
     }

@@ -36,19 +36,21 @@
  */
 package functionalTests.activeobject.onfailure;
 
-import functionalTests.FunctionalTest;
+import static junit.framework.Assert.assertTrue;
+
 import org.apache.log4j.Level;
 import org.junit.Test;
 import org.objectweb.proactive.ActiveObjectCreationException;
 import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.core.body.exceptions.BodyTerminatedException;
 import org.objectweb.proactive.core.body.exceptions.FutureMonitoringPingFailureException;
+import org.objectweb.proactive.core.body.exceptions.InactiveBodyException;
 import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.node.NodeException;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
 
-import static junit.framework.Assert.assertTrue;
+import functionalTests.FunctionalTest;
 
 
 public class TestExceptionInInitActivity extends FunctionalTest {
@@ -88,7 +90,8 @@ public class TestExceptionInInitActivity extends FunctionalTest {
             ao.getTrue();
         } catch (RuntimeException e) {
             e.printStackTrace();
-            assertTrue(e instanceof FutureMonitoringPingFailureException);
+            assertTrue((e instanceof FutureMonitoringPingFailureException) ||
+                (e instanceof BodyTerminatedException) || (e instanceof InactiveBodyException));
             exception = true;
         }
         assertTrue(exception);

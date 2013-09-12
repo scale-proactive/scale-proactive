@@ -5,14 +5,14 @@ import java.util.Map;
 
 public class CompatibilityMap {
 	/** Group name -> group */
-    private Map<String, MethodGroup> groups = new HashMap<String, MethodGroup>();
+    private Map<String, MethodGroup> groups;
 	
 	/** Method name -> group */
-    private Map<String, MethodGroup> membership = new HashMap<String, MethodGroup>();
+    private Map<String, MethodGroup> membership;
     
     public CompatibilityMap() {
-    	this.groups = new HashMap<>();
-    	this.membership = new HashMap<>();
+    	this.groups = new HashMap<String, MethodGroup>();
+    	this.membership = new HashMap<String, MethodGroup>();
     }
     
     public void addGroup(String groupName, MethodGroup group) {

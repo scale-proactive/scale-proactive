@@ -37,7 +37,7 @@ public class ThreadMap {
 	
 	
 	public ThreadMap() {
-		this.threadLimits = new HashMap<>();
+		this.threadLimits = new HashMap<MethodGroup, ThreadPair>();
 		this.threadPoolSize = ThreadManager.THREAD_POOL_DEFAULT;
 		this.hardLimit = ThreadManager.HARD_LIMIT_DEFAULT;
 		this.hostReentrant = ThreadManager.HOST_REENTRANT_DEFAULT;

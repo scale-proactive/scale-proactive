@@ -102,7 +102,7 @@ public class PriorityRanking implements PriorityMap {
 				this.existPathMatrix = 
 						new HashMap<String, HashMap<String, Boolean>>(size);
 				for (MethodGroup gi : this.groupList) {
-					HashMap<String, Boolean> map = new HashMap<>(size);
+					HashMap<String, Boolean> map = new HashMap<String, Boolean>(size);
 					for (MethodGroup gj : this.groupList) {		
 						rank1 = null;
 						rank2 = null;

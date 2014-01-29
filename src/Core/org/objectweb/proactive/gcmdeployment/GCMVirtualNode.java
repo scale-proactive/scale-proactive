@@ -261,6 +261,15 @@ public interface GCMVirtualNode {
      * @return A node from this virtual node
      */
     public Node getANode();
+    
+    /**
+     * Returns a node from this GCMVirtualNode
+     * 
+     * This method will block until a node is available only if force is set to true.
+     * 
+     * @return A node from this virtual node
+     */
+    public Node getANode(boolean force);
 
     /**
      * Returns a node from this GCMVirtualNode
@@ -272,6 +281,18 @@ public interface GCMVirtualNode {
      * @return A node from this virtual node or null if the timeout is reached
      */
     public Node getANode(int timeout);
+    
+    /**
+     * Returns a node from this GCMVirtualNode
+     * 
+     * This method will block until a node is available or the timeout is reached 
+     * only if force is set to true.
+     * 
+     * @param timeout
+     *            in milliseconds
+     * @return A node from this virtual node or null if the timeout is reached
+     */
+    public Node getANode(int timeout, boolean force);
 
     public UniqueID getUniqueID();
 }

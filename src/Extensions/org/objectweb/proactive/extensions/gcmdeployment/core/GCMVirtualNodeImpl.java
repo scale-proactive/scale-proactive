@@ -218,15 +218,29 @@ public class GCMVirtualNodeImpl implements GCMVirtualNodeInternal {
     }
 
     public Node getANode() {
-        return getANode(0);
+        return getANode(0, false);
+    }
+    
+    public Node getANode(boolean force) {
+    	return getANode(0, force);
     }
 
     public Node getANode(int timeout) {
 
-        TimeoutAccounter time = TimeoutAccounter.getAccounter(timeout);
+        return getANode(timeout, false);
+    }
+    
+    public Node getANode(int timeout, boolean force) {
+    	
+    	TimeoutAccounter time = TimeoutAccounter.getAccounter(timeout);
         while (!time.isTimeoutElapsed()) {
             synchronized (nodes) {
                 try {
+                	if (force) {
+                		Node node = nodes.get(getANewNodeIndex%nodes.size());
+                        getANewNodeIndex++;
+                        return node;
+                	}
                     if (nodes.size() > getANewNodeIndex) {
                         Node node = nodes.get(getANewNodeIndex);
                         getANewNodeIndex++;

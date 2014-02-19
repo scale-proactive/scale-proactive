@@ -81,9 +81,17 @@ public class GCMVirtualNodeRemoteObjectAdapter extends Adapter<GCMVirtualNode> i
     public Node getANode() {
         return vn.getANode();
     }
+    
+    public Node getANode(boolean force) {
+    	return vn.getANode(force);
+    }
 
     public Node getANode(int timeout) {
         return vn.getANode(timeout);
+    }
+    
+    public Node getANode(int timeout, boolean force) {
+    	return vn.getANode(timeout,force);
     }
 
     public List<Node> getCurrentNodes() {

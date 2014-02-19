@@ -19,7 +19,7 @@ import org.objectweb.proactive.multiactivity.execution.RunnableRequest;
 public class ThreadTracker extends ThreadManager {
 
 	/** Associate a group with its thread limit and currently used threads */
-	private Map<MethodGroup, Integer> threadUsage;
+	private Map<MethodGroup, Integer> threadAccounting;
 
 	/** Group manager (needed to guess the group of a request) */
 	private CompatibilityManager compatibility;
@@ -29,10 +29,10 @@ public class ThreadTracker extends ThreadManager {
 			ThreadMap threadMap) {
 		super(threadMap);
 		this.compatibility = compatibilityManager;
-		this.threadUsage = new HashMap<MethodGroup, Integer>();
+		this.threadAccounting = new HashMap<MethodGroup, Integer>();
 		Set<MethodGroup> groups = this.threadMap.getGroups();
 		for (MethodGroup group : groups) {
-			this.threadUsage.put(group, 0);
+			this.threadAccounting.put(group, 0);
 		}
 	}
 
@@ -44,9 +44,9 @@ public class ThreadTracker extends ThreadManager {
 		MethodGroup group = 
 				this.compatibility.getGroupOf(request.getRequest());
 		if (group != null) {
-			Integer i = this.threadUsage.get(group);
+			Integer i = this.threadAccounting.get(group);
 			if (i != null) {
-				this.threadUsage.put(group, i + 1);
+				this.threadAccounting.put(group, i + 1);
 			}
 		}
 	}
@@ -59,9 +59,9 @@ public class ThreadTracker extends ThreadManager {
 		MethodGroup group = 
 				this.compatibility.getGroupOf(request.getRequest());
 		if (group != null) {
-			Integer i = this.threadUsage.get(group);
+			Integer i = this.threadAccounting.get(group);
 			if (i != null) {
-				this.threadUsage.put(group, i - 1);
+				this.threadAccounting.put(group, i - 1);
 			}
 		}
 	}
@@ -76,7 +76,7 @@ public class ThreadTracker extends ThreadManager {
 				this.compatibility.getGroupOf(request.getRequest());
 		// A request belonging to no group has no limit
 		if (group != null && !group.hasSuperPriority()) {
-			Integer usage = this.threadUsage.get(group);
+			Integer usage = this.threadAccounting.get(group);
 			if (usage != null) {
 				ThreadPair groupPair = threadMap.get(group);
 				if (groupPair != null) {
@@ -112,7 +112,7 @@ public class ThreadTracker extends ThreadManager {
 			for (MethodGroup group : this.threadMap.getGroups()) {
 				if (!group.equals(requestGroup)) {
 					ThreadPair groupPair = this.threadMap.get(group);
-					int groupUsage = this.threadUsage.get(group);
+					int groupUsage = this.threadAccounting.get(group);
 					if (groupPair.getMinThreads() != 0) {
 						reservedAndNotUsedThreads += 
 								groupPair.getMinThreads() - groupUsage > 0 ? 
@@ -124,7 +124,7 @@ public class ThreadTracker extends ThreadManager {
 			// If the number of free threads is smaller than the number of 
 			// threads that are reserved by the group and that are not 
 			// currently used, then we cannot use a thread to execute the 
-			// request, because they are reserved.
+			// request, because they are reserved for other groups.
 			if (freeThreads <= reservedAndNotUsedThreads){
 				isReserved = true;
 			}
@@ -140,11 +140,11 @@ public class ThreadTracker extends ThreadManager {
 	 */
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder("\n");
 		int totalUsed = 0;
-		for (Entry<MethodGroup, Integer> groupEntry : threadUsage.entrySet()) {
-			sb.append(
-					groupEntry.getKey().name).append(" usage=").
+		for (Entry<MethodGroup, Integer> groupEntry : threadAccounting.entrySet()) {
+			sb.append("group name=").append(
+					groupEntry.getKey().name).append(" used=").
 					append(groupEntry.getValue()).append(" reserved=").
 					append(threadMap.get(groupEntry.getKey()).getMinThreads()).
 					append(" maximum=").
@@ -154,7 +154,7 @@ public class ThreadTracker extends ThreadManager {
 				totalUsed += groupEntry.getValue();
 			}
 		}
-		sb.append("Used threads = ").append(totalUsed);
+		sb.append("All groups - used threads = ").append(totalUsed);
 		return sb.toString();
 	}
 

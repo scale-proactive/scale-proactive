@@ -1,4 +1,4 @@
-package org.objectweb.proactive.multiactivity.priority;
+package org.objectweb.proactive.multiactivity;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -17,26 +17,26 @@ import org.apache.log4j.PatternLayout;
  * 
  * @author The ProActive Team
  */
-public class PriorityUtils {
+public class MultiactivityUtils {
 
-	/** Enable/disable priority logs */
+	/** Enable/disable multiactivity logs */
 	public static final boolean LOG_ENABLED = true;
 	
 	// Constants used to log messages
 	private static final Logger LOGGER;
 	private static final String LINE_SEP = System.getProperty("line.separator");
 	private static final String FILE_SEP = System.getProperty("file.separator");
-	private static final String LOGGER_NAME = "PriorityLogger";	
+	private static final String LOGGER_NAME = "MultiactivityLogger";	
 	
 	// Location and format of logs
 	public static final String LOG_SEPARATOR = "\t";
-	public static final String LOG_PATH = "/tmp/priority_logs";
-	public static final String LOG_FILE = "priority.log";
+	public static final String LOG_PATH = "/tmp/multiactivity_logs";
+	public static final String LOG_FILE = "multiactivity.log";
 	public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(
 			"yyyy-MM-dd HH:mm:ss:SSS", Locale.ENGLISH);
 	
-	// Particular strings used in logs. Useful to parse the corresponding 
-	// information
+	// Particular strings used in logs about priorities. Useful to parse the 
+	// corresponding information
 	public static final String INSERTION_TIME = "INSERTION-TIME";
 	public static final String SERVICE_TIME = "SERVICE-TIME";
 	public static final String METHOD_TIME = "METHOD-TIME";
@@ -47,7 +47,7 @@ public class PriorityUtils {
 		// Logger initialization
 		Layout layout = new PatternLayout("%m");
 		LOGGER = Logger.getLogger(LOGGER_NAME);
-		LOGGER.setLevel(Level.INFO);
+		LOGGER.setLevel(Level.TRACE);
 		
 		try {
 			File file = new File(LOG_PATH);
@@ -77,7 +77,7 @@ public class PriorityUtils {
 	 * @param message
 	 */
 	public static void logMessage(String message) {
-		LOGGER.info(message + PriorityUtils.LINE_SEP);
+		LOGGER.info(message);
 	}
 	
 }

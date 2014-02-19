@@ -49,6 +49,7 @@ import org.objectweb.proactive.core.body.future.FuturePool;
 import org.objectweb.proactive.core.body.future.FutureProxy;
 import org.objectweb.proactive.core.mop.MOP;
 import org.objectweb.proactive.core.mop.StubObject;
+import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
 import org.objectweb.proactive.utils.TimeoutAccounter;
 
 

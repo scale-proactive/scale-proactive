@@ -37,6 +37,7 @@
 package org.objectweb.proactive.multiactivity;
 
 import java.util.LinkedList;
+import java.util.List;
 
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.Service;
@@ -225,7 +226,7 @@ public class MultiActiveService extends Service {
      * service (from oldest to latest).
      * @return Served requests
      */
-    public LinkedList<Request> getServingHistory() {
+    public List<Request> getServingHistory() {
     	return this.executor.getServingHistory();
     }
 

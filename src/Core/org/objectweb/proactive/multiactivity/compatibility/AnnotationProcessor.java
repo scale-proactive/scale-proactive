@@ -48,22 +48,20 @@ import org.apache.log4j.Logger;
 import org.objectweb.proactive.annotation.multiactivity.Compatible;
 import org.objectweb.proactive.annotation.multiactivity.DefineGroups;
 import org.objectweb.proactive.annotation.multiactivity.DefineGraphBasedPriorities;
-import org.objectweb.proactive.annotation.multiactivity.DefineRankBasedPriorities;
 import org.objectweb.proactive.annotation.multiactivity.DefineRules;
 import org.objectweb.proactive.annotation.multiactivity.DefineThreadConfig;
 import org.objectweb.proactive.annotation.multiactivity.Group;
-import org.objectweb.proactive.annotation.multiactivity.Priority;
 import org.objectweb.proactive.annotation.multiactivity.Set;
 import org.objectweb.proactive.annotation.multiactivity.MemberOf;
 import org.objectweb.proactive.annotation.multiactivity.PriorityOrder;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
+import org.objectweb.proactive.multiactivity.MultiactivityUtils;
 import org.objectweb.proactive.multiactivity.limits.ThreadManager;
 import org.objectweb.proactive.multiactivity.limits.ThreadMap;
 import org.objectweb.proactive.multiactivity.priority.PriorityGraph;
 import org.objectweb.proactive.multiactivity.priority.PriorityRanking;
 import org.objectweb.proactive.multiactivity.priority.PriorityMap;
-import org.objectweb.proactive.multiactivity.priority.PriorityUtils;
 
 
 /**
@@ -105,8 +103,9 @@ public class AnnotationProcessor {
 
 	// priority structures
 	private PriorityGraph priorityGraph = new PriorityGraph();
-	private PriorityRanking priorityRanking = new PriorityRanking();
-	
+	// Used for benchmarks only
+	//private PriorityRanking priorityRanking = new PriorityRanking();
+
 	// group -> maximum number of threads used by methods of the group
 	private ThreadMap threadMap = new ThreadMap();
 
@@ -155,7 +154,8 @@ public class AnnotationProcessor {
 		Annotation groupDefAnn = null;
 		Annotation compDefAnn = null;
 		Annotation priorityGraphDefAnn = null;
-		Annotation priorityRankDefAnn = null;
+		// Used for benchmarks only
+		//Annotation priorityRankDefAnn = null;
 		Annotation threadConfigDefAnn = null;
 		int reservedThreads;
 		int totalReservedThreads = 0;
@@ -177,12 +177,6 @@ public class AnnotationProcessor {
 				priorityGraphDefAnn = a;
 			}
 
-			if (priorityRankDefAnn == null 
-					&& a.annotationType().equals(
-							DefineRankBasedPriorities.class)) {
-				priorityRankDefAnn = a;
-			}
-			
 			if (threadConfigDefAnn == null
 					&& a.annotationType().equals(
 							DefineThreadConfig.class)) {
@@ -190,9 +184,16 @@ public class AnnotationProcessor {
 				threadMap.setConfiguredThroughAnnot();
 			}
 
+			// used for benchmarks only
+			/*if (priorityRankDefAnn == null 
+					&& a.annotationType().equals(
+							DefineRankBasedPriorities.class)) {
+				priorityRankDefAnn = a;
+			}*/
+
 			if (compDefAnn != null && groupDefAnn != null
 					&& priorityGraphDefAnn != null 
-					&& priorityRankDefAnn != null && 
+					&& //priorityRankDefAnn != null && 
 					threadConfigDefAnn != null) {
 				break;
 			}
@@ -208,13 +209,13 @@ public class AnnotationProcessor {
 									g.name(), g.selfCompatible(),
 									g.parameter(), g.condition(), g.superPriority());
 					compatibilityMap.getGroups().put(g.name(), mg);
-					
+
 					// Set the group thread limits
 					reservedThreads = g.minThreads() < g.maxThreads() ? 
 							g.minThreads() : g.maxThreads();
-					threadMap.setThreadLimits(mg, reservedThreads, g.maxThreads());
-					totalReservedThreads += reservedThreads;
-					
+							threadMap.setThreadLimits(mg, reservedThreads, g.maxThreads());
+							totalReservedThreads += reservedThreads;
+
 				} else {
 					addError(
 							LOC_CLASS, processedClass.getCanonicalName(),
@@ -298,13 +299,29 @@ public class AnnotationProcessor {
 				}
 				predecessors.clear();
 			}
-			if (PriorityUtils.LOG_ENABLED) {
-				PriorityUtils.logMessage(priorityGraph.toString());
+			if (MultiactivityUtils.LOG_ENABLED) {
+				MultiactivityUtils.logMessage(priorityGraph.toString());
 			}
 		}
 
+		// if there are configuration for threads defined
+		if (threadConfigDefAnn != null) {
+			DefineThreadConfig threadConfig = ((DefineThreadConfig) threadConfigDefAnn);
+			int poolSize = totalReservedThreads >= threadConfig.threadPoolSize() ? 
+					totalReservedThreads + ThreadManager.THREAD_POOL_MARGIN : threadConfig.threadPoolSize();
+			threadMap.configure(poolSize, threadConfig.hardLimit(),
+					threadConfig.hostReentrant());
+			if (MultiactivityUtils.LOG_ENABLED) {
+				MultiactivityUtils.logMessage(
+						"Configuration of threads: thread pool size = " + poolSize + "" +
+								", hard limit = " + threadConfig.hardLimit() + "" +
+								", host reentrant = " + threadConfig.hostReentrant());
+			}
+		}
+
+		// Used for benchmarks only
 		// if there are rank based priorities defined
-		if (priorityRankDefAnn != null) {
+		/*if (priorityRankDefAnn != null) {
 
 			int priorityLevel;
 
@@ -319,22 +336,7 @@ public class AnnotationProcessor {
 					}
 				}
 			}
-		}
-		
-		// if there are configuration for threads defined
-		if (threadConfigDefAnn != null) {
-			DefineThreadConfig threadConfig = ((DefineThreadConfig) threadConfigDefAnn);
-			int poolSize = totalReservedThreads >= threadConfig.threadPoolSize() ? 
-					totalReservedThreads + ThreadManager.THREAD_POOL_MARGIN : threadConfig.threadPoolSize();
-			threadMap.configure(poolSize, threadConfig.hardLimit(),
-					threadConfig.hostReentrant());
-			if (PriorityUtils.LOG_ENABLED) {
-				PriorityUtils.logMessage(
-						"Configuration of threads: thread pool size = " + poolSize + "" +
-								", hard limit = " + threadConfig.hardLimit() + "" +
-										", host reentrant = " + threadConfig.hostReentrant());
-			}
-		}
+		}*/
 	}
 
 	/*
@@ -521,7 +523,7 @@ public class AnnotationProcessor {
 	public CompatibilityMap getCompatibilityMap() {
 		return this.compatibilityMap;
 	}
-	
+
 	/**
 	 * Returns a map that maps the group names to the method groups.
 	 * 
@@ -568,17 +570,18 @@ public class AnnotationProcessor {
 
 	public PriorityMap getPriorityMap() {
 		PriorityMap structure = null;
-		switch (PriorityMap.currentStructure) {
+		// Used for benchmarks only
+		/*switch (PriorityMap.currentStructure) {
 		case RANK_BASED:
 			structure = this.priorityRanking;
 			break;
-		case GRAPH_BASED:
-			structure = this.priorityGraph;
-			break;
-		}
+		case GRAPH_BASED:*/
+		structure = this.priorityGraph;
+		//	break;
+		//}
 		return structure;
 	}
-	
+
 	public ThreadMap getThreadMap() {
 		return this.threadMap;
 	}

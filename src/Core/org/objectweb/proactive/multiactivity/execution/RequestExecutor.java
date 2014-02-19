@@ -36,6 +36,7 @@
  */
 package org.objectweb.proactive.multiactivity.execution;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -59,13 +60,13 @@ import org.objectweb.proactive.core.body.request.RequestQueue;
 import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
+import org.objectweb.proactive.multiactivity.MultiactivityUtils;
 import org.objectweb.proactive.multiactivity.ServingController;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.limits.ThreadManager;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
-import org.objectweb.proactive.multiactivity.priority.PriorityUtils;
 
 
 /**
@@ -163,7 +164,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	private final ThreadManager threadManager;
 
 	/** List of the requests that have already been served */
-	private LinkedList<Request> servingHistory = new LinkedList<Request>();
+	private List<Request> servingHistory = new LinkedList<Request>();
 
 	/**
 	 * Default constructor.
@@ -312,8 +313,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
 		synchronized (requestQueue) {
 
-			long insertionTimeBefore;
-			long insertionTimeAfter;
+			// Used for microbenchmarks
+			/*long insertionTimeBefore;
+			long insertionTimeAfter;*/
 
 			while (body.isActive()) {
 
@@ -326,19 +328,15 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 						for (int i = 0; i < rc.size(); i++) {
 							RunnableRequest runnableRequest = wrapRequest(rc.get(i));
 
-							if (PriorityUtils.LOG_ENABLED) {
+							// Used only for microbenchmarks
+							/*if (PriorityUtils.LOG_ENABLED) {
 								insertionTimeBefore = System.nanoTime();
-							}
+							}*/
 
 							priorityManager.register(runnableRequest);
 
-							if (PriorityUtils.LOG_ENABLED) {
-								insertionTimeAfter = System.nanoTime();
-								PriorityUtils.logMessage(runnableRequest.getRequest().
-										getMethodName() + PriorityUtils.LOG_SEPARATOR 
-										+ PriorityUtils.INSERTION_TIME + PriorityUtils.LOG_SEPARATOR 
-										+ (insertionTimeAfter - insertionTimeBefore));
-							}
+							// Used only for microbenchmarks
+							//logTime(runnableRequest, MultiactivityUtils.INSERTION_TIME, insertionTimeBefore);
 						}
 
 						// if anything can be done, let the other thread know
@@ -364,18 +362,23 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	private void internalExecute() {
 		synchronized (this) { 
 
-			boolean hasThreadGroup;
+			boolean groupHasThreads;
 			boolean isThreadReserved;
-			long serviceTimeAfter;
-			long serviceTimeBefore;
+			Iterator<RunnableRequest> i;
+			
+			int objectDescriptionPos;
+			String logString = "";
+			StringBuilder logStringBuilder;
+			// Used only for microbenchmarks
+			/*long serviceTimeAfter;
+			long serviceTimeBefore;*/
 
 			while (body.isActive()) {
 
-				if (PriorityUtils.LOG_ENABLED) {
+				// Used only for microbenchmarks
+				/*if (PriorityUtils.LOG_ENABLED) {
 					serviceTimeBefore = System.nanoTime();
-				}
-
-				Iterator<RunnableRequest> i;
+				}*/
 
 				if (SAME_THREAD_REENTRANT) {
 					if (canServeOneHosted()) {
@@ -396,13 +399,13 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 									for (RunnableRequest host : requestTags.get(tag)) {
 										if (host != null && isNotAHost(host)) {
 											synchronized (host) {
-												hasThreadGroup = threadManager.hasFreeThreads(parasite);
+												groupHasThreads = threadManager.hasFreeThreads(parasite);
 												isThreadReserved = threadManager.isThreadReserved(parasite,
-														THREAD_LIMIT - countActive());
+														LIMIT_TOTAL_THREADS ? THREAD_LIMIT - threadUsage.keySet().size() : THREAD_LIMIT - countActive());
 												
 												// All the condition are satisfied to execute the request,
 												// update all tracking structures and execute the request.
-												if (hasThreadGroup && !isThreadReserved) {
+												if (groupHasThreads && !isThreadReserved) {
 													
 													priorityManager.unregister(parasite);
 													threadManager.increaseUsage(parasite);
@@ -410,23 +413,10 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 													hostMap.put(host, parasite);
 													requestTags.get(tag).remove(host);
 													parasite.setHostedOn(host);
-													
-													if (PriorityUtils.LOG_ENABLED) {
-														PriorityUtils.logMessage(threadManager.toString());
-														PriorityUtils.logMessage("Total threads = " + THREAD_LIMIT);
-														PriorityUtils.logMessage("Used threads = " + countActive());
-														PriorityUtils.logMessage("Available threads = " + (THREAD_LIMIT - countActive()) + "\n");
-													}
-
-													if (PriorityUtils.LOG_ENABLED) {
-														serviceTimeAfter = System.nanoTime();
-														PriorityUtils.logMessage(parasite.getRequest().
-																getMethodName() + PriorityUtils.LOG_SEPARATOR 
-																+ PriorityUtils.SERVICE_TIME + PriorityUtils.LOG_SEPARATOR 
-																+ (serviceTimeAfter - serviceTimeBefore));
-													}
-													
 													servingHistory.add(parasite.getRequest());
+													
+													// Used only for microbenchmarks
+													//logTime(parasite, MultiactivityUtils.SERVICE_TIME, serviceTimeBefore);
 													
 													host.notify();
 													break;
@@ -452,7 +442,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 					// check if the future has arrived + the request is not
 					// already engaged in a hosted serving
 					if (hasArrived.contains(cont.getWaitingOn()) && isNotAHost(cont)) {
-
 						synchronized (cont) {
 							waiting.remove(cont);
 							resumeServing(cont, cont.getWaitingOn());
@@ -473,34 +462,21 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
 					while (canServeOne() && i.hasNext()) {
 						RunnableRequest current = i.next();
-						hasThreadGroup = threadManager.hasFreeThreads(current);
+						groupHasThreads = threadManager.hasFreeThreads(current);
 						isThreadReserved = threadManager.isThreadReserved(current,
-								THREAD_LIMIT - countActive());
+								LIMIT_TOTAL_THREADS ? THREAD_LIMIT - threadUsage.keySet().size() : THREAD_LIMIT - countActive());
 						
 						// All the condition are satisfied to execute the request,
 						// update all tracking structures and execute the request.
-						if (hasThreadGroup && !isThreadReserved) {
+						if (groupHasThreads && !isThreadReserved) {
 							
 							priorityManager.unregister(current);
 							threadManager.increaseUsage(current);
 							active.add(current);
 							executorService.execute(current);
 							
-							if (PriorityUtils.LOG_ENABLED) {
-								PriorityUtils.logMessage(threadManager.toString());
-								PriorityUtils.logMessage("Total threads = " + THREAD_LIMIT);
-								PriorityUtils.logMessage("Used threads = " + countActive());
-								PriorityUtils.logMessage("Available threads = " + (THREAD_LIMIT - countActive()) + "\n");
-							}
-
-							if (PriorityUtils.LOG_ENABLED) {
-								serviceTimeAfter = System.nanoTime();
-								PriorityUtils.logMessage(current.getRequest().
-										getMethodName() + PriorityUtils.LOG_SEPARATOR 
-										+ PriorityUtils.SERVICE_TIME + PriorityUtils.LOG_SEPARATOR 
-										+ (serviceTimeAfter - serviceTimeBefore));
-							}
-
+							// Used for microbenchmarks
+							//logTime(current, MultiactivityUtils.SERVICE_TIME, serviceTimeBefore);
 							servingHistory.add(current.getRequest());
 
 							if (log.isTraceEnabled()) {
@@ -508,6 +484,24 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 							}
 						}
 					}
+				}
+				
+				// Log updated values
+				
+				logStringBuilder = new StringBuilder().append(threadManager.toString()).append(THREAD_LIMIT).
+						append(LIMIT_TOTAL_THREADS).append(countActive()).append(countWaiting()).
+						append(LIMIT_TOTAL_THREADS ? THREAD_LIMIT - countActive() - countWaiting() : THREAD_LIMIT - countActive());
+				
+				if (MultiactivityUtils.LOG_ENABLED && !logString.equals(logStringBuilder.toString())) {
+					logString = logStringBuilder.toString();
+					objectDescriptionPos = this.toString().split("\\.").length;
+					MultiactivityUtils.logMessage(objectDescriptionPos > 0 ? this.toString().split("\\.")[objectDescriptionPos-1] : this.toString());
+					MultiactivityUtils.logMessage(threadManager.toString());
+					MultiactivityUtils.logMessage("Thread limit=" + THREAD_LIMIT);
+					MultiactivityUtils.logMessage("Hard limit=" + LIMIT_TOTAL_THREADS);
+					MultiactivityUtils.logMessage("Active threads=" + countActive());
+					MultiactivityUtils.logMessage("Waiting threads=" + countWaiting());
+					MultiactivityUtils.logMessage("Available threads=" + (LIMIT_TOTAL_THREADS ? THREAD_LIMIT - countActive() - countWaiting() : THREAD_LIMIT - countActive()) + "\n");
 				}
 
 				// SLEEP if nothing else to do will wake up on 1) new submit, 
@@ -542,7 +536,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 		return result.toString();
 	}
 
-	public LinkedList<Request> getServingHistory() {
+	public List<Request> getServingHistory() {
 		return this.servingHistory;
 	}
 
@@ -580,10 +574,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 				// hard limit
 				? (waiting.size() > 0 && hasArrived.size() > 0)
 						// soft limit
-						: (waiting.size() > 0 && hasArrived.size() > 0);// &&
-				// countActive()
-				// <
-				// THREAD_LIMIT);
+						: (waiting.size() > 0 && hasArrived.size() > 0 && countActive() < THREAD_LIMIT);
 	}
 
 	/**
@@ -618,6 +609,12 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 				waitingList.put(fId, new LinkedList<RunnableRequest>());
 			}
 			waitingList.get(fId).add(r);
+			
+			/*MultiactivityUtils.logMessage("Waiting a future for request: "
+					+ "" + r.getRequest().getMethodName() + " with parameter: " + 
+					(r.getRequest().getMethodCall().getNumberOfParameter() > 1 ? 
+							r.getRequest().getMethodCall().getParameter(0).getClass().getSimpleName() + ", " +
+							r.getRequest().getMethodCall().getParameter(1) : ""));*/
 
 			if (SAME_THREAD_REENTRANT) {
 				if (!requestTags.containsKey(r.getSessionTag())) {
@@ -642,6 +639,13 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 *            The future it was waiting for.
 	 */
 	private void resumeServing(RunnableRequest r, FutureID fId) {
+		
+		/*MultiactivityUtils.logMessage("Future received for request: "
+				+ "" + waitingList.get(fId).get(0).getRequest().getMethodName() + " with parameter: " + 
+				(waitingList.get(fId).get(0).getRequest().getMethodCall().getNumberOfParameter() > 1 ? 
+						waitingList.get(fId).get(0).getRequest().getMethodCall().getParameter(0).getClass().getSimpleName() + ", " +
+						waitingList.get(fId).get(0).getRequest().getMethodCall().getParameter(1) : ""));*/
+		
 		synchronized (this) {
 			active.add(r);
 
@@ -737,21 +741,21 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
 				signalWaitFor(thisRequest, future.getFutureID());
 			}
-
+			
 			while (!thisRequest.canRun()) {
 
 				try {
 					thisRequest.wait();
-				} catch (InterruptedException e) {
+				} 
+				catch (InterruptedException e) {
 					e.printStackTrace();
 				}
+				
 				if (hostMap.containsKey(thisRequest) && hostMap.get(thisRequest) != null) {
 					hostMap.get(thisRequest).run();
 				}
-
 			}
 		}
-
 	}
 
 	@Override
@@ -827,6 +831,19 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	public int countActive() {
 		return active.size() - extraActiveRequestCount.get();
 	}
+	
+	public int countWaiting() {
+		return waiting.size();
+	}
+	
+	/**
+	 * Depending on the usecase, it might be interesting to switch to hard 
+	 * limit during execution in order to adapt the scheduling to events.
+	 * @param hardLimit
+	 */
+	public void switchHardLimit(boolean hardLimit) {
+		LIMIT_TOTAL_THREADS = hardLimit;
+	}
 
 	public void incrementExtraActiveRequestCount(int i) {
 		extraActiveRequestCount.addAndGet(i);
@@ -844,4 +861,14 @@ public class RequestExecutor implements FutureWaiter, ServingController {
         return this.requestQueue;
     }
 
+    @SuppressWarnings("unused")
+	private void logTime(RunnableRequest request, String logType, long serviceTimeBefore) {
+    	if (MultiactivityUtils.LOG_ENABLED) {
+			long serviceTimeAfter = System.nanoTime();
+			MultiactivityUtils.logMessage(request.getRequest().
+					getMethodName() + MultiactivityUtils.LOG_SEPARATOR 
+					+ logType + MultiactivityUtils.LOG_SEPARATOR 
+					+ (serviceTimeAfter - serviceTimeBefore));
+    	}
+    }
 }

@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.objectweb.proactive.multiactivity.MultiactivityUtils;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 
 /**
@@ -337,7 +338,7 @@ public class PriorityGraph implements PriorityMap {
 			if (this.nodesList == null) {
 				this.nodesList = this.listNodes();
 				for (PriorityNode node : this.nodesList) {
-					PriorityUtils.logMessage(node.group.name + " ");
+					MultiactivityUtils.logMessage(node.group.name + " ");
 				}
 			}
 

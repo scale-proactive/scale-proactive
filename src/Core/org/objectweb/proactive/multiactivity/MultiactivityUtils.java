@@ -20,7 +20,7 @@ import org.apache.log4j.PatternLayout;
 public class MultiactivityUtils {
 
 	/** Enable/disable multiactivity logs */
-	public static final boolean LOG_ENABLED = true;
+	public static final boolean LOG_ENABLED = false;
 	
 	// Constants used to log messages
 	private static final Logger LOGGER;

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GCMDeployment 
+	xmlns="urn:gcm:deployment:1.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="urn:gcm:deployment:1.0 http://proactive.inria.fr/schemas/gcm/1.0/ExtensionSchemas.xsd	">
+	
+	<environment>
+		<javaPropertyVariable name="user.home"/>
+	</environment>
+	
+
+	<resources>
+		<bridge refid="bSchubby">
+			<host refid="hSchubby" />
+		</bridge>
+	</resources>
+
+	<acquisition>
+		<lookup type="RMI" port="6666" hostList="host[0-9].grid.fr"></lookup>
+	</acquisition>
+
+	<infrastructure>
+		<hosts>
+			<host id="hSchubby" os="unix" hostCapacity="1" vmCapacity="1">
+				<homeDirectory base="root" relpath="${user.home}" />
+			</host>
+		</hosts>
+
+		<bridges>
+			<sshBridge commandPath="/usr/bin/ssh" hostname="schubby.inria.fr" id="bSchubby" username="cmathieu" />
+
+			<rshBridge hostname="schubby.inria.fr" id="brSchubby" username="cmathieu" />
+
+		</bridges>
+	</infrastructure>
+
+</GCMDeployment>

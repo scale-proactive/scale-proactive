@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="urn:gcm:deployment:1.0"
+	xmlns="urn:gcm:deployment:1.0"	
+	elementFormDefault="qualified">
+    <xsd:annotation>
+        <xsd:documentation>
+            <p>
+                Schema used for GCM Deployment Descriptors. The root element is <a href="element/GCMDeployment.html">&lt;GCMDeployment&gt;</a>.
+            </p>
+        </xsd:documentation>
+    </xsd:annotation>
+
+	<xsd:include schemaLocation="../GCMDeployment/group/GroupCCSSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/group/GroupGridEngineSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/group/GroupLSFSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/group/GroupLoadLevelerSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/group/GroupOARSchema.xsd" />	
+	<xsd:include schemaLocation="../GCMDeployment/group/GroupPBSSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/group/GroupPrunSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/group/GroupRSHSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/group/GroupSSHSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/group/GroupMPISchema.xsd" />
+
+	<xsd:include schemaLocation="../GCMDeployment/bridge/BridgeRSHSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/bridge/BridgeSSHSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/bridge/BridgeOARSHSchema.xsd" />
+
+	<xsd:include schemaLocation="../GCMDeployment/vm/vmware-vi.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/vm/vmware-vix.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/vm/virtualbox-ws.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/vm/libxen.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/vm/libvirt.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/vm/hyperv-wmi.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/vm/hyperv-winrm.xsd" />
+
+<!--
+	<xsd:include schemaLocation="../GCMDeployment/group/unsupported/GroupARCSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/group/unsupported/GroupCGSPSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/group/unsupported/GroupFuraSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/group/unsupported/GroupGlobusSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/group/unsupported/GroupGridBusSchema.xsd" />
+	<xsd:include schemaLocation="../GCMDeployment/group/unsupported/GroupOARSHSchema.xsd" />
+ -->
+</xsd:schema>
+
+

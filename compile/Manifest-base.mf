@@ -1,0 +1,5 @@
+Main-Class: org.objectweb.proactive.Main
+Implementation-Title: ProActive
+Implementation-Version: $Id$
+Implementation-Vendor: OASIS - INRIA Sophia Antipolis
+Implementation-URL: http://proactive.inria.fr

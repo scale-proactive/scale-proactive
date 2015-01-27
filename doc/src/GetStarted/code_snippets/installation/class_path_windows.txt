@@ -1,0 +1,2 @@
+cd [Your ProActive install directory]
+set CLASSPATH=.;%CD%\dist\lib\ProActive_examples.jar;%CD%\dist\lib\ProActive.jar;

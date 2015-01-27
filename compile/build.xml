@@ -1,0 +1,1183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="compile.all" basedir=".">
+	<!--
+		Available properties are:
+			-Dtest='unitTests/**/*.class'		Override the default testsuite for junit* targets
+			-Dversion="3.2.1"					Tag a build with this version
+	-->
+
+	<!-- ************
+		Taskdefs
+	-->
+
+	<taskdef name="if" classname="ise.antelope.tasks.IfTask" />
+
+
+	<!-- emma -->
+	<path id="emma.lib">
+		<pathelement location="${base.dir}/compile/lib/emma_ant.jar" />
+		<pathelement location="${base.dir}/compile/lib/emma.jar" />
+	</path>
+
+	<taskdef resource="emma_ant.properties" classpathref="emma.lib" />
+
+	<!--
+		Create a timestamp for this build
+		If ${version} is defined its value is used as string version for this build
+		Otherwise the timestamp is used
+	-->
+
+	<!-- Version setting example-->
+	<!-- <property name="version" value="4.2.0" /> -->
+	<!-- Release date -->
+	<!-- <property name="release.date" value="17 Dec. 2009" /> -->
+
+	<tstamp>
+		<!-- <format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss" /> -->
+		<format property="TODAY" pattern="yyyy-MM-dd" />
+
+	</tstamp>
+
+	<if name="version">
+		<property name="isRelease" value="true" />
+
+		<else>
+			<property name="version" value="${TODAY}" />
+		</else>
+	</if>
+
+
+	<!-- ************
+		Imports
+	-->
+
+	<property file="${user.home}/.proactive/build.properties" />
+	<import file="common.xml" />
+
+	<import file="../doc/src/build.xml" optional="true" />
+
+	<!-- ************
+		Classpath
+	-->
+
+	<path id="check.annotations.classpath">
+		<path refid="project.classpath" />
+		<!-- Annotation processing -->
+		<pathelement path="${deploy.lib.dir}/ProActive_annotations_CTree.jar" />
+	</path>
+
+
+	<!-- Default testsuite can be overriden by using the -Dtest property -->
+	<if name="test">
+		<fileset dir="${cl.test.dir}" id="testsuite">
+			<include name="${test}" />
+			<exclude name="**/*$*.class" />
+			<exclude name="${annotations_tests_exec_exclude}" />
+		</fileset>
+		<else>
+			<fileset dir="${cl.test.dir}" id="testsuite">
+				<include name="unitTests/**/*Test*.class" />
+				<include name="functionalTests/**/**/*Test*.class" />
+
+				<exclude name="**/*$*.class" />
+				<exclude name="functionalTests/security/*/*.class" />
+				<!-- TestUnlimitedCrypto declares its own testsuite -->
+				<exclude name="functionalTests/*.class" />
+				<exclude name="functionalTests/component/collectiveitf/multicast/**/*.fractal" />
+				<exclude name="functionalTests/component/collectiveitf/multicast/ClientTestItf.class" />
+				<exclude name="functionalTests/component/collectiveitf/multicast/MulticastTestItf.class" />
+				<exclude name="functionalTests/component/collectiveitf/multicast/ServerItfTestItf.class" />
+				<exclude name="functionalTests/component/collectiveitf/multicast/ServerParameterAnnotationTester.class" />
+				<exclude name="functionalTests/component/collectiveitf/multicast/ServerTestItf.class" />
+				<exclude name="functionalTests/component/collectiveitf/multicast/ServerItfTestItf.class" />
+				<exclude name="functionalTests/component/collectiveitf/multicast/TestItf.class" />
+				<exclude name="functionalTests/component/collectiveitf/multicast/Tester.class" />
+				<exclude name="functionalTests/component/collectiveitf/multicast/TesterImpl.class" />
+				<exclude name="functionalTests/component/collectiveitf/multicast/classbased/TesterImpl.class" />
+				<exclude name="${annotations_tests_exec_exclude}" />
+				<exclude name="functionalTests/pamr/TestHeartbeat.class" />
+			</fileset>
+		</else>
+	</if>
+
+
+	<if name="test">
+		<fileset dir="${cl.test.dir}" id="performancesuite">
+			<include name="${test}" />
+			<exclude name="**/*$*.class" />
+			<exclude name="**/*Ibis*.class" />
+		</fileset>
+		<else>
+			<fileset dir="${cl.test.dir}" id="performancesuite">
+				<include name="performanceTests/bandwidth/Test*.class" />
+				<include name="performanceTests/throughput/Test*.class" />
+				<exclude name="**/*$*.class" />
+				<exclude name="**/*Ibis*.class" />
+			</fileset>
+		</else>
+	</if>
+
+	<fileset dir="${cl.test.dir}" id="pamr.testheartbeat">
+		<include name="functionalTests/pamr/TestHeartbeat.class" />
+	</fileset>
+
+	<!-- ************
+		Backward Compatibility
+	-->
+
+	<target name="compile" depends="compile.all" description="Deprecated, see compile.all" />
+	<target name="core" depends="compile.core" description="Deprecated, see compile.core" />
+	<target name="examples" depends="compile.examples" description="Deprecated, see compile.examples" />
+	<target name="extensions" depends="compile.extensions" description="Deprecated, see compile.extensions" />
+	<target name="extra" depends="compile.extra" description="Deprecated, see compile.extra" />
+	<target name="microTimer" depends="compile.microTimer" description="Deprecated, see compile.microTimer" />
+	<target name="stubGenerator" depends="compile.stubGenerator" description="Deprecated, see compile.stubGenerator" />
+	<target name="tests" depends="compile.tests" />
+	<target name="proActiveJar" depends="deploy" description="Deprecated, see deploy" />
+	<!-- <target name="all" depends="compile,docs" description="build the class files and the documentation" />-->
+
+
+
+	<!-- ************
+		Compilation
+	-->
+
+	<target name="compile.all" depends="compile.core, compile.extensions, compile.extra, compile.util, compile.examples, compile.tests, compile.benchmarks" description="Build class files (ProActive + Extensions + Extra + Examples + Utils + Tests)" />
+
+
+	<target name="compile.core" depends="-configurationCopy, compile.util" description="Compile ProActive core classes">
+		<!-- update ProActive.getVersion(). If -Dversion is not set, then ${version} is a timestamp for this build -->
+		<replaceregexp file="${src.proactive.dir}/${proactive.path}/Main.java" match="\$Id.*\$" replace="${version}" byline="true" />
+		<replaceregexp file="${base.dir}/README.txt" match="\$Id.*\$" replace="${version}" byline="true" />
+
+
+		<javac srcdir="${src.proactive.dir}" destdir="${cl.proactive.dir}" deprecation="on" source="${source}" debug="${debug}">
+			<classpath refid="project.with.ws.classpath" />
+			<include name="**/*.java" />
+
+			<!-- XXX, MicroTimer should be in core or not used by the core-->
+		</javac>
+
+		<rmic base="${cl.proactive.dir}" sourcebase="${cl.proactive.dir}" stubversion="1.2">
+			<classpath refid="project.classpath" />
+			<include name="org/objectweb/proactive/core/body/ft/servers/FTServer.class" />
+			<include name="org/objectweb/proactive/core/remoteobject/rmi/RmiRemoteObjectImpl.class" />
+		</rmic>
+
+		<stubGenerator srcDir="${cl.proactive.dir}" refclasspath="project.classpath">
+			<class name="org.objectweb.proactive.core.util.wrapper.BooleanMutableWrapper" />
+			<class name="org.objectweb.proactive.core.util.wrapper.BooleanWrapper" />
+			<class name="org.objectweb.proactive.core.util.wrapper.DoubleMutableWrapper" />
+			<class name="org.objectweb.proactive.core.util.wrapper.DoubleWrapper" />
+			<class name="org.objectweb.proactive.core.util.wrapper.FloatMutableWrapper" />
+			<class name="org.objectweb.proactive.core.util.wrapper.FloatWrapper" />
+			<class name="org.objectweb.proactive.core.util.wrapper.GenericTypeWrapper" />
+			<class name="org.objectweb.proactive.core.util.wrapper.IntMutableWrapper" />
+			<class name="org.objectweb.proactive.core.util.wrapper.IntWrapper" />
+			<class name="org.objectweb.proactive.core.util.wrapper.LongMutableWrapper" />
+			<class name="org.objectweb.proactive.core.util.wrapper.LongWrapper" />
+			<class name="org.objectweb.proactive.core.util.wrapper.StringMutableWrapper" />
+			<class name="org.objectweb.proactive.core.util.wrapper.StringWrapper" />
+
+			<class name="org.objectweb.proactive.core.runtime.ProActiveRuntime" />
+			<class name="org.objectweb.proactive.core.body.UniversalBody" />
+			<class name="org.objectweb.proactive.core.component.type.Composite" />
+			<class name="org.objectweb.proactive.core.jmx.util.JMXNotificationListener" />
+			<class name="org.objectweb.proactive.core.util.log.remote.ProActiveLogCollector" />
+			<class name="org.objectweb.proactive.core.jmx.ProActiveConnection" />
+			<class name="org.objectweb.proactive.core.jmx.server.ProActiveServerImpl" />
+			<class name="org.objectweb.proactive.core.debug.tunneling.DebuggerSocketServer" />
+			<class name="org.objectweb.proactive.core.debug.tunneling.DebuggerSocketClient" />
+		</stubGenerator>
+
+		<antcall target="ibis" />
+	</target>
+
+
+	<target name="compile.extensions" depends="compile.core, -deploy.mkdir" description="Compile ProActive Extensions classes">
+		<copy todir="${cl.extensions.dir}">
+			<fileset dir="${src.extensions.dir}" includes="META-INF/**" />
+		</copy>
+		<subant target="-compile" inheritall="yes" failonerror="true">
+			<fileset dir="${src.extensions.dir}" includes="**/build.xml" />
+		</subant>
+	</target>
+
+
+	<target name="compile.extra" depends="compile.core" description="Compile ProActive Extensions classes">
+		<copy todir="${cl.extra.dir}">
+			<fileset dir="${src.extra.dir}" includes="META-INF/**" />
+		</copy>
+		<subant target="-compile" inheritall="yes" failonerror="true">
+			<fileset dir="${src.extra.dir}" includes="**/build.xml" />
+		</subant>
+	</target>
+
+	<target name="compile.tests" depends="compile.core, compile.extensions, compile.extra, compile.util" description="Compile functional and unit tests classes">
+		<if name="ant.java.version" value="1.5">
+			<!-- Exclude CTree related stuff from compilation -->
+			<property name="annotations_tests_exec_exclude" value="functionalTests/annotations/*CTree*.class,functionalTests/annotations/**/*CTree*" />
+			<echo message="Using java 1.5, excluding from tests execution:${annotations_tests_exec_exclude}" />
+		</if>
+
+		<javac srcdir="${src.test.dir}" destdir="${cl.test.dir}" includes="unitTests/**" deprecation="on" source="${source}" debug="${debug}">
+			<classpath refid="project.with.ws.classpath" />
+		</javac>
+		<javac srcdir="${src.test.dir}" destdir="${cl.test.dir}" includes="functionalTests/**" excludes="functionalTests/annotations/*/inputs/**,${annotations_tests_exec_exclude}" deprecation="on" source="${source}" debug="${debug}">
+			<classpath refid="project.with.ws.classpath" />
+		</javac>
+		<javac srcdir="${src.test.dir}" destdir="${cl.test.dir}" includes="performanceTests/**" deprecation="on" source="${source}" debug="${debug}">
+			<classpath refid="project.with.ws.classpath" />
+		</javac>
+		<copy toDir="${cl.test.dir}">
+			<fileset dir="${src.test.dir}">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+	</target>
+
+
+	<target name="compile.benchmarks" depends="compile.core, compile.extra" description="Compile the benchmarks">
+		<javac srcdir="${src.benchmarks.dir}" destdir="${cl.benchmarks.dir}" includes="**/*.java" deprecation="on" source="${source}" debug="${debug}">
+			<classpath refid="project.classpath" />
+		</javac>
+	</target>
+
+
+	<target name="compile.examples" depends="compile.core, compile.extensions, compile.extra, compile.util" description="Compile all examples classes">
+
+		<!-- XXX, MicroTimer should be in core or not used by examples-->
+		<javac srcdir="${src.examples.dir}" destdir="${cl.examples.dir}" includes="**/*.java" excludes="${proactive.path}/examples/nbody/common/NBody3DFrame.java" deprecation="on" source="${source}" debug="${debug}" encoding="UTF-8">
+			<classpath>
+				<path refid="project.with.ws.classpath" />
+			</classpath>
+		</javac>
+
+		<copy todir="${cl.examples.dir}/" includeEmptyDirs="no">
+			<fileset dir="${src.examples.dir}/">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+
+		<if>
+			<bool>
+				<and>
+					<os family="Unix" />
+					<available file="mpic++" filepath="/bin:/usr/bin:/usr/local/bin" />
+				</and>
+			</bool>
+			<echo>Compiling native examples</echo>
+			<property name="src.mpi.dir" value="${src.extensions.dir}/${extensions.path}/nativeinterfacempi/control/config/src" />
+			<property name="src.nativeinterface.dir" value="${src.extensions.dir}/${extensions.path}/nativeinterface" />
+
+			<exec dir="${src.examples.dir}/${examples.path}/mpi/proactive_mpi" executable="mpic++" os="Linux">
+				<arg line="-O3 -lrt
+					-I${src.mpi.dir}
+					-I${src.nativeinterface.dir}
+					-L${deploy.lib.native.dir}
+					-lProActiveNativeInterfaceIPC 
+					-lProActiveNativeComm
+					-lProActiveMPIComm
+					-fPIC -g
+					hello_pampi.c -o hello_pampi " />
+			</exec>
+
+			<exec dir="${src.examples.dir}/${examples.path}/mpi/proactive_mpi" executable="cp" os="Linux">
+				<arg line="hello_pampi ${cl.examples.dir}/${examples.path}/mpi/proactive_mpi/" />
+			</exec>
+
+			<exec dir="${cl.examples.dir}/${examples.path}/mpi/proactive_mpi" executable="chmod" os="Linux">
+				<arg line="+x hello_pampi" />
+			</exec>
+
+			<else>
+				<echo>Native examples are only available for Unix and mpic++ must be installed</echo>
+			</else>
+		</if>
+
+
+		<available classname="com.sun.j3d.utils.behaviors.mouse.MouseWheelZoom" property="java3d_present" />
+		<if name="java3d_present">
+			<echo message="Info: Java3D installed." />
+			<javac srcdir="${src.examples.dir}" destdir="${cl.examples.dir}" includes="${proactive.path}/examples/nbody/common/NBody3DFrame.java" deprecation="on" source="${source}" debug="${debug}">
+				<classpath refid="project.with.ws.classpath" />
+			</javac>
+			<else>
+				<echo level="warning" message="Info: Java 3D dependencies were not resolved." />
+			</else>
+		</if>
+	</target>
+
+
+	<target name="compile.util" depends="-configurationCopy" description="Compile ProActive Utils classes">
+		<!-- XXX Timer is in core.util.Profiling -->
+		<javac srcdir="${src.utils.dir}" destdir="${cl.utils.dir}" includes="**" deprecation="on" source="${source}" debug="${debug}">
+			<classpath refid="project.classpath" />
+		</javac>
+
+		<taskdef name="stubGenerator" classname="ant.AntStubGenerator" classpath="${cl.utils.dir}" />
+		<typedef name="class" classname="ant.AntStubGeneratorClass" classpath="${cl.utils.dir}" />
+	</target>
+
+
+	<target name="compile.trywithcatch" depends="-init" description="Compile ProActive Try With Catch classes">
+		<javac srcdir="${src.utils.dir}" destdir="${cl.utils.dir}" includes="trywithcatch/**" deprecation="on" source="${source}" debug="${debug}" />
+	</target>
+
+
+	<target name="compile.stubGenerator" depends="-init" description="Compile Stub Generator Classes">
+		<javac srcdir="${src.dir}" destdir="${classes.dir}" deprecation="on" source="${source}" debug="${debug}">
+			<classpath refid="project.classpath" />
+			<include name="${proactive.path}/ext/util/StubGenerator.java" />
+		</javac>
+	</target>
+
+	<target name="compile.microTimer">
+		<exec dir="${src.dir}/org/objectweb/proactive/core/util/timer" executable="g++" os="Linux">
+			<arg line=" -shared -o libMicroTimer.so  MicroTimer.cc" />
+		</exec>
+		<copy file="${src.dir}/org/objectweb/proactive/core/util/timer/libMicroTimer.so" todir="${lib.dir}" />
+	</target>
+
+
+	<!-- ************
+		ProActive ant taskdefs
+	-->
+
+
+	<!-- ************
+		Deployment
+	-->
+
+	<target name="deploy.core" depends="compile.all, -deploy.mkdir, compile.all" description="Populate dist/ with all the files needed">
+		<!-- Update Implementation-Version -->
+		<if name="isRelease" exists="true">
+			<replaceregexp file="${compile.dir}/Manifest-base.mf" match="\$Id.*\$" replace="${version}" byline="true" />
+		</if>
+		<concat destfile="${compile.dir}/Manifest.mf">
+			<fileset dir="${compile.dir}" includes="Manifest-base.mf" />
+			<fileset dir="${osgi.manifest.dir}" includes="Manifest.mf" />
+		</concat>
+
+
+		<taskdef name="smerger" classname="ant.ServiceMerger" classpath="${cl.utils.dir}" />
+
+		<mkdir dir="${classes.dir}/META-INF/services" />
+		<smerger destdir="${classes.dir}/META-INF/services">
+			<fileset dir="${cl.extensions.dir}" includes="META-INF/services/**" />
+			<fileset dir="${cl.extra.dir}" includes="META-INF/services/**" />
+			<fileset dir="${cl.proactive.dir}" includes="META-INF/services/**" />
+		</smerger>
+
+		<jar manifest="${compile.dir}/Manifest.mf" destfile="${deploy.lib.dir}/ProActive.jar" index="true">
+			<fileset dir="${classes.dir}" includes="META-INF/**" />
+			<fileset dir="${cl.proactive.dir}">
+				<include name="**" />
+				<exclude name="META-INF/**" />
+			</fileset>
+			<fileset dir="${cl.extensions.dir}">
+				<include name="**" />
+				<exclude name="META-INF/**" />
+				<exclude name="org/objectweb/proactive/extensions/annotation/**/*CTree*" />
+			</fileset>
+			<fileset dir="${cl.extra.dir}">
+				<include name="**" />
+				<exclude name="META-INF/**" />
+			</fileset>
+			<fileset dir="${config.dir}" includes="ProActiveConfiguration.xml" />
+			<fileset dir="${osgi.res.dir}" includes="metadata.xml" />
+			<indexjars>
+				<fileset dir="${lib.dir}">
+					<include name="*.jar" />
+				</fileset>
+				<fileset dir="${cxf.lib.dir}">
+					<include name="*.jar" />
+					<!-- It is mandatory to exclude the cxf jar of the jar index
+					and to explicity include it in the classpath. CXF is not able to
+					find its configuration files if they are not directly accessible
+					through the classpath. -->
+					<exclude name="cxf-2.5.2.jar" />
+				</fileset>
+			</indexjars>
+		</jar>
+
+		<copy todir="${deploy.lib.dir}">
+			<!-- Copy all libs -->
+			<fileset dir="${lib.dir}">
+				<include name="*.jar" />
+				<include name="**/*.so" />
+				<include name="**/*.dll" />
+			</fileset>
+			<fileset dir="${cxf.lib.dir}">
+				<include name="*.jar" />
+			</fileset>
+		</copy>
+
+		<copy todir="${deploy.scripts.dir}">
+			<!-- Copy script needed by legacy delpoyment -->
+			<fileset dir="${base.dir}/scripts">
+				<include name="unix/cluster/**" />
+				<include name="windows/cluster/**" />
+				<include name="gcmdeployment/**" />
+				<include name="virtualization/**" />
+			</fileset>
+		</copy>
+
+		<copy todir="${deploy.dir}">
+			<fileset dir="${compile.dir}">
+				<include name="proactive-log4j" />
+				<include name="proactive.java.policy" />
+			</fileset>
+		</copy>
+
+		<chmod perm="755">
+			<fileset dir="${deploy.scripts.dir}" />
+			<include name="**/*.sh" />
+		</chmod>
+
+	</target>
+
+
+	<target name="deploy.examples" depends="examples, deploy.core" description="Add ProActive_examples.jar to the dist/ directory">
+		<jar destfile="${deploy.lib.dir}/ProActive_examples.jar">
+			<fileset dir="${cl.examples.dir}" includes="**" />
+			<fileset dir="${cl.benchmarks.dir}" includes="**" />
+		</jar>
+	</target>
+
+	<target name="deploy.tests" depends="deploy.core" description="Add ProActive_tests.jar to the dist/ directory">
+		<jar destfile="${deploy.lib.dir}/ProActive_tests.jar">
+			<fileset dir="${cl.test.dir}" />
+		</jar>
+	</target>
+
+	<target name="deploy.utils" description="Add ProActive_utils.jar to the dist/ directory">
+		<jar destfile="${deploy.lib.dir}/ProActive_utils.jar">
+			<fileset dir="${cl.utils.dir}" />
+		</jar>
+	</target>
+
+	<target name="deploy.annotations.java5" depends="compile.extensions, -deploy.mkdir" description="Create a jar file which contains only the JDK 1.5 annotations">
+		<jar destfile="${deploy.lib.dir}/ProActive_annotations_APT.jar" index="true">
+			<fileset dir="${cl.extensions.dir}">
+				<include name="org/objectweb/proactive/extensions/annotation/**" />
+				<exclude name="org/objectweb/proactive/extensions/annotation/**/*CTree*" />
+			</fileset>
+			<fileset dir="${compile.dir}" includes="META-INF/services/com.sun.mirror.apt.AnnotationProcessorFactory" />
+		</jar>
+	</target>
+
+	<target name="deploy.annotations.java6" depends="compile.extensions, -deploy.mkdir" description="Create a jar file which contains only the JDK 1.6 annotations">
+		<if name="ant.java.version" value="1.5">
+			<else>
+				<jar destfile="${deploy.lib.dir}/ProActive_annotations_CTree.jar" index="true">
+					<service type="com.sun.mirror.apt.AnnotationProcessorFactory">
+						<provider classname="org.objectweb.proactive.extensions.annotation.common.ProActiveAnnotationProcessorFactory" />
+						<provider classname="org.objectweb.proactive.extensions.annotation.common.BogusAnnotationProcessorFactory" />
+					</service>
+					<service type="javax.annotation.processing.Processor">
+						<provider classname="org.objectweb.proactive.extensions.annotation.common.ProActiveProcessorCTree" />
+					</service>
+
+					<fileset dir="${cl.extensions.dir}">
+						<include name="org/objectweb/proactive/extensions/annotation/**" />
+					</fileset>
+				</jar>
+			</else>
+		</if>
+	</target>
+
+	<target name="-deploy.mkdir">
+		<!-- Make deploy directories -->
+		<mkdir dir="${deploy.dir}" />
+		<mkdir dir="${deploy.lib.dir}" />
+		<mkdir dir="${deploy.lib.native.dir}" />
+		<mkdir dir="${deploy.scripts.dir}" />
+	</target>
+
+	<target name="deploy.annotations.all" depends="deploy.annotations.java5, deploy.annotations.java6" />
+
+	<target name="deploy.all" depends="deploy.core, deploy.examples, deploy.tests, deploy.utils, deploy.annotations.java6" description="Populate dist/ with all ProActive Programming dependencies and JARs" />
+
+	<target name="deploy" depends="deploy.all" description="Populate dist/ (with ProActive_examples.jar)" />
+
+
+	<!-- ************
+		Annotation processing
+	-->
+
+	<target name="-declare" depends="compile.util">
+		<taskdef name="annotations_javac" classname="ant.JavacForceCompileTask" classpath="${cl.utils.dir}" />
+		<taskdef name="annotations_apt" classname="ant.AptForceCompileTask" classpath="${cl.utils.dir}" />
+	</target>
+
+	<macrodef name="check_annotations">
+		<attribute name="module" />
+		<element name="extra.exclusion.pattern" optional="yes" />
+		<element name="extra.inclusion.pattern" optional="yes" />
+		<sequential>
+			<if name="ant.java.version" value="1.5">
+				<!-- invoke apt -->
+				<annotations_apt srcdir="${src.@{module}.dir}" destdir="${cl.@{module}.dir}" compile="false" encoding="UTF-8">
+					<include name="**/*.java" />
+					<extra.inclusion.pattern />
+					<extra.exclusion.pattern />
+					<classpath refid="check.annotations.classpath" />
+					<compilerarg line="-nocompile" />
+				</annotations_apt>
+				<else>
+					<!-- invoke javac -->
+					<annotations_javac srcdir="${src.@{module}.dir}" destdir="${cl.@{module}.dir}" source="${source}" debug="${debug}" encoding="UTF-8">
+						<include name="**/*.java" />
+						<extra.inclusion.pattern />
+						<extra.exclusion.pattern />
+						<classpath refid="check.annotations.classpath" />
+					</annotations_javac>
+				</else>
+			</if>
+		</sequential>
+	</macrodef>
+
+	<target name="check.annotations.core" depends="deploy,-declare" description="Annotation processing for Core">
+		<check_annotations module="proactive" />
+	</target>
+
+	<target name="check.annotations.extensions" depends="deploy,-declare" description="Annotation processing for Extensions">
+		<check_annotations module="extensions">
+			<extra.exclusion.pattern>
+				<exclude name="org/objectweb/proactive/extensions/annotation/**/*.java" />
+			</extra.exclusion.pattern>
+		</check_annotations>
+	</target>
+
+	<target name="check.annotations.extra" depends="deploy,-declare" description="Annotation processing for Extra">
+		<check_annotations module="extra" />
+	</target>
+
+	<target name="check.annotations.examples" depends="deploy,-declare" description="Annotation processing for Examples">
+		<check_annotations module="examples">
+			<extra.exclusion.pattern>
+				<exclude name="${proactive.path}/examples/nbody/common/NBody3DFrame.java" />
+			</extra.exclusion.pattern>
+		</check_annotations>
+	</target>
+
+	<target name="check.annotations.benchmarks" depends="deploy,-declare" description="Annotation processing for Benchmarks">
+		<check_annotations module="benchmarks" />
+	</target>
+
+	<target name="check.annotations" depends="check.annotations.all" description="Perform annotation processing on ProActive code" />
+
+	<target name="check.annotations.all" depends="check.annotations.core, check.annotations.extensions, check.annotations.extra, check.annotations.examples, check.annotations.benchmarks" description="Do annotation processing for the following ProActive modules : Core + Extensions + Extra + Examples + Benchmarks" />
+
+
+	<!-- ************
+		Testing
+	-->
+
+
+
+
+	<macrodef name="junitMacro">
+		<attribute name="nodeDescriptor" />
+		<attribute name="testsuite" />
+		<attribute name="communication.protocol" default="rmi" />
+		<element name="jvmargs" optional="yes" />
+		<element name="additionalClasspath" optional="yes" />
+		<sequential>
+
+			<delete dir="${junit.dir}" />
+			<mkdir dir="${junit.dir}" />
+			<junit printsummary="yes" forkmode="perTest" showoutput="${junit.showoutput}" timeout="300000">
+				<jvmarg value="-Dproactive.home=${base.dir}" />
+
+				<classpath>
+					<additionalClasspath>
+						<!-- It is mandatory to explicity include the ibis jar in the
+						classpath. Ibis is not able to find the classes if they are
+						not directly accessible through the classpath.
+						i.e. we cannot use the jar index tip -->
+						<pathelement location="${lib.dir}/ibis-1.4.jar" />
+					</additionalClasspath>
+					<path refid="test.classpath" />
+				</classpath>
+
+				<jvmarg value="-Dproactive.communication.protocol=@{communication.protocol}" />
+				<jvmarg value="-Djava.security.policy=${base.dir}/compile/proactive.java.policy" />
+				<jvmarg value="-Dlog4j.configuration=file:${base.dir}/compile/proactive-log4j" />
+				<jvmarg value="-DfunctionalTests.descriptor.defaultnodes.file=@{nodeDescriptor}" />
+
+				<jvmargs />
+
+				<!--
+
+					<jvmarg value="-agentlib:yjpagent=onexit=snapshot,tracing,alloceach=5" />
+					Remote Debug:
+					<jvmarg value="-Xdebug" />
+					<jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000" />
+
+					Yourkit (don't forget to set your LD_LIBRARY_PATH):
+					<jvmarg value="-agentlib:yjpagent" />
+				-->
+
+				<formatter type="xml" />
+
+
+				<batchtest fork="yes" todir="${junit.dir}">
+					<fileset refid="@{testsuite}" />
+				</batchtest>
+			</junit>
+		</sequential>
+	</macrodef>
+
+    <target name="junit.summary">
+        <junitreport todir="${junit.dir}">
+            <fileset dir="${junit.dir}">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report format="frames" todir="${junit.dir}/html"/>
+        </junitreport>
+        <echo message="JUnit report: ${junit.dir}/html/index.html" />
+    </target>
+
+	<target name="junit" depends="compile.tests, deploy.all" description="Run all non regression tests on the current host only">
+		<junitMacro nodedescriptor="/functionalTests/descriptor/defaultnodes/NodesLocal.xml" testsuite="testsuite" />
+		<antcall target="junit.summary" />
+	</target>
+
+	<target name="junit.http" depends="compile.tests, deploy.all" description="Run all non regression tests on the current host only">
+		<junitMacro communication.protocol="http" nodedescriptor="/functionalTests/descriptor/defaultnodes/NodesLocal.xml" testsuite="testsuite" />
+        <antcall target="junit.summary" />
+	</target>
+
+	<target name="junit.rmissh" depends="compile.tests, deploy.all" description="Run all non regression tests on the current host only">
+		<junitMacro communication.protocol="rmissh" nodedescriptor="/functionalTests/descriptor/defaultnodes/NodesLocal.xml" testsuite="testsuite" />
+        <antcall target="junit.summary" />
+	</target>
+
+	<target name="junit.rmi" depends="compile.tests, deploy.all" description="Run all non regression tests on the current host only">
+		<junitMacro communication.protocol="rmi" nodedescriptor="/functionalTests/descriptor/defaultnodes/NodesLocal.xml" testsuite="testsuite" />
+        <antcall target="junit.summary" />
+	</target>
+
+	<target name="junit.rmissl" depends="compile.tests, deploy.all" description="Run all non regression tests on the current host only">
+		<junitMacro communication.protocol="rmissl" nodedescriptor="/functionalTests/descriptor/defaultnodes/NodesLocal.xml" testsuite="testsuite" />
+        <antcall target="junit.summary" />
+	</target>
+
+	<target name="junit.amqp" depends="compile.tests, deploy.all" description="Run all non regression tests on the current host only">
+		<junitMacro communication.protocol="amqp" nodedescriptor="/functionalTests/descriptor/defaultnodes/NodesLocal.xml" testsuite="testsuite" />
+        <antcall target="junit.summary" />
+	</target>
+
+
+	<target name="junit.pnps" depends="compile.tests, deploy.all" description="Run all non regression tests on the current host only">
+		<junitMacro communication.protocol="pnps" nodedescriptor="/functionalTests/descriptor/defaultnodes/NodesLocal.xml" testsuite="testsuite">
+			<jvmargs>
+				<jvmarg value="-Djava.security.egd=file:/dev/urandom" />
+			</jvmargs>
+		</junitMacro>
+        <antcall target="junit.summary" />
+	</target>
+
+	<target name="junit.ibis" depends="deploy.all">
+		<junitMacro communication.protocol="ibis" nodedescriptor="/functionalTests/descriptor/defaultnodes/NodesLocalIbis.xml" testsuite="testsuite">
+			<jvmargs>
+				<jvmarg value="-Dproactive.communication.protocol=ibis" />
+				<jvmarg value="-Dibis.serialization=ibis" />
+			</jvmargs>
+		</junitMacro>
+        <antcall target="junit.summary" />
+	</target>
+
+	<target name="junit.pamr" depends="compile.tests, deploy.all" description="Run all non regression tests on the current host only">
+		<junitMacro communication.protocol="pamr" nodedescriptor="/functionalTests/descriptor/defaultnodes/NodesLocal.xml" testsuite="testsuite">
+			<jvmargs>
+				<jvmarg value="-Dproactive.net.router.address=localhost" />
+				<jvmarg value="-Dproactive.net.router.port=0" />
+			</jvmargs>
+		</junitMacro>
+        <antcall target="junit.summary" />
+	</target>
+
+	<target name="junit.pnp" depends="compile.tests, deploy.all" description="Run all non regression tests on the current host only">
+		<junitMacro communication.protocol="pnp" nodedescriptor="/functionalTests/descriptor/defaultnodes/NodesLocal.xml" testsuite="testsuite" />
+        <antcall target="junit.summary" />
+	</target>
+
+	<target name="junit.pamr.testheartbeat" depends="compile.tests, deploy.all" description="Run pamr heartbeat test. Separate because uses jdi.">
+		<junitMacro communication.protocol="pamr" nodedescriptor="/functionalTests/descriptor/defaultnodes/NodesLocal.xml" testsuite="pamr.testheartbeat">
+			<jvmargs>
+				<jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5550" />
+				<jvmarg value="-Djdwp.port=5550" />
+			</jvmargs>
+		</junitMacro>
+        <antcall target="junit.summary" />
+	</target>
+
+	<target name="with.clover">
+		<taskdef resource="cloverlib.xml" classpath="${base.dir}/compile/lib/clover.jar" />
+		<clover-setup initString="${compile.dir}/ProActiveCoverage.db" />
+	</target>
+
+
+	<target name="clover.report" depends="with.clover">
+		<taskdef resource="cloverlib.xml" classpath="${base.dir}/compile/lib/clover.jar" />
+		<!-- generate a historypoint for the current coverage -->
+		<clover-historypoint historyDir="${clover.historypoint.dir}" />
+		<clover-report>
+			<!-- generate a current report -->
+			<current title="ProActive" outfile="${clover.report.dir}">
+				<testresults dir="${junit.dir}" includes="TEST-*.xml" />
+				<format type="html" />
+				<fileset dir="${src.dir}">
+					<include name="Core/**/*.java" />
+					<include name="Extensions/**/*.java" />
+					<include name="Extra/**/*.java" />
+					<include name="Tests/**/*.java" />
+				</fileset>
+				<sourcepath>
+					<dirset dir="${src.dir}">
+						<include name="Core" />
+						<include name="Extensions" />
+						<include name="Extra" />
+					</dirset>
+				</sourcepath>
+			</current>
+			<!-- generate a historical report -->
+			<historical outfile="${clover.historyreport.dir}" historyDir="${clover.historypoint.dir}">
+				<format type="html" />
+			</historical>
+		</clover-report>
+		<!--
+		<clover-clean />
+		-->
+	</target>
+
+
+	<target name="junit.clover" depends="compile.tests, deploy.all" description="Same as junit but with code coverage enabled">
+		<copy file="${compile.dir}/lib/clover.jar" todir="${deploy.lib.dir}">
+		</copy>
+		<junitMacro nodedescriptor="/functionalTests/descriptor/defaultnodes/NodesLocal.xml" testsuite="testsuite">
+			<additionalClassPath>
+				<pathelement location="${ant.home}/lib/clover.jar" />
+			</additionalClassPath>
+		</junitMacro>
+	</target>
+
+	<target name="junit.emma" depends="compile.all, deploy.all" description="Same as junit but with code coverage enabled">
+
+		<delete dir="${classes.dir}/emma" />
+		<mkdir dir="${classes.dir}/emma" />
+		<delete dir="${base.dir}/emma" />
+		<mkdir dir="${base.dir}/emma" />
+
+		<!-- Instrumentation -->
+		<emma enabled="true">
+			<instr instrpathref="test.classpath" destdir="${classes.dir}/emma" metadatafile="${base.dir}/emma/metadata.emma" merge="true">
+				<filter includes="org.objectweb.proactive.*" excludes="pa.*, *_Stub" />
+			</instr>
+		</emma>
+
+		<junitMacro nodedescriptor="/functionalTests/descriptor/defaultnodes/NodesLocal.xml" testsuite="testsuite">
+			<jvmargs>
+				<jvmarg value="-Demma.coverage.out.file=${base.dir}/emma/coverage.emma" />
+				<jvmarg value="-Demma.coverage.out.merge=true" />
+			</jvmargs>
+			<additionalClassPath>
+				<pathelement location="${classes.dir}/emma" />
+				<path refid="emma.lib" />
+			</additionalClassPath>
+		</junitMacro>
+
+		<!-- Reporting -->
+		<emma enabled="true">
+			<report sort="+block,+name,+method,+class,+line" metrics="method:60,line:50,class:80" units="instr">
+				<sourcepath>
+					<dirset dir="${src.dir}">
+						<include name="*" />
+					</dirset>
+				</sourcepath>
+				<infileset dir="${base.dir}/emma" includes="*.emma, *.ec, *.em" />
+				<xml columns="name, class, method, block, line" outfile="${base.dir}/emma/coverage.xml" depth="source" encoding="UTF-8" />
+				<html columns="name, class, method, block, line" outfile="${base.dir}/emma/coverage.html" depth="source" />
+			</report>
+		</emma>
+	</target>
+
+	<!--
+	<target name="runTestsLocalHttp" depends="nonregressiontest, proActiveJar" description="Run all non regression tests on the current host only">
+			<junitMacro nodedescriptor="/nonregressiontest/descriptor/defaultnodes/NodesLocal.xml">
+			<jvmargs>
+				<jvmarg value="-Dproactive.communication.protocol=http" />
+				<jvmarg value="-Dproactive.http.port=2026" />
+				<jvmarg value="-Dproactive.locationserver.rmi=http://locahost:2026/LocationServer" />
+			</jvmargs>
+			</runTestsMacro>
+	</target>
+	-->
+
+	<target name="junit.performance" depends="deploy.all">
+		<junitMacro nodeDescriptor="/functionalTests/descriptor/defaultnodes/Nodes.xml" testsuite="performancesuite" />
+	</target>
+
+	<!-- ************
+		Source file handling
+	-->
+
+
+	<target name="copyright_format" depends="update_copyright_and_version, format" description="Update Copyright and Version in every text files and format them" />
+
+
+	<target name="update_copyright_and_version" depends="compile.util" description="Update Copyright and Version in every text files">
+
+		<java classname="sources.UpdateCopyrightAndVersion" fork="false">
+			<classpath refid="project.classpath" />
+			<!--  base dir -->
+			<arg value="${base.dir}" />
+			<!--  exclude dirs -->
+			<arg value="${docs.dir}" />
+			<arg value="${dist.dir}" />
+			<arg value="${classes.dir}" />
+			<arg value="${test.classes.dir}" />
+			<arg value="${lib.dir}" />
+			<arg value="${dev.dir}" />
+			<arg value="${extra.format.dir}" />
+			<sysproperty key="copyright.update" value="${copyright.update}" />
+		</java>
+	</target>
+
+	<macrodef name="eclipse_format_m">
+		<attribute name="loglevel" default="WARN" />
+		<element name="sourcefileset" optional="false" />
+
+		<sequential>
+			<taskdef name="javaformatter" classname="org.hibernate.tool.ant.JavaFormatterTask">
+				<classpath>
+					<fileset dir="${dev.dir}/lib">
+						<include name="*.jar" />
+					</fileset>
+				</classpath>
+			</taskdef>
+
+			<copy file="${compile.dir}/eclipse_formatter_config.xml" tofile="${compile.dir}/eclipse_formatter_config.properties" />
+
+			<replaceregexp file="${compile.dir}/eclipse_formatter_config.properties" match='^&lt;(.xml|/?profile).*' replace="" byline="true" />
+
+			<replaceregexp file="${compile.dir}/eclipse_formatter_config.properties" match='.*\"(.*)\".*\"(.*)\".*' replace="\1=\2" byline="true" />
+
+			<javaformatter configurationFile="eclipse_formatter_config.properties">
+				<sourcefileset />
+			</javaformatter>
+		</sequential>
+	</macrodef>
+
+	<target name="format" description="hibernate's eclipse-based formatter">
+		<eclipse_format_m>
+			<sourcefileset>
+				<fileset dir="${src.dir}" includes="**/*.java" />
+			</sourcefileset>
+		</eclipse_format_m>
+	</target>
+
+
+	<target name="check" depends="-init,compile.util">
+		<delete dir="${classes.dir}/tmp" />
+		<copy todir="${classes.dir}/tmp">
+			<fileset dir="${src.dir}">
+				<include name="**/*.java" />
+			</fileset>
+		</copy>
+
+		<eclipse_format_m>
+			<sourcefileset>
+				<fileset dir="${classes.dir}/tmp">
+					<include name="**/*.java" />
+				</fileset>
+			</sourcefileset>
+		</eclipse_format_m>
+
+		<java resultproperty="check.failed" classname="diff.DiffJavaDir" fork="true" failonerror="false">
+			<classpath refid="project.classpath" />
+			<arg value="${src.dir}" />
+			<arg value="${classes.dir}/tmp" />
+		</java>
+
+		<delete dir="${classes.dir}/tmp" />
+		<if name="check.failed" value="1">
+			<fail message="Please format your source code" />
+		</if>
+	</target>
+
+
+	<!-- ************
+		Misc
+	-->
+
+	<target name="clean" description="Remove all generated files">
+		<delete dir="${classes.dir}" />
+		<delete dir="${release.dir}" />
+		<delete dir="${deploy.dir}" />
+		<delete dir="${classlibs.dir}" />
+		<delete dir="${test.classes.dir}" />
+		<delete file="tests.log" />
+		<delete dir="${junit.dir}" />
+		<property name="webservices.dir" value="${src.extensions.dir}/org/objectweb/proactive/extensions/webservices/" />
+		<delete dir="${webservices.dir}/servicedeployer/build" />
+		<delete dir="${tutorials.dir}" />
+		<subant target="doc.clean" inheritall="true">
+			<fileset dir="../doc/toolchain" includes="doc.xml" />
+		</subant>
+	</target>
+
+
+	<target name="-init">
+		<!-- Create the build directory structure used by compile -->
+		<mkdir dir="${classes.dir}" />
+		<mkdir dir="${cl.examples.dir}" />
+		<mkdir dir="${cl.extra.dir}" />
+		<mkdir dir="${cl.extensions.dir}" />
+		<mkdir dir="${cl.proactive.dir}" />
+		<mkdir dir="${cl.test.dir}" />
+		<mkdir dir="${cl.utils.dir}" />
+		<mkdir dir="${cl.benchmarks.dir}" />
+
+		<echo message="--- Debugging is ${debug} ---" />
+	</target>
+
+
+	<target name="-configurationCopy" depends="-init">
+		<copy toDir="${cl.proactive.dir}">
+			<fileset dir="${src.proactive.dir}">
+				<include name="org/objectweb/proactive/core/config/proactive-log4j" />
+				<include name="org/objectweb/proactive/core/config/distributed-log4j" />
+				<include name="org/**/*.xml" />
+				<include name="org/**/*.fractal" />
+				<include name="org/**/*.properties" />
+				<include name="org/**/*.xsd" />
+				<include name="org/**/*.png" />
+				<include name="org/objectweb/proactive/core/component/adl/xml/proactive.dtd" />
+				<include name="org/**/jaas.config" />
+				<include name="META-INF/**" />
+			</fileset>
+		</copy>
+		<copy toDir="${cl.utils.dir}">
+			<fileset dir="${src.utils.dir}">
+				<include name="sources/*.txt" />
+			</fileset>
+		</copy>
+	</target>
+
+
+	<!-- ================================================================ -->
+	<!--               Ibisc to generate stubs/skels                      -->
+	<!-- ================================================================ -->
+	<target name="ibis" description="Everything related to ProActive IBIS">
+		<delete>
+			<fileset dir="${classes.dir}" includes="**/rmi*.java" />
+		</delete>
+		<java classname="ibis.frontend.rmi.Rmic" fork="true" dir="${cl.proactive.dir}/org/objectweb/proactive/core/remoteobject/ibis/">
+			<classpath refid="project.classpath" />
+			<arg value="org.objectweb.proactive.core.remoteobject.ibis.IbisRemoteObjectImpl" />
+		</java>
+		<javac srcdir="${cl.proactive.dir}" destdir="${cl.proactive.dir}" deprecation="on" source="${source}" debug="${debug}">
+			<include name="**/*.java" />
+			<classpath refid="project.classpath" />
+		</javac>
+	</target>
+
+
+	<target name="jdepend" depends="compile" description="JDepend report">
+		<macrodef name="jdependMacro">
+			<attribute name="outputfile" />
+			<attribute name="classesdir" />
+			<sequential>
+				<jdepend format="xml" outputfile="${base.dir}/@{outputfile}.xml">
+					<classespath>
+						<pathelement location="@{classesdir}" />
+					</classespath>
+				</jdepend>
+				<xslt includes="@{outputfile}.xml" basedir="${base.dir}" destdir="${base.dir}" style="jdepend.xsl" />
+				<delete>
+					<fileset dir="${base.dir}">
+						<include name="@{outputfile}.xml" />
+					</fileset>
+				</delete>
+				<echo> --> JDepend report available: ${base.dir}/@{outputfile}.html</echo>
+			</sequential>
+		</macrodef>
+
+		<jdependMacro outputfile="jdepend_core" classesdir="${cl.proactive.dir}" />
+		<jdependMacro outputfile="jdepend_all" classesdir="${classes.dir}" />
+	</target>
+
+
+	<!-- ================================================================ -->
+	<!--                    Create OSGi Library Bundle                    -->
+	<!--  =============================================================== -->
+	<target name="librariesBundle">
+		<mkdir dir="${bundle.dir}" />
+		<jar manifest="${osgi.manifest.dir}/ManifestLibraries.mf" jarfile="${bundle.dir}/librariesBundle.jar">
+			<fileset dir="${lib.dir}/">
+				<include name="javassist.jar" />
+				<include name="log4j.jar" />
+				<include name="xercesImpl-2.8.1.jar" />
+				<include name="bouncycastle.jar" />
+				<include name="fractal-api-2.0.3-SNAPSHOT.jar" />
+				<include name="fractal-gcm-api-1.1.1.jar" />
+			</fileset>
+		</jar>
+	</target>
+
+	<!-- ================================================================ -->
+	<!--                     Build the JMX Connector Bundle               -->
+	<!--  =============================================================== -->
+	<target name="proActiveConnectorBundle">
+		<mkdir dir="${bundle.dir}" />
+		<jar manifest="${manifest.connector.dir}/Manifest.mf" jarfile="${bundle.dir}/proactiveConnectorBundle.jar">
+			<fileset dir="${cl.extensions.dir}">
+				<include name="${extensions.path}/osgi/connector/Activator.class" />
+			</fileset>
+		</jar>
+	</target>
+
+	<!-- ================================================================ -->
+	<!--                      Build all OSGi Bundles                      -->
+	<!--  =============================================================== -->
+
+	<target name="OSGiBundles" depends="deploy, librariesBundle, proActiveConnectorBundle">
+		<subant inheritall="yes" failonerror="true">
+			<target name="helloBundle" />
+			<target name="helloClientBundle" />
+			<fileset dir="${src.examples.dir}/${examples.path}/osgi" includes="**/build.xml" />
+		</subant>
+		<subant inheritall="yes" failonerror="true">
+			<target name="OSGiManagement" />
+			<fileset dir="${src.examples.dir}/${examples.path}/jmx/remote/management" includes="**/build.xml" />
+		</subant>
+	</target>
+
+
+	<!-- ================================================================ -->
+	<!--                          Performance test                        -->
+	<!-- ================================================================ -->
+
+	<target name="runPerformanceTest" depends="tests" description="Run performance test on the current host.">
+
+		<property name="n" value="" />
+		<property name="o" value="" />
+		<property name="p" value="" />
+		<property name="c" value="" />
+		<property name="x" value="" />
+		<echo message="Starting the performance test." />
+		<java classname="${performanceTestClass}" fork="true">
+			<classpath refid="project.classpath" />
+			<jvmarg value="-Djava.security.policy=${base.dir}/compile/proactive.java.policy" />
+			<jvmarg value="-Dlog4j.configuration=file:${base.dir}/compile/proactive-log4j" />
+			<arg value="-n" />
+			<arg value="${n}" />
+			<arg value="-o" />
+			<arg value="${o}" />
+			<arg value="-p" />
+			<arg value="${p}" />
+			<arg value="-c" />
+			<arg value="${c}" />
+			<arg value="-x" />
+			<arg value="${x}" />
+		</java>
+	</target>
+
+
+	<!-- ================================================================================ -->
+	<!--    Create the proactive Web Archive to be used with the web service framework    -->
+	<!-- ================================================================================ -->
+	<target name="proActiveWar"  depends="deploy.all" description="Build the proactive.war archive with CXF embedded">
+		<war destfile="${deploy.dir}/proactive.war" webxml="${cxf.dir}/etc/web.xml">
+			<webinf dir="${cxf.dir}/wsdl">
+				<include name="cxf-servlet.xml" />
+			</webinf>
+			<lib dir="${deploy.dir}/lib">
+				<include name="*.jar" />
+			</lib>
+			<fileset dir="${cxf.dir}/etc">
+				<include name="META-INF/**" />
+			</fileset>
+		</war>
+	</target>
+
+	<target name="proActiveWarCXF" depends="proActiveWar" description="Deprecated, see proActiveWar"/>
+
+
+	<!-- MUST BE CALLED FROM AN INRIA MACHINE ON PRODUCTION NETWORK -->
+	<target name="uploadSchemas" description="Upload schemas on web site">
+		<property name="schemas.website.dir" value="/net/servers/www-sop/teams/oasis/proactive/schemas/gcm/1.0/" />
+		<mkdir dir="${schemas.website.dir}" />
+		<copy todir="${schemas.website.dir}" includeEmptyDirs="no" overwrite="true">
+			<fileset dir="${src.extensions.dir}/${extensions.path}/gcmdeployment/GCMDeployment/group">
+				<include name="*.xsd" />
+			</fileset>
+			<fileset dir="${src.extensions.dir}/${extensions.path}/gcmdeployment/GCMDeployment/bridge">
+				<include name="*.xsd" />
+			</fileset>
+			<fileset dir="${src.extensions.dir}/${extensions.path}/gcmdeployment/GCMApplication/commandbuilder">
+				<include name="*.xsd" />
+			</fileset>
+			<fileset dir="${src.extensions.dir}/${extensions.path}/gcmdeployment/schema">
+				<include name="*.xsd" />
+			</fileset>
+		</copy>
+		<xslt style="${src.extensions.dir}/${extensions.path}/gcmdeployment/schema/AddVariableRef.xsl" in="${schemas.website.dir}/CommonTypes.xsd" out="${schemas.website.dir}/CommonTypesNew.xsd" />
+		<move file="${schemas.website.dir}/CommonTypesNew.xsd" overwrite="yes" tofile="${schemas.website.dir}/CommonTypes.xsd" />
+		<!-- All XSD are in schema.website.dir, schemaLocation need to be updated -->
+		<replaceregexp match='schemaLocation=".*/([a-zA-Z0-9.]*\.xsd)"' replace='schemaLocation="http://proactive.inria.fr/schemas/gcm/1.0/\1"' byline="true">
+			<fileset dir="${schemas.website.dir}" includes="*.xsd" />
+		</replaceregexp>
+		<chmod perm="ug+rw" verbose="true">
+			<fileset dir="${schemas.website.dir}">
+				<include name="*.xsd" />
+			</fileset>
+		</chmod>
+	</target>
+
+	<!-- ====================================== -->
+	<!--          Create the tutorial           -->
+	<!-- ====================================== -->
+	<target name="tutorials" depends="deploy.core" description="Extracts tutorials from sources and creates the tutorials directory with building and launching scripts">
+		<delete quiet="true">
+			<fileset dir="${tutorials.src}" />
+		</delete>
+		<mkdir dir="${tutorials.src}" />
+		<java classname="doc.tutorials.Tutorializer" fork="true">
+			<classpath>
+				<fileset dir="${base.dir}/doc/toolchain/lib">
+					<include name="**/*.jar" />
+				</fileset>
+			</classpath>
+			<arg value="${src.examples.dir}" />
+			<arg value="${tutorials.src}" />
+		</java>
+		<mkdir dir="${tutorials.dist}" />
+		<copy toDir="${tutorials.dist}">
+			<fileset dir="${deploy.dir}">
+				<include name="**/*" />
+				<exclude name="lib/ProActive_examples.jar" />
+				<exclude name="lib/ProActive_utils.jar" />
+				<exclude name="lib/ProActive_tests.jar" />
+			</fileset>
+		</copy>
+		<mkdir dir="${tutorials.dir}/scripts" />
+		<copy toDir="${tutorials.dir}/scripts">
+			<fileset dir="${src.examples.dir}/${examples.path}/userguide/scripts">
+				<include name="**/*" />
+			</fileset>
+		</copy>
+		<chmod dir="${tutorials.dir}/scripts" perm="755" includes="**/*.sh" />
+		<mkdir dir="${tutorials.dir}/compile" />
+		<copy toDir="${tutorials.dir}/compile">
+			<fileset dir="${src.examples.dir}/${examples.path}/userguide/compile">
+				<include name="**/*" />
+			</fileset>
+		</copy>
+		<chmod file="${tutorials.dir}/compile/build" perm="755" />
+	</target>
+</project>

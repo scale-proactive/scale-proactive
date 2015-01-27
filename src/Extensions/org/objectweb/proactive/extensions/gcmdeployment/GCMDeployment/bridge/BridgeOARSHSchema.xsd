@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="urn:gcm:deployment:1.0"
+	xmlns="urn:gcm:deployment:1.0"
+	elementFormDefault="qualified">
+
+	<xs:include schemaLocation="../../schema/DeploymentDescriptorSchema.xsd"/>
+	
+	<xs:include schemaLocation="./BridgeSSHSchema.xsd" />
+
+	<xs:complexType name="bridgeTypeOARSH">
+		<xs:complexContent>
+			<xs:extension base="bridgeTypeSSH">
+				<xs:attribute name="jobId" type="PosintOrVariableType" use="required">
+                    <xs:annotation>
+			<xs:documentation>
+                            <p>Id of the job</p>
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:element name="oarshBridge" type="bridgeTypeOARSH" substitutionGroup="abstractBridgeElement">
+        <xs:annotation>
+            <xs:documentation>
+                <p>Describes a OARSH Bridge</p>
+            </xs:documentation>
+        </xs:annotation>
+    </xs:element>
+</xs:schema>

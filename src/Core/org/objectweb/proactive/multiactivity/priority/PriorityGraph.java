@@ -34,7 +34,7 @@ public class PriorityGraph implements PriorityMap {
 	private HashMap<String, HashMap<String, Boolean>> existPathMatrix;
 
 	/** Specifies whether the matrix optimization should be used or not */
-	private boolean matrixEnabled = false;
+	private boolean matrixEnabled = true;
 
 
 	public PriorityGraph() {

@@ -40,7 +40,7 @@ public interface PriorityMap {
 	 */
 	public enum PriorityManagement {
 		
-		RANK_BASED, GRAPH_BASED;
+		GRAPH_BASED;
 		
 		/**
 		 * {@inheritDoc}
@@ -50,9 +50,6 @@ public interface PriorityMap {
 		@Override
 		public String toString() {
 			String toReturn = null;
-			if (this.name().equals(RANK_BASED)) {
-				toReturn = "PriorityRanking";
-			}
 			if (this.name().equals(GRAPH_BASED)) {
 				toReturn = "PriorityGraph";
 			}

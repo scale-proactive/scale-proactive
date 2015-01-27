@@ -36,7 +36,6 @@
  */
 package org.objectweb.proactive.multiactivity.execution;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -69,8 +68,6 @@ import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.limits.ThreadManager;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
-import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
-import org.objectweb.proactive.multiactivity.priority.PriorityGroup;
 import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 
 

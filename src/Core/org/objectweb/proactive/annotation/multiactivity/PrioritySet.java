@@ -16,7 +16,7 @@ import org.objectweb.proactive.annotation.PublicAPI;
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @PublicAPI
-public @interface Set {
+public @interface PrioritySet {
 
     /** The names of the groups to be held in the same priority level */
     public String[] groupNames();

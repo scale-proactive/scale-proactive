@@ -47,20 +47,19 @@ import java.util.List;
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.annotation.multiactivity.Compatible;
 import org.objectweb.proactive.annotation.multiactivity.DefineGroups;
-import org.objectweb.proactive.annotation.multiactivity.DefineGraphBasedPriorities;
+import org.objectweb.proactive.annotation.multiactivity.DefinePriorities;
 import org.objectweb.proactive.annotation.multiactivity.DefineRules;
 import org.objectweb.proactive.annotation.multiactivity.DefineThreadConfig;
 import org.objectweb.proactive.annotation.multiactivity.Group;
-import org.objectweb.proactive.annotation.multiactivity.Set;
+import org.objectweb.proactive.annotation.multiactivity.PrioritySet;
 import org.objectweb.proactive.annotation.multiactivity.MemberOf;
-import org.objectweb.proactive.annotation.multiactivity.PriorityOrder;
+import org.objectweb.proactive.annotation.multiactivity.PriorityHierarchy;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.MultiactivityUtils;
 import org.objectweb.proactive.multiactivity.limits.ThreadManager;
 import org.objectweb.proactive.multiactivity.limits.ThreadMap;
 import org.objectweb.proactive.multiactivity.priority.PriorityGraph;
-import org.objectweb.proactive.multiactivity.priority.PriorityRanking;
 import org.objectweb.proactive.multiactivity.priority.PriorityMap;
 
 
@@ -173,7 +172,7 @@ public class AnnotationProcessor {
 
 			if (priorityGraphDefAnn == null 
 					&& a.annotationType().equals(
-							DefineGraphBasedPriorities.class)) {
+							DefinePriorities.class)) {
 				priorityGraphDefAnn = a;
 			}
 
@@ -269,8 +268,8 @@ public class AnnotationProcessor {
 			List<MethodGroup> predecessors = new LinkedList<MethodGroup>();
 			List<MethodGroup> nextPredecessors = new LinkedList<MethodGroup>();
 
-			for (PriorityOrder priorityOrder : ((DefineGraphBasedPriorities) priorityGraphDefAnn).value()) {
-				for (Set priority : priorityOrder.value()) {
+			for (PriorityHierarchy priorityOrder : ((DefinePriorities) priorityGraphDefAnn).value()) {
+				for (PrioritySet priority : priorityOrder.value()) {
 					for (String groupName : priority.groupNames()) {
 						// Get the group object associated with the group name
 						MethodGroup group = this.compatibilityMap.getGroups().get(groupName);

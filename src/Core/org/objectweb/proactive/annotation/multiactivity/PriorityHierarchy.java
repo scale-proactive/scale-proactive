@@ -7,9 +7,9 @@ import java.lang.annotation.RetentionPolicy;
 import org.objectweb.proactive.annotation.PublicAPI;
 
 /**
- * This annotation is used to define a list of {@link Set}s inside a 
- * {@link DefineGraphBasedPriorities} annotation. The order in which the 
- * {@link Set}s are defined is significant: groups in successive {@link Set} 
+ * This annotation is used to define a list of {@link PrioritySet}s inside a 
+ * {@link DefinePriorities} annotation. The order in which the 
+ * {@link PrioritySet}s are defined is significant: groups in successive {@link PrioritySet} 
  * annotations have a decreasing priority.
  * 
  * @author The ProActive Team
@@ -17,9 +17,9 @@ import org.objectweb.proactive.annotation.PublicAPI;
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @PublicAPI
-public @interface PriorityOrder {
+public @interface PriorityHierarchy {
 
 	/** Represents a priority order */
-    public Set[] value();
+    public PrioritySet[] value();
 
 }

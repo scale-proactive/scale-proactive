@@ -10,7 +10,7 @@ import org.objectweb.proactive.annotation.PublicAPI;
 
 /**
  * This annotation is used to define a list of 
- * {@link PriorityOrder}s at the header of a
+ * {@link PriorityHierarchy}s at the header of a
  * class, to model priorities as a dependency graph.
  * 
  * @author The ProActive Team
@@ -19,9 +19,9 @@ import org.objectweb.proactive.annotation.PublicAPI;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @PublicAPI
-public @interface DefineGraphBasedPriorities {
+public @interface DefinePriorities {
 
 	/** Represents an union of priority orders */
-    public PriorityOrder[] value();
+    public PriorityHierarchy[] value();
 
 }

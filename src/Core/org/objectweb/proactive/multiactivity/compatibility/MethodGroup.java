@@ -60,6 +60,8 @@ public class MethodGroup {
     private Set<MethodGroup> compatibleWith = new HashSet<MethodGroup>();
 
     private final int hashCode;
+    
+    private final boolean hasSuperPriority;
 
     private Class<?> parameter = null;
     private HashMap<String, Integer> parameterPosition = new HashMap<String, Integer>();
@@ -82,7 +84,7 @@ public class MethodGroup {
      * @param name A descriptive name for the group -- all group names have to be unique
      * @param selfCompatible if the methods that are members of the group can run in parallel
      */
-    public MethodGroup(String name, boolean selfCompatible) {
+    public MethodGroup(String name, boolean selfCompatible, boolean hasSuperPriority) {
         this.selfCompatible = selfCompatible;
         this.name = name;
         this.hashCode = name.hashCode();
@@ -90,7 +92,8 @@ public class MethodGroup {
         if (selfCompatible) {
             this.compatibleWith.add(this);
         }
-
+        
+        this.hasSuperPriority = hasSuperPriority;
     }
 
     /**
@@ -99,8 +102,8 @@ public class MethodGroup {
      * @param selfCompatible if the methods that are members of the group can run in parallel
      * @param parameter -- the common argument to all methods inside the group (type)
      */
-    public MethodGroup(String name, boolean selfCompatible, String parameter) {
-        this(name, selfCompatible);
+    public MethodGroup(String name, boolean selfCompatible, String parameter, boolean hasSuperPriority) {
+        this(name, selfCompatible, hasSuperPriority);
         if (parameter.length() > 0) {
             try {
                 this.parameter = Class.forName(parameter);
@@ -118,8 +121,8 @@ public class MethodGroup {
      * @param parameter -- the common argument to all methods inside the group (type)
      * @param comparator -- function to use to condition compatibility inside the group.
      */
-    public MethodGroup(String name, boolean selfCompatible, String parameter, String comparator) {
-        this(name, selfCompatible, parameter);
+    public MethodGroup(String name, boolean selfCompatible, String parameter, String comparator, boolean hasSuperPriority) {
+        this(name, selfCompatible, parameter, hasSuperPriority);
 
         if (!comparator.equals("")) {
             this.comparators.put(name, comparator);
@@ -204,6 +207,10 @@ public class MethodGroup {
      */
     public Class<?> getGroupParameter() {
         return parameter;
+    }
+    
+    public boolean hasSuperPriority() {
+    	return this.hasSuperPriority;
     }
 
     /**

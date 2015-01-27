@@ -45,7 +45,7 @@ import org.objectweb.proactive.core.component.body.NF2RequestFilter;
 import org.objectweb.proactive.core.component.body.NF3RequestFilter;
 import org.objectweb.proactive.core.component.body.NFRequestFilterImpl;
 import org.objectweb.proactive.core.component.control.PAGCMLifeCycleController;
-import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 
 
@@ -101,7 +101,7 @@ public class ComponentPriorityServingPolicy extends ComponentServingPolicy {
      * 
      * @return The compatible requests to serve.
      */
-    public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
+    public List<Request> runPolicy(CompatibilityManager compatibility) {
         List<Request> reqs = compatibility.getQueueContents();
         List<Request> ret = new ArrayList<Request>();
 

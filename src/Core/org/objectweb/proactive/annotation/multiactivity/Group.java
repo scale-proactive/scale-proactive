@@ -41,6 +41,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 import org.objectweb.proactive.annotation.PublicAPI;
+import org.objectweb.proactive.multiactivity.limits.ThreadTracker;
 
 
 /**
@@ -69,19 +70,37 @@ public @interface Group {
      * @return
      */
     public boolean selfCompatible();
+    
+    /** 
+     * Sets the maximum number of threads that can be occupied at the same 
+     * time by the group.
+     */
+    public int maxThreads() default ThreadTracker.MAX_THREADS_DEFAULT;
+    
+    /** 
+     * Sets the minimum number of threads that are reserved to execute only 
+     * requests of this group. 
+     */
+    public int minThreads() default ThreadTracker.MIN_THREADS_DEFAULT;
+    
+    /**
+     * Conditioning function of the self-compatibility.
+     */
+    public String condition() default "";
 
     /**
      * Class name of the common argument of all methods belonging to this group.
-     * 
-     * @return
      */
     public String parameter() default "";
-
+    
     /**
-     * Conditioning function of the self-compatibility.
-     * 
-     * @return
+     * Whether requests of this group have a super priority, i.e. are executed 
+     * regardless of other priorities (inserted at the head of the queue if no 
+     * other super priority request lies there), and regardless of the 
+     * reserved threads (a super priority request can borrow the reserved 
+     * thread of another group). A super priority group cannot have a limited 
+     * number of threads (not taken into account).
      */
-    public String condition() default "";
+    public boolean superPriority() default false;
 
 }

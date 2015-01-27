@@ -42,10 +42,10 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.body.request.Request;
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
+import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
-import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
-import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
 
 
 /**
@@ -74,7 +74,7 @@ public class DefaultServingPolicy extends ServingPolicy {
      * @return The compatible requests to serve.
      */
     @Override
-    public int runPolicyOnRequest(int requestIndex, StatefulCompatibilityMap compatibility,
+    public int runPolicyOnRequest(int requestIndex, CompatibilityManager compatibility,
             List<Request> runnableRequests) {
         List<Request> requestQueue = compatibility.getQueueContents();
         Request request = requestQueue.get(requestIndex);
@@ -148,7 +148,7 @@ public class DefaultServingPolicy extends ServingPolicy {
         return requestIndex;
     }
 
-    private final boolean isCompatibleWithPreceding(StatefulCompatibilityMap compatibility, Request request,
+    private final boolean isCompatibleWithPreceding(CompatibilityManager compatibility, Request request,
             int requestIndex) {
         List<Request> requestQueue = compatibility.getQueueContents();
 

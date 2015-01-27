@@ -40,7 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.objectweb.proactive.core.body.request.Request;
-import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 
 
 /**
@@ -69,7 +69,7 @@ public abstract class ServingPolicy {
      * 
      * @return a sublist of the requests that can be executed in parallel.
      */
-    public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
+    public List<Request> runPolicy(CompatibilityManager compatibility) {
         List<Request> ret = new ArrayList<Request>();
 
         for (int i = 0; i < compatibility.getQueueContents().size(); i++) {
@@ -98,7 +98,7 @@ public abstract class ServingPolicy {
      *         {@code requestIndexInRequestQueue - numberOfRequestsRemovedFromRequestQueue}
      *         .
      */
-    public int runPolicyOnRequest(int requestIndexInRequestQueue, StatefulCompatibilityMap compatibility,
+    public int runPolicyOnRequest(int requestIndexInRequestQueue, CompatibilityManager compatibility,
             List<Request> runnableRequests) {
         throw new UnsupportedOperationException(this.getClass().getSimpleName() +
             "#runPolicyOnRequest must be overriden if you want to use it");

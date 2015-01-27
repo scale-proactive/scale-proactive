@@ -53,7 +53,6 @@ import org.objectweb.proactive.multiactivity.component.policy.ComponentMembraneS
 import org.objectweb.proactive.multiactivity.component.policy.ComponentPriorityServingPolicy;
 import org.objectweb.proactive.multiactivity.component.policy.ComponentServingPolicy;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
-import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
 
 
 /**
@@ -168,10 +167,10 @@ public class ComponentMultiActiveService extends MultiActiveService {
      * {@link ComponentMultiActiveService#wrapServingPolicy(ServingPolicy)}.
      */
     @Override
-    public void policyServing(ServingPolicy policy, List<PriorityConstraint> priorityConstraints,
+    public void policyServing(ServingPolicy policy,
             int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
         policy = this.wrapServingPolicy(policy);
-        super.policyServing(policy, priorityConstraints, maxActiveThreads, hardLimit, hostReentrant);
+        super.policyServing(policy, maxActiveThreads, hardLimit, hostReentrant);
     }
 
 }

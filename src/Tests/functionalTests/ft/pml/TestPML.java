@@ -56,7 +56,7 @@ public class TestPML extends AbstractFTTezt {
 
     @Before
     public void before() {
-        TestDisabler.waitingFeatureFix();
+        //TestDisabler.waitingFeatureFix();
     }
 
     @org.junit.Test

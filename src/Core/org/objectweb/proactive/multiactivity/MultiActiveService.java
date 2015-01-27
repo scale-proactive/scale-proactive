@@ -42,15 +42,19 @@ import java.util.List;
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.Service;
+import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.compatibility.AnnotationProcessor;
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
 import org.objectweb.proactive.multiactivity.execution.RequestExecutor;
+import org.objectweb.proactive.multiactivity.limits.ThreadManager;
+import org.objectweb.proactive.multiactivity.limits.ThreadTracker;
+import org.objectweb.proactive.multiactivity.priority.PriorityManager;
+import org.objectweb.proactive.multiactivity.priority.PriorityTracker;
 import org.objectweb.proactive.multiactivity.policy.DefaultServingPolicy;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
-import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
-import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 
 
 /**
@@ -72,9 +76,12 @@ public class MultiActiveService extends Service {
     public LinkedList<Integer> serveTsts = new LinkedList<Integer>();
 
     private static final Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
-
-    CompatibilityTracker compatibility;
-    RequestExecutor executor = null;
+    
+    private boolean isConfiguredThroughAnnot = false;
+    private int totalReservedThreads;
+    
+    RequestExecutor executor;
+    
 
     /**
      * MultiActiveService that will be able to optionally use a policy, and will deploy each serving request on a 
@@ -89,34 +96,31 @@ public class MultiActiveService extends Service {
         //we are not compatible with 'fifoServing' any more.
 
     }
-
-    //initializing the compatibility info and the executor
+    
     private void init() {
-        this.init(null);
-    }
-
-    private void init(List<PriorityConstraint> priorityConstraints) {
         if (executor != null)
             return;
 
         AnnotationProcessor annotationProcessor = new AnnotationProcessor(body.getReifiedObject().getClass());
 
-        compatibility = new CompatibilityTracker(annotationProcessor, requestQueue);
-
-        if (priorityConstraints != null) {
-            annotationProcessor.getPriorityConstraints().addAll(priorityConstraints);
-        }
-
-        executor = new RequestExecutor(body, compatibility, annotationProcessor.getPriorityConstraints());
-
-        if (logger.isDebugEnabled()) {
-            if (executor.getPriorityManager().getPriorityConstraints().size() > 0) {
-                logger.debug("Priority constraints for " + body.getReifiedObject().getClass());
-                logger.debug(executor.getPriorityManager());
-            } else {
-                logger.debug("No priority constraint defined for " + body.getReifiedObject().getClass());
-            }
-        }
+        // Setting the compatibility manager from what was extracted from annotations
+        CompatibilityManager compatibilityManager = new CompatibilityTracker(
+        		requestQueue, annotationProcessor.getCompatibilityMap());
+        
+        // Filling priority structures according to what was extracted from annotations
+        PriorityManager priorityManager = new PriorityTracker(
+        		compatibilityManager, annotationProcessor.getPriorityMap());
+        
+        // Setting thread configuration from what was extracted from annotations
+        isConfiguredThroughAnnot = annotationProcessor.getThreadMap().isConfiguredThroughAnnot();
+        totalReservedThreads = annotationProcessor.getThreadMap().getTotalConfiguredThread();
+        ThreadManager threadManager = new ThreadTracker(
+        		compatibilityManager, annotationProcessor.getThreadMap());
+        
+        // Building executor and configuring it with all required information for scheduling
+        executor = new RequestExecutor(body, compatibilityManager, priorityManager, threadManager);
+        executor.configure(threadManager.getThreadPoolSize(), 
+        		threadManager.getHardLimit(), threadManager.getHostReentrant());
     }
 
     /**
@@ -127,21 +131,11 @@ public class MultiActiveService extends Service {
      */
     public void multiActiveServing(int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
         init();
-        executor.configure(maxActiveThreads, hardLimit, hostReentrant);
-        executor.execute(createServingPolicy());
-    }
 
-    /**
-     * Service that relies on the default parallel policy to extract requests from the queue.
-     * @param priorityConstraints priority constraints to apply
-     * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
-     * @param hardLimit false if the above limit is applicable only to active (running) threads, but not the waiting ones
-     * @param hostReentrant true if re-entrant calls should be hosted on the issuer's thread
-     */
-    public void multiActiveServing(List<PriorityConstraint> priorityConstraints, int maxActiveThreads,
-            boolean hardLimit, boolean hostReentrant) {
-        init(priorityConstraints);
-        executor.configure(maxActiveThreads, hardLimit, hostReentrant);
+        if (!isConfiguredThroughAnnot) {
+        	executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
+        			ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, hardLimit, hostReentrant);
+        }
         executor.execute(createServingPolicy());
     }
 
@@ -151,9 +145,11 @@ public class MultiActiveService extends Service {
      */
     public void multiActiveServing(int maxActiveThreads) {
         init();
-        executor.configure(maxActiveThreads, false, false);
+        if (!isConfiguredThroughAnnot) {
+        	executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
+        			ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, false, false);
+        }
         executor.execute(createServingPolicy());
-
     }
 
     /**
@@ -161,7 +157,9 @@ public class MultiActiveService extends Service {
      */
     public void multiActiveServing() {
         init();
-        executor.configure(Integer.MAX_VALUE, false, false);
+        if (!isConfiguredThroughAnnot) {
+        	executor.configure(Integer.MAX_VALUE, false, false);
+        }
         executor.execute(createServingPolicy());
     }
 
@@ -182,10 +180,13 @@ public class MultiActiveService extends Service {
      * @param hardLimit false if the above limit is applicable only to active (running) threads, but not the waiting ones
      * @param hostReentrant true if re-entrant calls should be hosted on the issuer's thread
      */
-    public void policyServing(ServingPolicy policy, List<PriorityConstraint> priorityConstraints,
-            int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
-        init(priorityConstraints);
-        executor.configure(maxActiveThreads, hardLimit, hostReentrant);
+    public void policyServing(ServingPolicy policy, int maxActiveThreads, boolean hardLimit,
+            boolean hostReentrant) {
+        init();
+        if (!isConfiguredThroughAnnot) {
+        	executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
+        			ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, hardLimit, hostReentrant);
+        }
         executor.execute(policy);
     }
 
@@ -195,7 +196,10 @@ public class MultiActiveService extends Service {
      */
     public void policyServing(ServingPolicy policy, int maxActiveThreads) {
         init();
-        executor.configure(maxActiveThreads, false, false);
+        if (!isConfiguredThroughAnnot) {
+        	executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
+        			ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, false, false);
+        }
         executor.execute(policy);
     }
 
@@ -205,7 +209,9 @@ public class MultiActiveService extends Service {
      */
     public void policyServing(ServingPolicy policy) {
         init();
-        executor.configure(Integer.MAX_VALUE, false, false);
+        if (!isConfiguredThroughAnnot) {
+        	executor.configure(Integer.MAX_VALUE, false, false);
+        }
         executor.execute(policy);
     }
 
@@ -219,9 +225,14 @@ public class MultiActiveService extends Service {
 
         return executor;
     }
-
-    public PriorityManager getPriorityConstraints() {
-        return executor.getPriorityManager();
+    
+    /**
+     * Returns the list of requests that have been served by this multiactive 
+     * service (from oldest to latest).
+     * @return Served requests
+     */
+    public List<Request> getServingHistory() {
+    	return this.executor.getServingHistory();
     }
 
     public RequestExecutor getRequestExecutor() {

@@ -40,7 +40,6 @@ import org.objectweb.proactive.core.body.future.FutureID;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.body.tags.Tag;
 import org.objectweb.proactive.core.body.tags.tag.DsiTag;
-import org.objectweb.proactive.multiactivity.priority.PriorityConstraint;
 
 
 /**
@@ -63,10 +62,6 @@ public class RunnableRequest implements Runnable {
     private RunnableRequest hostedOn;
 
     private String sessionTag;
-
-    // the priority constraint associated to this runnable request
-    // not so nice to have this field here but it avoids additional maps
-    private PriorityConstraint priorityConstraint;
 
     private boolean boosted = false;
 
@@ -163,14 +158,6 @@ public class RunnableRequest implements Runnable {
 
     public void setBoosted() {
         this.boosted = true;
-    }
-
-    public PriorityConstraint getPriorityConstraint() {
-        return this.priorityConstraint;
-    }
-
-    public void setPriorityConstraint(PriorityConstraint priorityConstraint) {
-        this.priorityConstraint = priorityConstraint;
     }
 
 }

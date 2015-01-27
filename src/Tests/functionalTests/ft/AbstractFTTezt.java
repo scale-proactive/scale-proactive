@@ -71,7 +71,7 @@ public class AbstractFTTezt extends GCMFunctionalTest {
             new org.objectweb.proactive.core.process.AbstractExternalProcess.StandardOutputMessageLogger());
         this.server.setClassname("org.objectweb.proactive.core.body.ft.servers.StartFTServer");
         this.server.setJvmOptions(super.getJvmParameters());
-        this.server.setParameters(Arrays.asList("-proto", "protocol"));
+        this.server.setParameters(Arrays.asList("-proto", protocol));
         this.server.startProcess();
         try {
             Thread.sleep(3000);

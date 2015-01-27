@@ -46,7 +46,8 @@ import java.util.*;
 
 
 public class Main {
-    static final private String PA_VERSION = "$Id$";
+
+	static final private String PA_VERSION = "$Id$";
 
     /**
      * Returns the version number

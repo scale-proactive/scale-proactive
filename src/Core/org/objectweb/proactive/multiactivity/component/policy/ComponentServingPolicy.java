@@ -42,7 +42,7 @@ import java.util.List;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.component.body.NFRequestFilterImpl;
 import org.objectweb.proactive.core.component.control.PAGCMLifeCycleController;
-import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 
 
@@ -97,7 +97,7 @@ public class ComponentServingPolicy extends ServingPolicy {
      * 
      * @return The compatible requests to serve.
      */
-    public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
+    public List<Request> runPolicy(CompatibilityManager compatibility) {
         List<Request> reqs = compatibility.getQueueContents();
         List<Request> ret = new ArrayList<Request>();
 
@@ -145,15 +145,17 @@ public class ComponentServingPolicy extends ServingPolicy {
 
     /**
      * {@inheritDoc}
-     */
+     */ 
     @Override
-    public int runPolicyOnRequest(int requestIndexInRequestQueue, StatefulCompatibilityMap compatibility,
-            List<Request> runnableRequests) {
-        return this.delegate.runPolicyOnRequest(requestIndexInRequestQueue, compatibility, runnableRequests);
+    public int runPolicyOnRequest(int requestIndexInRequestQueue,
+    		CompatibilityManager compatibility,
+                                  List<Request> runnableRequests) {
+        return this.delegate.runPolicyOnRequest(
+                requestIndexInRequestQueue, compatibility, runnableRequests);
     }
-
+    
     protected void addRequestToRunnableRequests(List<Request> queue, int requestIndex,
-            StatefulCompatibilityMap compatibility, List<Request> runnableRequests) {
+    		CompatibilityManager compatibility, List<Request> runnableRequests) {
         runnableRequests.add(queue.get(requestIndex));
         compatibility.addRunning(queue.get(requestIndex));
         queue.remove(requestIndex);

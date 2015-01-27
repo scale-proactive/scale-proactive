@@ -44,7 +44,7 @@ import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.component.body.MembraneControllerRequestFilter;
 import org.objectweb.proactive.core.component.control.PAGCMLifeCycleController;
 import org.objectweb.proactive.core.component.control.PAMembraneController;
-import org.objectweb.proactive.multiactivity.compatibility.StatefulCompatibilityMap;
+import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 
 
@@ -98,7 +98,7 @@ public class ComponentMembranePriorityServingPolicy extends ComponentPrioritySer
      * 
      * @return The compatible requests to serve.
      */
-    public List<Request> runPolicy(StatefulCompatibilityMap compatibility) {
+    public List<Request> runPolicy(CompatibilityManager compatibility) {
         if (membraneController.getMembraneState().equals(PAMembraneController.MEMBRANE_STOPPED)) {
             List<Request> reqs = compatibility.getQueueContents();
             List<Request> ret = new ArrayList<Request>();

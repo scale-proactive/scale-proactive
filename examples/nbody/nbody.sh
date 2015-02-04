@@ -16,7 +16,7 @@ workingDir=`dirname $0`
 
 if [ "$1" = "-displayft" -o "$1" = "-3dft" ]
 then
-	export XMLDESCRIPTOR=$workingDir/GCMA_FaultToleranceTest.xml
+	export XMLDESCRIPTOR=$workingDir/GCMA_FaultTolerance.xml
 else
 	export XMLDESCRIPTOR=$workingDir/GCMA.xml
 fi

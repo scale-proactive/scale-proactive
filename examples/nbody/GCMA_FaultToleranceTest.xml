@@ -7,8 +7,8 @@
 		<javaPropertyVariable name="proactive.home" />
 		<javaPropertyVariable name="user.home" />
 
-		<descriptorVariable name="hostCapacity" value="2" />
-		<descriptorVariable name="vmCapacity" value="2" />
+		<descriptorVariable name="hostCapacity" value="2"/>
+		<descriptorVariable name="vmCapacity" value="2"/>
 	</environment>
 
 
@@ -16,35 +16,22 @@
 		<proactive base="root" relpath="${proactive.home}">
 			<configuration>
 				<applicationClasspath>
-					<pathElement base="proactive" relpath="dist/lib/ProActive_examples.jar" />
-					<pathElement base="proactive" relpath="dist/lib/ibis-1.4.jar" />
-					<pathElement base="proactive" relpath="dist/lib/ibis-connect-1.0.jar" />
-					<pathElement base="proactive" relpath="dist/lib/ibis-util-1.0.jar" />
+					<pathElement base="proactive" relpath="dist/lib/ProActive_examples.jar"/>
+					<pathElement base="proactive" relpath="dist/lib/ibis-1.4.jar"/>
+					<pathElement base="proactive" relpath="dist/lib/ibis-connect-1.0.jar"/>
+					<pathElement base="proactive" relpath="dist/lib/ibis-util-1.0.jar"/>
 				</applicationClasspath>
 			</configuration>
-
+			
 			<virtualNode id="Workers" capacity="4">
 				<technicalServices>
-					<class
-						name="org.objectweb.proactive.core.body.ft.service.FaultToleranceTechnicalService">
-						<property name="global" value="rmi://localhost:1100/FTServer" />
-						<property name="resource" value="rmi://localhost:1100/FTServer" />
-						<property name="ttc" value="20" />
+					<class name="org.objectweb.proactive.core.body.ft.service.FaultToleranceTechnicalService">
+						<property name="global" value="rmi://apcoubi.inria.fr:1100/FTServer" />
+						<property name="resource" value="rmi://apcoubi.inria.fr:1100/FTServer" />
+						<property name="ttc" value="5" />
 						<property name="protocol" value="cic" />
 					</class>
 				</technicalServices>
-			</virtualNode>
-			<virtualNode id='Resource' capacity='1'>
-				<technicalServices>
-					<class
-						name='org.objectweb.proactive.core.body.ft.service.FaultToleranceTechnicalService'>
-						<property name='global' value='rmi://localhost:1100/FTServer' />
-						<property name='ttc' value='20' />
-						<property name='protocol' value='cic' />
-						<property name='resource' value='rmi://localhost:1100/FTServer' />
-					</class>
-				</technicalServices>
-				<nodeProvider refid="workers"/>
 			</virtualNode>
 		</proactive>
 

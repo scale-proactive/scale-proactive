@@ -25,7 +25,7 @@
 		</hosts>
 		<groups>
 			<sshGroup id="sshLan"
-				hostList="localhost desert desert desert desert" />
+				hostList="apcoubi apcoubi khomka apcoubi" />
 		</groups>
 
 	</infrastructure>

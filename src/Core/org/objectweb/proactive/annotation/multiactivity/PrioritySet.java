@@ -19,6 +19,6 @@ import org.objectweb.proactive.annotation.PublicAPI;
 public @interface PrioritySet {
 
     /** The names of the groups to be held in the same priority level */
-    public String[] groupNames();
+    public String[] value();
     
 }

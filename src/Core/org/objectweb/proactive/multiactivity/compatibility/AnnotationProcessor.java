@@ -270,7 +270,7 @@ public class AnnotationProcessor {
 
 			for (PriorityHierarchy priorityOrder : ((DefinePriorities) priorityGraphDefAnn).value()) {
 				for (PrioritySet priority : priorityOrder.value()) {
-					for (String groupName : priority.groupNames()) {
+					for (String groupName : priority.value()) {
 						// Get the group object associated with the group name
 						MethodGroup group = this.compatibilityMap.getGroups().get(groupName);
 						if (group != null) {

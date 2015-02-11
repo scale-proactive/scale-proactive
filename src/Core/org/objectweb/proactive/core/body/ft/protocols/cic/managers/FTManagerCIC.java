@@ -100,8 +100,10 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     /** Value returned by an object if the sender of the received message must recover asap */
     public static final int RECOVER = -4;
 
-    //logger
+    //loggers
     protected static Logger logger = ProActiveLogger.getLogger(Loggers.FAULT_TOLERANCE_CIC);
+    protected static Logger multiactiveLogger = ProActiveLogger.getLogger(
+    		Loggers.FAULT_TOLERANCE_MULTIACTIVITY);
 
     // local runtime
     // private static final Runtime runtime = Runtime.getRuntime();
@@ -176,12 +178,18 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 
     @Override
     public int onReceiveReply(Reply reply) {
+    	if (multiactiveLogger.isDebugEnabled()) {
+    		multiactiveLogger.debug("#onReceiveReply " + reply.getMethodName());
+    	}
         reply.setFTManager(this);
         return this.incarnationTest(reply);
     }
 
     @Override
     public int onReceiveRequest(Request request) {
+    	if (multiactiveLogger.isDebugEnabled()) {
+    		multiactiveLogger.debug("#onReceiveRequest " + request.getMethodName());
+    	}
         request.setFTManager(this);
         return this.incarnationTest(request);
     }
@@ -210,6 +218,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 
     @Override
     public synchronized int onDeliverReply(Reply reply) {
+    	if (multiactiveLogger.isDebugEnabled()) {
+    		multiactiveLogger.debug("#onDeliverReply " + reply.getMethodName());
+    	}
         int currentCheckpointIndex = this.checkpointIndex;
         if (this.isSignificant(reply)) {
             MessageInfoCIC mi = (MessageInfoCIC) reply.getMessageInfo();
@@ -226,6 +237,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 
     @Override
     public synchronized int onDeliverRequest(Request request) {
+    	if (multiactiveLogger.isDebugEnabled()) {
+    		multiactiveLogger.debug("#onDeliverRequest " + request.getMethodName());
+    	}
         int currentCheckpointIndex = this.checkpointIndex;
 
         //System.out.println(""+ this.ownerID + " receive " + request);
@@ -317,6 +331,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 
     @Override
     public synchronized int onSendReplyBefore(Reply reply) {
+    	if (multiactiveLogger.isDebugEnabled()) {
+    		multiactiveLogger.debug("#onSendReplyBefore " + reply.getMethodName());
+    	}
         // set message info values
         this.forSentReply.checkpointIndex = (char) this.checkpointIndex;
         this.forSentReply.historyIndex = (char) this.historyIndex;
@@ -345,6 +362,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 
     @Override
     public synchronized int onSendRequestBefore(Request request) {
+    	if (multiactiveLogger.isDebugEnabled()) {
+    		multiactiveLogger.debug("#onSendRequestBefore " + request.getMethodName());
+    	}
         // set message info values
         this.forSentRequest.checkpointIndex = (char) this.checkpointIndex;
         this.forSentRequest.historyIndex = (char) this.historyIndex;
@@ -391,6 +411,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 
     @Override
     public synchronized int onSendReplyAfter(Reply reply, int rdvValue, UniversalBody destination) {
+    	if (multiactiveLogger.isDebugEnabled()) {
+    		multiactiveLogger.debug("#onSendReplyAfter " + reply.getMethodName());
+    	}
         // if return value is RESEND, receiver have to recover --> resend the message
         if (rdvValue == FTManagerCIC.RESEND_MESSAGE) {
             try {
@@ -436,6 +459,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     @Override
     public synchronized int onSendRequestAfter(Request request, int rdvValue, UniversalBody destination)
             throws RenegotiateSessionException, CommunicationForbiddenException {
+    	if (multiactiveLogger.isDebugEnabled()) {
+    		multiactiveLogger.debug("#onSendRequestAfter " + request.getMethodName());
+    	}
         //	if return value is RESEDN, receiver have to recover --> resend the message
         if (rdvValue == FTManagerCIC.RESEND_MESSAGE) {
             try {
@@ -477,6 +503,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 
     @Override
     public int onServeRequestBefore(Request request) {
+    	if (multiactiveLogger.isDebugEnabled()) {
+    		multiactiveLogger.debug("#onServeRequestBefore " + request.getMethodName());
+    	}
         // checkpoint if needed
         while (this.haveToCheckpoint()) {
             this.checkpoint(request);
@@ -497,6 +526,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 
     @Override
     public int onServeRequestAfter(Request request) {
+    	if (multiactiveLogger.isDebugEnabled()) {
+    		multiactiveLogger.debug("#onServeRequestAfter " + request.getMethodName());
+    	}
         return 0;
     }
 

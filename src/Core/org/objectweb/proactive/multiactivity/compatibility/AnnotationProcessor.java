@@ -152,8 +152,6 @@ public class AnnotationProcessor {
 		Annotation groupDefAnn = null;
 		Annotation compDefAnn = null;
 		Annotation priorityGraphDefAnn = null;
-		// Used for benchmarks only
-		//Annotation priorityRankDefAnn = null;
 		Annotation threadConfigDefAnn = null;
 		int reservedThreads;
 		int totalReservedThreads = 0;
@@ -182,17 +180,9 @@ public class AnnotationProcessor {
 				threadMap.setConfiguredThroughAnnot();
 			}
 
-			// used for benchmarks only
-			/*if (priorityRankDefAnn == null 
-					&& a.annotationType().equals(
-							DefineRankBasedPriorities.class)) {
-				priorityRankDefAnn = a;
-			}*/
-
 			if (compDefAnn != null && groupDefAnn != null
 					&& priorityGraphDefAnn != null 
-					&& //priorityRankDefAnn != null && 
-					threadConfigDefAnn != null) {
+					&& threadConfigDefAnn != null) {
 				break;
 			}
 		}
@@ -298,7 +288,8 @@ public class AnnotationProcessor {
 				predecessors.clear();
 			}
 			if (logger.isInfoEnabled()) {
-				logger.info("Priority graph is: " + priorityGraph.toString());
+				logger.info("Priority graph for MAO " + this.processedClass.getSimpleName() + 
+						" is:" + priorityGraph.toString());
 			}
 		}
 
@@ -310,30 +301,12 @@ public class AnnotationProcessor {
 			threadMap.configure(poolSize, threadConfig.hardLimit(),
 					threadConfig.hostReentrant());
 			if (logger.isInfoEnabled()) {
-				logger.info("Configuration of threads: thread pool size = " + poolSize + "" +
-								", hard limit = " + threadConfig.hardLimit() + "" +
-								", host reentrant = " + threadConfig.hostReentrant());
+				logger.info("Configuration of threads for MAO " + this.processedClass.getSimpleName() + 
+						" is: thread pool size=" + poolSize + ", hard limit=" + 
+						threadConfig.hardLimit() + "" + ", host reentrant=" + threadConfig.hostReentrant());
 			}
 		}
 
-		// Used for benchmarks only
-		// if there are rank based priorities defined
-		/*if (priorityRankDefAnn != null) {
-
-			int priorityLevel;
-
-			for (Priority priority : ((DefineRankBasedPriorities) priorityRankDefAnn).value()) {
-
-				priorityLevel = priority.level();
-
-				for (String groupName : priority.groupNames()) {
-					MethodGroup group = this.compatibilityMap.getGroups().get(groupName);
-					if (group != null) {
-						priorityRanking.insert(priorityLevel, group);
-					}
-				}
-			}
-		}*/
 	}
 
 	/*
@@ -566,17 +539,7 @@ public class AnnotationProcessor {
 	}
 
 	public PriorityMap getPriorityMap() {
-		PriorityMap structure = null;
-		// Used for benchmarks only
-		/*switch (PriorityMap.currentStructure) {
-		case RANK_BASED:
-			structure = this.priorityRanking;
-			break;
-		case GRAPH_BASED:*/
-		structure = this.priorityGraph;
-		//	break;
-		//}
-		return structure;
+		return this.priorityGraph;
 	}
 
 	public ThreadMap getThreadMap() {

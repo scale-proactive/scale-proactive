@@ -382,9 +382,9 @@ public class PriorityGraph implements PriorityMap {
 	@Override
 	public String toString() {
 		int level = 0;
-		String description = "\n";
+		String description = "";
 		for (PriorityNode root : this.roots) {
-			description += this.recursiveToString(root, level);
+			description += " +" + this.recursiveToString(root, level);
 		}
 		return description ;
 	}
@@ -397,13 +397,11 @@ public class PriorityGraph implements PriorityMap {
 	 */
 	private String recursiveToString(PriorityNode currentNode, int level) {
 		String description = "";
-		for (int i = 0 ; i < level ; i++) {
-			description += "\t";
-		}
-		description += currentNode.group.name + "(" +  ")" + "\n";
+		description += currentNode.group.name + "(";
 		for (PriorityNode pn : currentNode.successors) {
 			description += recursiveToString(pn, level + 1);
 		}
+		description += ")";
 		return description;
 	}
 

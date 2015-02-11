@@ -62,7 +62,6 @@ import org.objectweb.proactive.core.body.request.RequestQueue;
 import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
-import org.objectweb.proactive.multiactivity.MultiactivityUtils;
 import org.objectweb.proactive.multiactivity.ServingController;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
@@ -80,37 +79,37 @@ import org.objectweb.proactive.multiactivity.priority.PriorityManager;
  */
 public class RequestExecutor implements FutureWaiter, ServingController {
 
-    private final class ThreadPoolExecutorNameUpdater extends ThreadPoolExecutor {
+	private final class ThreadPoolExecutorNameUpdater extends ThreadPoolExecutor {
 
-        private String bodyID = body.getID().toString();
+		private String bodyID = body.getID().toString();
 
-        public ThreadPoolExecutorNameUpdater(int corePoolSize, int maximumPoolSize, long keepAliveTime,
-                TimeUnit unit, BlockingQueue<Runnable> workQueue) {
-            super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
-        }
+		public ThreadPoolExecutorNameUpdater(int corePoolSize, int maximumPoolSize, long keepAliveTime,
+				TimeUnit unit, BlockingQueue<Runnable> workQueue) {
+			super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
+		}
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        protected void beforeExecute(Thread thread, Runnable r) {
-            thread.setName("MAOs Executor Thread(" + thread.getId() + ") for " + this.bodyID);
-            super.beforeExecute(thread, r);
-        }
+		/**
+		 * {@inheritDoc}
+		 */
+		 @Override
+		 protected void beforeExecute(Thread thread, Runnable r) {
+			 thread.setName("MAOs Executor Thread(" + thread.getId() + ") for " + this.bodyID);
+			 super.beforeExecute(thread, r);
+		 }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        protected void afterExecute(Runnable r, Throwable t) {
-            Thread thread = Thread.currentThread();
-            thread.setName("IDLE MAOs Executor Thread(" + thread.getId() + ") for " + this.bodyID);
-            super.afterExecute(r, t);
-        }
+		 /**
+		  * {@inheritDoc}
+		  */
+		 @Override
+		 protected void afterExecute(Runnable r, Throwable t) {
+			 Thread thread = Thread.currentThread();
+			 thread.setName("IDLE MAOs Executor Thread(" + thread.getId() + ") for " + this.bodyID);
+			 super.afterExecute(r, t);
+		 }
 
-    }
+	}
 
-   
+
 	private static Logger log = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
 	/**
@@ -217,13 +216,13 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 		this.priorityManager = priorityManager;
 		this.threadManager = threadManager;
 		executorService = new ThreadPoolExecutorNameUpdater(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS,
-	            new SynchronousQueue<Runnable>());		active = new HashSet<RunnableRequest>();
-		waiting = new HashSet<RunnableRequest>();
-		hasArrived = new HashSet<FutureID>();
-		threadUsage = new HashMap<Long, List<RunnableRequest>>();
-		waitingList = new HashMap<FutureID, List<RunnableRequest>>();
-		hostMap = new ConcurrentHashMap<RunnableRequest, RunnableRequest>();
-		FutureWaiterRegistry.putForBody(body.getID(), this);
+				new SynchronousQueue<Runnable>());		active = new HashSet<RunnableRequest>();
+				waiting = new HashSet<RunnableRequest>();
+				hasArrived = new HashSet<FutureID>();
+				threadUsage = new HashMap<Long, List<RunnableRequest>>();
+				waitingList = new HashMap<FutureID, List<RunnableRequest>>();
+				hostMap = new ConcurrentHashMap<RunnableRequest, RunnableRequest>();
+				FutureWaiterRegistry.putForBody(body.getID(), this);
 	}
 
 	/**
@@ -398,20 +397,12 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 			boolean groupHasThreads;
 			boolean isThreadReserved;
 			Iterator<RunnableRequest> i;
-			
+
 			int objectDescriptionPos;
 			String logString = "";
 			StringBuilder logStringBuilder;
-			// Used only for microbenchmarks
-			/*long serviceTimeAfter;
-			long serviceTimeBefore;*/
-
+			
 			while (body.isActive()) {
-
-				// Used only for microbenchmarks
-				/*if (PriorityUtils.LOG_ENABLED) {
-					serviceTimeBefore = System.nanoTime();
-				}*/
 
 				if (SAME_THREAD_REENTRANT) {
 					if (canServeOneHosted()) {
@@ -435,11 +426,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 												groupHasThreads = threadManager.hasFreeThreads(parasite);
 												isThreadReserved = threadManager.isThreadReserved(parasite,
 														LIMIT_TOTAL_THREADS ? THREAD_LIMIT - threadUsage.keySet().size() : THREAD_LIMIT - countActive());
-												
+
 												// All the condition are satisfied to execute the request,
 												// update all tracking structures and execute the request.
 												if (groupHasThreads && !isThreadReserved) {
-													
+
 													priorityManager.unregister(parasite);
 													threadManager.increaseUsage(parasite);
 													active.add(parasite);
@@ -447,10 +438,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 													requestTags.get(tag).remove(host);
 													parasite.setHostedOn(host);
 													servingHistory.add(parasite.getRequest());
-													
-													// Used only for microbenchmarks
-													//logTime(parasite, MultiactivityUtils.SERVICE_TIME, serviceTimeBefore);
-													
+
 													host.notify();
 													break;
 												}
@@ -465,7 +453,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
 				// WAKE any waiting thread that could resume execution and there
 				// are free resources for it
-				// i = waiting.iterator();
 				Iterator<List<RunnableRequest>> it = threadUsage.values().iterator();
 
 				while (canResumeOne() && it.hasNext()) {
@@ -498,18 +485,16 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 						groupHasThreads = threadManager.hasFreeThreads(current);
 						isThreadReserved = threadManager.isThreadReserved(current,
 								LIMIT_TOTAL_THREADS ? THREAD_LIMIT - threadUsage.keySet().size() : THREAD_LIMIT - countActive());
-						
+
 						// All the condition are satisfied to execute the request,
 						// update all tracking structures and execute the request.
 						if (groupHasThreads && !isThreadReserved) {
-							
+
 							priorityManager.unregister(current);
 							threadManager.increaseUsage(current);
 							active.add(current);
 							executorService.execute(current);
-							
-							// Used for microbenchmarks
-							//logTime(current, MultiactivityUtils.SERVICE_TIME, serviceTimeBefore);
+
 							servingHistory.add(current.getRequest());
 
 							if (log.isTraceEnabled()) {
@@ -518,23 +503,24 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 						}
 					}
 				}
-				
+
 				// Log updated values
-				
-				logStringBuilder = new StringBuilder().append(threadManager.toString()).append(THREAD_LIMIT).
-						append(LIMIT_TOTAL_THREADS).append(countActive()).append(countWaiting()).
-						append(LIMIT_TOTAL_THREADS ? THREAD_LIMIT - countActive() - countWaiting() : THREAD_LIMIT - countActive());
-				
-				if (MultiactivityUtils.LOG_ENABLED && !logString.equals(logStringBuilder.toString())) {
-					logString = logStringBuilder.toString();
-					objectDescriptionPos = this.toString().split("\\.").length;
-					MultiactivityUtils.logMessage(objectDescriptionPos > 0 ? this.toString().split("\\.")[objectDescriptionPos-1] : this.toString());
-					MultiactivityUtils.logMessage(threadManager.toString());
-					MultiactivityUtils.logMessage("Thread limit=" + THREAD_LIMIT);
-					MultiactivityUtils.logMessage("Hard limit=" + LIMIT_TOTAL_THREADS);
-					MultiactivityUtils.logMessage("Active threads=" + countActive());
-					MultiactivityUtils.logMessage("Waiting threads=" + countWaiting());
-					MultiactivityUtils.logMessage("Available threads=" + (LIMIT_TOTAL_THREADS ? THREAD_LIMIT - countActive() - countWaiting() : THREAD_LIMIT - countActive()) + "\n");
+				if (log.isDebugEnabled()) {
+					logStringBuilder = new StringBuilder().append(threadManager.toString()).append(THREAD_LIMIT).
+							append(LIMIT_TOTAL_THREADS).append(countActive()).append(countWaiting()).
+							append(LIMIT_TOTAL_THREADS ? THREAD_LIMIT - countActive() - countWaiting() : THREAD_LIMIT - countActive());
+
+					if (!logString.equals(logStringBuilder.toString())) {
+						logString = logStringBuilder.toString();
+						objectDescriptionPos = this.toString().split("\\.").length;
+						log.debug(objectDescriptionPos > 0 ? this.toString().split("\\.")[objectDescriptionPos-1] : this.toString());
+						log.debug(threadManager.toString());
+						log.debug("Thread limit=" + THREAD_LIMIT);
+						log.debug("Hard limit=" + LIMIT_TOTAL_THREADS);
+						log.debug("Active threads=" + countActive());
+						log.debug("Waiting threads=" + countWaiting());
+						log.debug("Available threads=" + (LIMIT_TOTAL_THREADS ? THREAD_LIMIT - countActive() - countWaiting() : THREAD_LIMIT - countActive()) + "\n");
+					}
 				}
 
 				// SLEEP if nothing else to do will wake up on 1) new submit, 
@@ -551,32 +537,32 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	}
 
 	public static String toString(Request request) {
-        StringBuilder result = new StringBuilder();
+		StringBuilder result = new StringBuilder();
 
-        result.append(request.getMethodCall().getName());
-        result.append('(');
+		result.append(request.getMethodCall().getName());
+		result.append('(');
 
-        for (int i = 0; i < request.getMethodCall().getNumberOfParameter(); i++) {
-            Object parameter = request.getMethodCall().getParameter(i);
+		for (int i = 0; i < request.getMethodCall().getNumberOfParameter(); i++) {
+			Object parameter = request.getMethodCall().getParameter(i);
 
-            if (parameter == null) {
-                result.append("null");
-            } else {
-                result.append(parameter.getClass());
-            }
+			if (parameter == null) {
+				result.append("null");
+			} else {
+				result.append(parameter.getClass());
+			}
 
-            result.append("|ihc=");
-            result.append(System.identityHashCode(request));
+			result.append("|ihc=");
+			result.append(System.identityHashCode(request));
 
-            if (i < request.getMethodCall().getNumberOfParameter() - 1) {
-                result.append(" ");
-            }
-        }
+			if (i < request.getMethodCall().getNumberOfParameter() - 1) {
+				result.append(" ");
+			}
+		}
 
-        result.append(')');
+		result.append(')');
 
-        return result.toString();
-    }
+		return result.toString();
+	}
 
 	public List<Request> getServingHistory() {
 		return this.servingHistory;
@@ -651,7 +637,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 				waitingList.put(fId, new LinkedList<RunnableRequest>());
 			}
 			waitingList.get(fId).add(r);
-			
+
 			/*MultiactivityUtils.logMessage("Waiting a future for request: "
 					+ "" + r.getRequest().getMethodName() + " with parameter: " + 
 					(r.getRequest().getMethodCall().getNumberOfParameter() > 1 ? 
@@ -681,13 +667,13 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 *            The future it was waiting for.
 	 */
 	private void resumeServing(RunnableRequest r, FutureID fId) {
-		
+
 		/*MultiactivityUtils.logMessage("Future received for request: "
 				+ "" + waitingList.get(fId).get(0).getRequest().getMethodName() + " with parameter: " + 
 				(waitingList.get(fId).get(0).getRequest().getMethodCall().getNumberOfParameter() > 1 ? 
 						waitingList.get(fId).get(0).getRequest().getMethodCall().getParameter(0).getClass().getSimpleName() + ", " +
 						waitingList.get(fId).get(0).getRequest().getMethodCall().getParameter(1) : ""));*/
-		
+
 		synchronized (this) {
 			active.add(r);
 
@@ -783,7 +769,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
 				signalWaitFor(thisRequest, future.getFutureID());
 			}
-			
+
 			while (!thisRequest.canRun()) {
 
 				try {
@@ -792,7 +778,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 				catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				
+
 				if (hostMap.containsKey(thisRequest) && hostMap.get(thisRequest) != null) {
 					hostMap.get(thisRequest).run();
 				}
@@ -873,11 +859,11 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	public int countActive() {
 		return active.size() - extraActiveRequestCount.get();
 	}
-	
+
 	public int countWaiting() {
 		return waiting.size();
 	}
-	
+
 	/**
 	 * Depending on the usecase, it might be interesting to switch to hard 
 	 * limit during execution in order to adapt the scheduling to events.
@@ -899,19 +885,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 		return extraActiveRequestCount.get();
 	}
 
-    public RequestQueue getRequestQueue() {
-        return this.requestQueue;
-    }
-
-    @SuppressWarnings("unused")
-	private void logTime(RunnableRequest request, String logType, long serviceTimeBefore) {
-    	if (MultiactivityUtils.LOG_ENABLED) {
-			long serviceTimeAfter = System.nanoTime();
-			MultiactivityUtils.logMessage(request.getRequest().
-					getMethodName() + MultiactivityUtils.LOG_SEPARATOR 
-					+ logType + MultiactivityUtils.LOG_SEPARATOR 
-					+ (serviceTimeAfter - serviceTimeBefore));
-    	}
-    }
+	public RequestQueue getRequestQueue() {
+		return this.requestQueue;
+	}
 
 }

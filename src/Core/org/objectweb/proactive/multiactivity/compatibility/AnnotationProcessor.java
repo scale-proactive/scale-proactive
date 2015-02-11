@@ -56,7 +56,6 @@ import org.objectweb.proactive.annotation.multiactivity.MemberOf;
 import org.objectweb.proactive.annotation.multiactivity.PriorityHierarchy;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
-import org.objectweb.proactive.multiactivity.MultiactivityUtils;
 import org.objectweb.proactive.multiactivity.limits.ThreadManager;
 import org.objectweb.proactive.multiactivity.limits.ThreadMap;
 import org.objectweb.proactive.multiactivity.priority.PriorityGraph;
@@ -298,8 +297,8 @@ public class AnnotationProcessor {
 				}
 				predecessors.clear();
 			}
-			if (MultiactivityUtils.LOG_ENABLED) {
-				MultiactivityUtils.logMessage(priorityGraph.toString());
+			if (logger.isInfoEnabled()) {
+				logger.info("Priority graph is: " + priorityGraph.toString());
 			}
 		}
 
@@ -310,9 +309,8 @@ public class AnnotationProcessor {
 					totalReservedThreads + ThreadManager.THREAD_POOL_MARGIN : threadConfig.threadPoolSize();
 			threadMap.configure(poolSize, threadConfig.hardLimit(),
 					threadConfig.hostReentrant());
-			if (MultiactivityUtils.LOG_ENABLED) {
-				MultiactivityUtils.logMessage(
-						"Configuration of threads: thread pool size = " + poolSize + "" +
+			if (logger.isInfoEnabled()) {
+				logger.info("Configuration of threads: thread pool size = " + poolSize + "" +
 								", hard limit = " + threadConfig.hardLimit() + "" +
 								", host reentrant = " + threadConfig.hostReentrant());
 			}

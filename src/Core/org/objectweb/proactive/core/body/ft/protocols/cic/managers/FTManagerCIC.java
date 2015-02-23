@@ -73,6 +73,8 @@ import org.objectweb.proactive.core.body.request.BlockingRequestQueue;
 import org.objectweb.proactive.core.body.request.BlockingRequestQueueImpl;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.body.request.RequestImpl;
+import org.objectweb.proactive.core.mop.Method;
+import org.objectweb.proactive.core.mop.MethodCall;
 import org.objectweb.proactive.core.mop.Utils;
 import org.objectweb.proactive.core.security.exceptions.CommunicationForbiddenException;
 import org.objectweb.proactive.core.security.exceptions.RenegotiateSessionException;
@@ -231,6 +233,17 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
             if (mi.checkpointIndex > currentCheckpointIndex) {
                 this.nextMax = Math.max(this.nextMax, mi.checkpointIndex);
             }
+            // [mao-ft] begin
+            try {
+				this.owner.getRequestQueue().add(new RequestImpl(
+						new MethodCall(this.owner.getReifiedObject().
+								getClass().getDeclaredMethod("checkpoint", 
+										new Class<?>[]{}), null, null), true));
+			} 
+            catch (NoSuchMethodException | SecurityException e) {
+				e.printStackTrace();
+			}
+            // [mao-ft] end
         }
         return currentCheckpointIndex;
     }

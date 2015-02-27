@@ -46,6 +46,7 @@ import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.ProActiveRuntimeException;
 import org.objectweb.proactive.core.body.AbstractBody;
 import org.objectweb.proactive.core.body.UniversalBody;
+import org.objectweb.proactive.core.body.ft.checkpointing.Checkpoint;
 import org.objectweb.proactive.core.body.ft.checkpointing.CheckpointInfo;
 import org.objectweb.proactive.core.body.ft.internalmsg.FTMessage;
 import org.objectweb.proactive.core.body.ft.protocols.FTManager;
@@ -208,4 +209,9 @@ public class HalfFTManagerPMLRB extends FTManager {
     public Object handleFTMessage(FTMessage fte) {
         throw new ProActiveRuntimeException(HALF_BODY_EXCEPTION_MESSAGE);
     }
+
+	@Override
+	public Checkpoint checkpoint(Request r) {
+		throw new ProActiveRuntimeException(HALF_BODY_EXCEPTION_MESSAGE);
+	}
 }

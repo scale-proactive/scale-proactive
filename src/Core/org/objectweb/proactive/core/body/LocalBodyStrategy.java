@@ -77,6 +77,13 @@ public interface LocalBodyStrategy {
      * @return the reified object that body is for
      */
     public Object getReifiedObject();
+    
+    /**
+     * Returns the deocrator of the reified object or 
+     * null if the reified object is not decorated.
+     * @return the reified object that body is for
+     */
+    public ReifiedObjectDecorator getDecorator();
 
     /**
      * Sends the request <code>request</code> with the future <code>future</code> to the local body
@@ -111,4 +118,10 @@ public interface LocalBodyStrategy {
      * @return a unique identifier that can be used to tag a future, a request.
      */
     public long getNextSequenceID();
+
+    /**
+     * Allow reified object decoration to add functionalities to reified objects.
+     * @param decoratedObject
+     */
+	public void setReifiedObject(ReifiedObjectDecorator decoratedObject);
 }

@@ -49,10 +49,12 @@ import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.body.AbstractBody;
+import org.objectweb.proactive.core.body.ReifiedObjectDecorator;
 import org.objectweb.proactive.core.body.UniversalBody;
 import org.objectweb.proactive.core.body.ft.checkpointing.Checkpoint;
 import org.objectweb.proactive.core.body.ft.checkpointing.CheckpointInfo;
 import org.objectweb.proactive.core.body.ft.exception.ProtocolErrorException;
+import org.objectweb.proactive.core.body.ft.extension.FTDecorator;
 import org.objectweb.proactive.core.body.ft.internalmsg.FTMessage;
 import org.objectweb.proactive.core.body.ft.internalmsg.GlobalStateCompletion;
 import org.objectweb.proactive.core.body.ft.internalmsg.OutputCommit;
@@ -105,7 +107,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     //loggers
     protected static Logger logger = ProActiveLogger.getLogger(Loggers.FAULT_TOLERANCE_CIC);
     protected static Logger multiactiveLogger = ProActiveLogger.getLogger(
-    		Loggers.FAULT_TOLERANCE_MULTIACTIVITY);
+    		Loggers.FAULT_TOLERANCE_EXTENSION);
 
     // local runtime
     // private static final Runtime runtime = Runtime.getRuntime();
@@ -114,7 +116,6 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     private int lastRecovery; // index of the last ckpt used for recovery
     private int checkpointIndex; //index of the latest perfomred checkpoint
     private long checkpointTimer;
-    private int nextMax;
 
     // private int nextMin;
     private int historyIndex; // index of the latest closed history
@@ -155,8 +156,6 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
         this.incarnation = 1;
         this.checkpointIndex = 0;
         this.historyIndex = 0;
-        this.nextMax = 1;
-        //this.nextMin = 0;
         this.lastRecovery = 0;
         this.checkpointTimer = System.currentTimeMillis();
         this.requestToResend = new Hashtable<Integer, Vector<RequestLog>>();
@@ -181,7 +180,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     @Override
     public int onReceiveReply(Reply reply) {
     	if (multiactiveLogger.isDebugEnabled()) {
-    		multiactiveLogger.debug("#onReceiveReply " + reply.getMethodName());
+    		multiactiveLogger.debug("#onReceiveReply (for body:" +
+    				this.owner.getReifiedObject().getClass().getSimpleName() 
+    				+ "): " + reply.getMethodName());
     	}
         reply.setFTManager(this);
         return this.incarnationTest(reply);
@@ -190,7 +191,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     @Override
     public int onReceiveRequest(Request request) {
     	if (multiactiveLogger.isDebugEnabled()) {
-    		multiactiveLogger.debug("#onReceiveRequest " + request.getMethodName());
+    		multiactiveLogger.debug("#onReceiveRequest (for body:" + 
+    				this.owner.getReifiedObject().getClass().getSimpleName() 
+    				+ "): " + request.getMethodName());
     	}
         request.setFTManager(this);
         return this.incarnationTest(request);
@@ -221,7 +224,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     @Override
     public synchronized int onDeliverReply(Reply reply) {
     	if (multiactiveLogger.isDebugEnabled()) {
-    		multiactiveLogger.debug("#onDeliverReply " + reply.getMethodName());
+    		multiactiveLogger.debug("#onDeliverReply (for body:" + 
+    				this.owner.getReifiedObject().getClass().getSimpleName() 
+    				+ "): " + reply.getMethodName());
     	}
         int currentCheckpointIndex = this.checkpointIndex;
         if (this.isSignificant(reply)) {
@@ -231,19 +236,8 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
             this.updateHistory(mi.historyIndex);
             // udpate checkpoint index
             if (mi.checkpointIndex > currentCheckpointIndex) {
-                this.nextMax = Math.max(this.nextMax, mi.checkpointIndex);
+            	generateCheckpointRequest();
             }
-            // [mao-ft] begin
-            try {
-				this.owner.getRequestQueue().add(new RequestImpl(
-						new MethodCall(this.owner.getReifiedObject().
-								getClass().getDeclaredMethod("checkpoint", 
-										new Class<?>[]{}), null, null), true));
-			} 
-            catch (NoSuchMethodException | SecurityException e) {
-				e.printStackTrace();
-			}
-            // [mao-ft] end
         }
         return currentCheckpointIndex;
     }
@@ -251,7 +245,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     @Override
     public synchronized int onDeliverRequest(Request request) {
     	if (multiactiveLogger.isDebugEnabled()) {
-    		multiactiveLogger.debug("#onDeliverRequest " + request.getMethodName());
+    		multiactiveLogger.debug("#onDeliverRequest (for body:" + 
+    				this.owner.getReifiedObject().getClass().getSimpleName() 
+    				+ "): " + request.getMethodName());
     	}
         int currentCheckpointIndex = this.checkpointIndex;
 
@@ -284,11 +280,10 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
                 //this request must be then ignored...
                 request.setIgnoreIt(true);
             }
-
             // udpate checkpoint index
             int ckptIndex = mi.checkpointIndex;
             if (ckptIndex > currentCheckpointIndex) {
-                this.nextMax = Math.max(this.nextMax, ckptIndex);
+            	generateCheckpointRequest();
                 // mark the request that is orphan; it will be changed in awaited req in next ckpt
                 // oprhan du indexCkpt+1 a mi.ckptIndex compris
                 mi.isOrphanFor = (char) ckptIndex;
@@ -297,6 +292,30 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
         }
         return currentCheckpointIndex;
     }
+
+    /*
+     * Creates a request for checkpointing and adds it in the body queue.
+     */
+	private void generateCheckpointRequest() {
+		EXTENDED_FT_LOGGER.debug("Creating a checkpoint request for object: " +
+				this.owner.getReifiedObject().getClass().getSimpleName());
+		try {
+			this.owner.getRequestQueue().add(new RequestImpl(
+					new MethodCall(this.owner.getDecorator().
+							getClass().getDeclaredMethod(FTDecorator.keyMethod, 
+									new Class<?>[]{}), null, null), true));
+		} 
+		catch (NoSuchMethodException | SecurityException e) {
+			e.printStackTrace();
+		}
+		StringBuilder b = new StringBuilder("Request queue of object: " +
+				this.owner.getReifiedObject() + ": ");
+		Iterator<Request> i = this.owner.getRequestQueue().iterator();
+		while (i.hasNext()) {
+			b.append(i.next().getMethodName() + " ");
+		}
+		EXTENDED_FT_LOGGER.debug(b.toString());
+	}
 
     /*
      * Close and commit the current history if needed.
@@ -345,7 +364,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     @Override
     public synchronized int onSendReplyBefore(Reply reply) {
     	if (multiactiveLogger.isDebugEnabled()) {
-    		multiactiveLogger.debug("#onSendReplyBefore " + reply.getMethodName());
+    		multiactiveLogger.debug("#onSendReplyBefore (for body:" + 
+    				this.owner.getReifiedObject().getClass().getSimpleName() 
+    				+ "): " + reply.getMethodName());
     	}
         // set message info values
         this.forSentReply.checkpointIndex = (char) this.checkpointIndex;
@@ -376,7 +397,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     @Override
     public synchronized int onSendRequestBefore(Request request) {
     	if (multiactiveLogger.isDebugEnabled()) {
-    		multiactiveLogger.debug("#onSendRequestBefore " + request.getMethodName());
+    		multiactiveLogger.debug("#onSendRequestBefore (for body:" + 
+    				this.owner.getReifiedObject().getClass().getSimpleName() 
+    				+ "): " + request.getMethodName());
     	}
         // set message info values
         this.forSentRequest.checkpointIndex = (char) this.checkpointIndex;
@@ -425,7 +448,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     @Override
     public synchronized int onSendReplyAfter(Reply reply, int rdvValue, UniversalBody destination) {
     	if (multiactiveLogger.isDebugEnabled()) {
-    		multiactiveLogger.debug("#onSendReplyAfter " + reply.getMethodName());
+    		multiactiveLogger.debug("#onSendReplyAfter (for body:" + 
+    				this.owner.getReifiedObject().getClass().getSimpleName() 
+    				+ "): " + reply.getMethodName());
     	}
         // if return value is RESEND, receiver have to recover --> resend the message
         if (rdvValue == FTManagerCIC.RESEND_MESSAGE) {
@@ -442,7 +467,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 
         // update checkpoint index
         if (rdvValue > currentCheckpointIndex) {
-            this.nextMax = Math.max(this.nextMax, rdvValue);
+            generateCheckpointRequest();
             // log this in-transit message
             this.extendReplyLog(rdvValue);
             // must make a deep copy of result !
@@ -473,7 +498,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     public synchronized int onSendRequestAfter(Request request, int rdvValue, UniversalBody destination)
             throws RenegotiateSessionException, CommunicationForbiddenException {
     	if (multiactiveLogger.isDebugEnabled()) {
-    		multiactiveLogger.debug("#onSendRequestAfter " + request.getMethodName());
+    		multiactiveLogger.debug("#onSendRequestAfter (for body:" + 
+    				this.owner.getReifiedObject().getClass().getSimpleName() 
+    				+ "): " + request.getMethodName());
     	}
         //	if return value is RESEDN, receiver have to recover --> resend the message
         if (rdvValue == FTManagerCIC.RESEND_MESSAGE) {
@@ -494,7 +521,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 
         // update checkpoint index
         if (rdvValue > currentCheckpointIndex) {
-            this.nextMax = Math.max(this.nextMax, rdvValue);
+            generateCheckpointRequest();
             // log this in-transit message in the rdvValue-currentIndex next checkpoints
             this.extendRequestLog(rdvValue);
             try {
@@ -517,10 +544,14 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     @Override
     public int onServeRequestBefore(Request request) {
     	if (multiactiveLogger.isDebugEnabled()) {
-    		multiactiveLogger.debug("#onServeRequestBefore " + request.getMethodName());
+    		multiactiveLogger.debug("#onServeRequestBefore (for body:" + 
+    				this.owner.getReifiedObject().getClass().getSimpleName() 
+    				+ "): " + request.getMethodName());
     	}
-        // checkpoint if needed
-        while (this.haveToCheckpoint()) {
+        
+    	// checkpoint if needed
+        if (!request.getMethodName().equals(FTDecorator.keyMethod) && 
+        		this.haveToCheckpoint()) {
             this.checkpoint(request);
         }
 
@@ -540,7 +571,9 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     @Override
     public int onServeRequestAfter(Request request) {
     	if (multiactiveLogger.isDebugEnabled()) {
-    		multiactiveLogger.debug("#onServeRequestAfter " + request.getMethodName());
+    		multiactiveLogger.debug("#onServeRequestAfter (for body:" + 
+    				this.owner.getReifiedObject().getClass().getSimpleName() 
+    				+ "): " + request.getMethodName());
     	}
         return 0;
     }
@@ -568,7 +601,6 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
         this.replyToResend = new Hashtable<Integer, Vector<ReplyLog>>();
         this.requestToResend = new Hashtable<Integer, Vector<RequestLog>>();
         this.checkpointIndex = index;
-        this.nextMax = index;
         this.checkpointTimer = System.currentTimeMillis();
         this.historyIndex = index;
         this.lastRecovery = index;
@@ -654,17 +686,10 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 
     /*
      * return true if this ao have to checkpoint
+     * should checkpoint if TTC is elapsed
      */
     private boolean haveToCheckpoint() {
-        int currentCheckpointIndex = this.checkpointIndex;
-        int currentNextMax = this.nextMax;
-
-        // checkpoint if next is greater than index
-        if (currentNextMax > currentCheckpointIndex) {
-            return true;
-        }
-        // checkpoint if TTC is elapsed
-        else if ((this.checkpointTimer + this.ttc) < System.currentTimeMillis()) {
+        if ((this.checkpointTimer + this.ttc) < System.currentTimeMillis()) {
             return true;
         } else {
             return false;
@@ -674,7 +699,8 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     /*
      * Perform a checkpoint with index = current + 1
      */
-    private Checkpoint checkpoint(Request pendingRequest) {
+    @Override
+    public Checkpoint checkpoint(Request pendingRequest) {
         //stop accepting communication
         (owner).blockCommunication();
         // synchronized on hisotry to avoid hisot commit during checkpoint

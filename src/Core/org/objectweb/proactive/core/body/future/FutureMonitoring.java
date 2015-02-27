@@ -241,6 +241,9 @@ public class FutureMonitoring implements Runnable {
             return;
         }
         Pair<UniqueID, String> pair = getUpdaterBodyIdAndNodeUrl(fp);
+        if (pair == null) {
+        	return;
+        }
         UniqueID updaterId = pair.getFirst();
         if (updaterId == null) {
             return;

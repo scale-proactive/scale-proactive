@@ -48,6 +48,7 @@ import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.body.AbstractBody;
 import org.objectweb.proactive.core.body.UniversalBody;
 import org.objectweb.proactive.core.body.exceptions.BodyTerminatedException;
+import org.objectweb.proactive.core.body.ft.checkpointing.Checkpoint;
 import org.objectweb.proactive.core.body.ft.checkpointing.CheckpointInfo;
 import org.objectweb.proactive.core.body.ft.internalmsg.FTMessage;
 import org.objectweb.proactive.core.body.ft.internalmsg.Heartbeat;
@@ -72,8 +73,13 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
  * @since ProActive 2.2
  */
 public abstract class FTManager implements java.io.Serializable {
-    //logger
+
+	private static final long serialVersionUID = 1L;
+	
+	//logger
     final protected static Logger logger = ProActiveLogger.getLogger(Loggers.FAULT_TOLERANCE);
+    final protected static Logger EXTENDED_FT_LOGGER = ProActiveLogger.getLogger(
+    		Loggers.FAULT_TOLERANCE_EXTENSION);
 
     /** This value is sent by an active object that is not fault tolerant*/
     public static final int NON_FT = -30;
@@ -135,6 +141,7 @@ public abstract class FTManager implements java.io.Serializable {
     public int init(AbstractBody owner) throws ProActiveException {
         this.owner = owner;
         this.ownerID = owner.getID();
+        
         Node node = NodeFactory.getNode(this.owner.getNodeURL());
 
         try {
@@ -418,6 +425,13 @@ public abstract class FTManager implements java.io.Serializable {
      * @return depend on the message meaning
      */
     public abstract Object handleFTMessage(FTMessage fte);
+    
+    /**
+     * This methods starts the checkpoint process (serialization and stable storage).
+     * @param r
+     * @return
+     */
+    public abstract Checkpoint checkpoint(Request r);
 
     /**
      * This method is called after a migration to update the object's location

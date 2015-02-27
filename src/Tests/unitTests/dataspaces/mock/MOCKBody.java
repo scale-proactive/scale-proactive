@@ -43,6 +43,7 @@ import java.security.PublicKey;
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.UniqueID;
+import org.objectweb.proactive.core.body.ReifiedObjectDecorator;
 import org.objectweb.proactive.core.body.UniversalBody;
 import org.objectweb.proactive.core.body.ft.internalmsg.FTMessage;
 import org.objectweb.proactive.core.body.future.Future;
@@ -375,4 +376,16 @@ public class MOCKBody implements Body {
         // TODO Auto-generated method stub
 
     }
+
+	@Override
+	public void setReifiedObject(ReifiedObjectDecorator decoratedObject) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public ReifiedObjectDecorator getDecorator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

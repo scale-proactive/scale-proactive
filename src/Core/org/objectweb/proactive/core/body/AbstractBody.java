@@ -920,7 +920,17 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
     }
 
     public Object getReifiedObject() {
-        return this.localBodyStrategy.getReifiedObject();
+    	Object obj = this.localBodyStrategy.getReifiedObject();
+    	if (obj instanceof ReifiedObjectDecorator) {
+    		return ((ReifiedObjectDecorator) obj).getReifiedObject();
+    	}
+    	else {
+    		return obj;
+    	}
+    }
+    
+    public ReifiedObjectDecorator getDecorator() {
+    	return this.localBodyStrategy.getDecorator();
     }
 
     /**

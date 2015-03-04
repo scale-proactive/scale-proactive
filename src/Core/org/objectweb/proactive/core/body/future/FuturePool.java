@@ -271,7 +271,10 @@ public class FuturePool extends Object implements java.io.Serializable {
             // FAULT-TOLERANCE
             int ftres = FTManager.NON_FT;
             if ((reply != null) && (reply.getFTManager() != null)) {
-                ftres = reply.getFTManager().onDeliverReply(reply);
+                ftres = reply.getFTManager().getBody().getDecorator().onDeliverReply(reply);
+            }
+            else {
+            	this.ownerBody.getDecorator().onDeliverReply(reply);
             }
 
             Future future = (futuresToUpdate.get(0));

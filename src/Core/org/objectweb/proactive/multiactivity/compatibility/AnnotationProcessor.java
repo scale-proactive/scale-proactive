@@ -54,6 +54,7 @@ import org.objectweb.proactive.annotation.multiactivity.Group;
 import org.objectweb.proactive.annotation.multiactivity.PrioritySet;
 import org.objectweb.proactive.annotation.multiactivity.MemberOf;
 import org.objectweb.proactive.annotation.multiactivity.PriorityHierarchy;
+import org.objectweb.proactive.core.body.ft.extension.FTDecorator;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.limits.ThreadManager;
@@ -287,10 +288,6 @@ public class AnnotationProcessor {
 				}
 				predecessors.clear();
 			}
-			if (logger.isInfoEnabled()) {
-				logger.info("Priority graph for MAO " + this.processedClass.getSimpleName() + 
-						" is:" + priorityGraph.toString());
-			}
 		}
 
 		// if there are configuration for threads defined
@@ -306,7 +303,25 @@ public class AnnotationProcessor {
 						threadConfig.hardLimit() + "" + ", host reentrant=" + threadConfig.hostReentrant());
 			}
 		}
-
+		
+		// If fault tolerance is enabled, we need to tweak the structures so 
+		// that they include a special request for checkpointing
+		MethodGroup mg =
+				new MethodGroup(FTDecorator.FT_MAO_GROUP, true,
+						"", "", false);
+		compatibilityMap.getGroups().put(FTDecorator.FT_MAO_GROUP, mg);
+		// We say that a checkpoint request is compatible with everybody 
+		// to make it go first in the queue
+		for (MethodGroup g : compatibilityMap.getGroups().values()) {
+			compatibilityMap.getGroups().get(FTDecorator.FT_MAO_GROUP).addCompatibleWith(g);
+		}
+		// A checkpoint has a super priority compared to other methods
+		priorityGraph.insertSuperPriority(mg);
+		
+		if (logger.isInfoEnabled()) {
+			logger.info("Priority graph for MAO " + this.processedClass.getSimpleName() + 
+					" is:" + priorityGraph.toString());
+		}
 	}
 
 	/*

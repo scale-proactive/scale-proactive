@@ -385,7 +385,6 @@ public class MOCKBody implements Body {
 
 	@Override
 	public ReifiedObjectDecorator getDecorator() {
-		// TODO Auto-generated method stub
-		return null;
+		return ReifiedObjectDecorator.emptyDecorator;
 	}
 }

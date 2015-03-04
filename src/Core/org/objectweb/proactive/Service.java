@@ -36,12 +36,12 @@
  */
 package org.objectweb.proactive;
 
-import java.io.Serializable;
-import java.lang.reflect.Modifier;
 
 import org.objectweb.proactive.annotation.PublicAPI;
 import org.objectweb.proactive.core.ProActiveException;
+import org.objectweb.proactive.core.body.AbstractBody;
 import org.objectweb.proactive.core.body.ft.extension.FTDecorator;
+import org.objectweb.proactive.core.body.ft.protocols.cic.managers.FTManagerCIC;
 import org.objectweb.proactive.core.body.ft.service.FaultToleranceTechnicalService;
 import org.objectweb.proactive.core.body.request.BlockingRequestQueue;
 import org.objectweb.proactive.core.body.request.Request;
@@ -115,7 +115,7 @@ public class Service {
         try {
 			Node node = NodeFactory.getNode(this.body.getNodeURL());
 			if ("true".equals(node.getProperty(FaultToleranceTechnicalService.FT_ENABLED))) {
-				this.body.setReifiedObject(new FTDecorator(this.body));
+				this.body.setReifiedObject(new FTDecorator(this.body, (FTManagerCIC) ((AbstractBody) this.body).getFTManager()));
 			}
         }
         catch (NodeException e) {

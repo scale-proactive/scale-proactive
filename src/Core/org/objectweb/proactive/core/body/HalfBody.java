@@ -339,7 +339,7 @@ public class HalfBody extends AbstractBody {
 
 		@Override
 		public ReifiedObjectDecorator getDecorator() {
-			throw new HalfBodyException();
+			return ReifiedObjectDecorator.emptyDecorator;
 		}
         
     }

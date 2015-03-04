@@ -198,7 +198,7 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 		this.replyReceiver = factory.newReplyReceiverFactory().newReplyReceiver();
 
 		setLocalBodyImpl(new ActiveLocalBodyStrategy(reifiedObject, factory.newRequestQueueFactory()
-				.newRequestQueue(this.bodyID), factory.newRequestFactory()));
+				.newRequestQueue(this, this.bodyID), factory.newRequestFactory()));
 		this.localBodyStrategy.getFuturePool().setOwnerBody(this);
 
 		// FAULT TOLERANCE=
@@ -754,7 +754,9 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 				// Useful if the exception is due to the content of the result
 				// (e.g. InvalidClassException)
 				try {
+					this.getDecorator().onSendReplyBefore(reply);
 					reply.send(request.getSender());
+					this.getDecorator().onSendReplyAfter(reply);
 				} catch (Throwable e1) {
 					// see PROACTIVE-1172
 					// previously only IOException were caught but now that new communication protocols
@@ -859,11 +861,13 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 
 			// END JMX Notification
 
-			// FAULT TOLERANCE
+			// FAULT TOLERANCE: the sendRequest operation needs to be wrapped to add exceptional clauses
 			if (BodyImpl.this.ftmanager != null) {
 				BodyImpl.this.ftmanager.sendRequest(request, destinationBody);
 			} else {
+				this.getDecorator().onSendRequestBefore(request);
 				request.send(destinationBody);
+				this.getDecorator().onSendRequestAfter(request);
 			}
 		}
 
@@ -937,7 +941,7 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 	    		return (ReifiedObjectDecorator) this.reifiedObject;
 	    	}
 	    	else {
-	    		return null;
+	    		return ReifiedObjectDecorator.emptyDecorator;
 	    	}
 		}
 	}
@@ -1013,7 +1017,7 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 
 		@Override
 		public ReifiedObjectDecorator getDecorator() {
-			throw new InactiveBodyException(BodyImpl.this);
+			return ReifiedObjectDecorator.emptyDecorator;
 		}
 	}
 

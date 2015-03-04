@@ -43,6 +43,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
 import org.apache.log4j.Logger;
+import org.objectweb.proactive.Body;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.body.AbstractBody;
@@ -50,6 +51,7 @@ import org.objectweb.proactive.core.body.UniversalBody;
 import org.objectweb.proactive.core.body.exceptions.BodyTerminatedException;
 import org.objectweb.proactive.core.body.ft.checkpointing.Checkpoint;
 import org.objectweb.proactive.core.body.ft.checkpointing.CheckpointInfo;
+import org.objectweb.proactive.core.body.ft.extension.FTDecorator;
 import org.objectweb.proactive.core.body.ft.internalmsg.FTMessage;
 import org.objectweb.proactive.core.body.ft.internalmsg.Heartbeat;
 import org.objectweb.proactive.core.body.ft.servers.faultdetection.FaultDetector;
@@ -273,9 +275,10 @@ public abstract class FTManager implements java.io.Serializable {
      */
     public int sendReply(Reply r, UniversalBody destination) {
         try {
-            this.onSendReplyBefore(r);
+        	this.owner.getDecorator().onSendReplyBefore(r);
             int res = r.send(destination);
-            this.onSendReplyAfter(r, res, destination);
+            ((FTDecorator) this.owner.getDecorator()).setOnSendReplyAfterParameters(res, destination);
+            this.owner.getDecorator().onSendReplyAfter(r);
             return res;
         } catch (BodyTerminatedException e) {
             logger.info("[FAULT] " + this.ownerID + " : FAILURE OF " + destination.getID() +
@@ -302,9 +305,10 @@ public abstract class FTManager implements java.io.Serializable {
     public int sendRequest(Request r, UniversalBody destination) throws RenegotiateSessionException,
             CommunicationForbiddenException {
         try {
-            this.onSendRequestBefore(r);
+            this.owner.getDecorator().onSendRequestBefore(r);
             int res = r.send(destination);
-            this.onSendRequestAfter(r, res, destination);
+            ((FTDecorator) this.owner.getDecorator()).setOnSendRequestAfterParameters(res, destination);
+            this.owner.getDecorator().onSendRequestAfter(r);
             return res;
         } catch (BodyTerminatedException e) {
             logger.info("[FAULT] " + this.ownerID + " : FAILURE OF " + destination.getID() +
@@ -333,82 +337,18 @@ public abstract class FTManager implements java.io.Serializable {
             return FaultDetector.IS_DEAD;
         }
     }
+    
+    public CheckpointServer getStorage() {
+		return this.storage;
+	}
+    
+    public Body getBody() {
+    	return this.owner;
+    }
 
     //////////////////////
     // ABSTRACT METHODS //
     //////////////////////
-
-    /**
-     * This method is called when a reply is received.
-     * @param reply the received reply
-     */
-    public abstract int onReceiveReply(Reply reply);
-
-    /**
-     * This method is called when a request is received.
-     * @param request the received request
-     */
-    public abstract int onReceiveRequest(Request request);
-
-    /**
-     * This method is called after the future is updated by the reply.
-     * @param reply the reply that updates a future
-     */
-    public abstract int onDeliverReply(Reply reply);
-
-    /**
-     * This method is called when a request is stored in the requestqueue
-     * @param request the stored request
-     */
-    public abstract int onDeliverRequest(Request request);
-
-    /**
-     * This method is called before the sending of a reply
-     * @param reply the reply that will be sent
-     */
-    public abstract int onSendReplyBefore(Reply reply);
-
-    /**
-     * This method is called after the sending of a reply
-     * @param reply the sent reply
-     * @param rdvValue the value returned by the sending
-     * @param destination the destination body of reply
-     * @return depends on fault-tolerance protocol
-     */
-    public abstract int onSendReplyAfter(Reply reply, int rdvValue, UniversalBody destination);
-
-    /**
-     * This method is called before the sending of a request
-     * @param request the request that will be sent
-     * @return depends on fault-tolerance protocol
-     */
-    public abstract int onSendRequestBefore(Request request);
-
-    /**
-     * This method is called after the sending of a request
-     * @param request the sent request
-     * @param rdvValue the value returned by the sending
-     * @param destination the destination body of request
-     * @return depends on fault-tolerance protocol
-     * @throws RenegotiateSessionException
-     * @throws CommunicationForbiddenException
-     */
-    public abstract int onSendRequestAfter(Request request, int rdvValue, UniversalBody destination)
-            throws RenegotiateSessionException, CommunicationForbiddenException;
-
-    /**
-     * This method is called before the service of a request
-     * @param request the request that is served
-     * @return depends on fault-tolerance protocol
-     */
-    public abstract int onServeRequestBefore(Request request);
-
-    /**
-     * This method is called after the service of a request
-     * @param request the request that has been served
-     * @return depends on fault-tolerance protocol
-     */
-    public abstract int onServeRequestAfter(Request request);
 
     /**
      * This method is called before restarting an object which has been recovered

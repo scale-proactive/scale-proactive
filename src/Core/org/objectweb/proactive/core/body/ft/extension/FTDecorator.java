@@ -191,12 +191,11 @@ public class FTDecorator extends ReifiedObjectDecorator {
 		logger.debug("Creating a checkpoint request for object: " +
 				this.body.getReifiedObject().getClass().getSimpleName());
 		try {
-			this.body.receiveRequest(new RequestImpl(
-					new MethodCall(this.body.getDecorator().
-							getClass().getDeclaredMethod(FTDecorator.keyMethod, 
-									new Class<?>[]{}), null, null), true));
+			this.body.sendRequest(new MethodCall(this.body.getDecorator().
+					getClass().getDeclaredMethod(FTDecorator.keyMethod, 
+							new Class<?>[]{}), null, null), null, this.body);
 		} 
-		catch (NoSuchMethodException | SecurityException | IOException | RenegotiateSessionException e) {
+		catch (NoSuchMethodException | SecurityException | IOException | RenegotiateSessionException | CommunicationForbiddenException e) {
 			e.printStackTrace();
 		}
 		StringBuilder b = new StringBuilder("Request queue of object: " +

@@ -25,7 +25,7 @@
 		</hosts>
 		<groups>
 			<sshGroup id="sshLan"
-				hostList="apcoubi apcoubi khomka apcoubi" />
+				hostList="localhost localhost localhost localhost" />
 		</groups>
 
 	</infrastructure>

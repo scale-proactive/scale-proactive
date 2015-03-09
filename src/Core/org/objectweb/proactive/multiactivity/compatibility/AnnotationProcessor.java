@@ -303,7 +303,6 @@ public class AnnotationProcessor {
 						threadConfig.hardLimit() + "" + ", host reentrant=" + threadConfig.hostReentrant());
 			}
 		}
-		
 		// If fault tolerance is enabled, we need to tweak the structures so 
 		// that they include a special request for checkpointing
 		MethodGroup mg =

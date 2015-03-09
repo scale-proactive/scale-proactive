@@ -345,10 +345,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
 		synchronized (requestQueue) {
 
-			// Used for microbenchmarks
-			/*long insertionTimeBefore;
-			long insertionTimeAfter;*/
-
 			while (body.isActive()) {
 
 				// get compatible ones from the queue
@@ -360,15 +356,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 						for (int i = 0; i < rc.size(); i++) {
 							RunnableRequest runnableRequest = wrapRequest(rc.get(i));
 
-							// Used only for microbenchmarks
-							/*if (PriorityUtils.LOG_ENABLED) {
-								insertionTimeBefore = System.nanoTime();
-							}*/
-
 							priorityManager.register(runnableRequest);
-
-							// Used only for microbenchmarks
-							//logTime(runnableRequest, MultiactivityUtils.INSERTION_TIME, insertionTimeBefore);
 						}
 
 						// if anything can be done, let the other thread know

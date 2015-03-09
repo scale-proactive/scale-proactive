@@ -44,6 +44,7 @@ import java.util.ListIterator;
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.body.LocalBodyStore;
+import org.objectweb.proactive.core.body.ft.extension.FTDecorator;
 import org.objectweb.proactive.core.body.ft.protocols.FTManager;
 import org.objectweb.proactive.core.event.AbstractEventProducer;
 import org.objectweb.proactive.core.event.ProActiveEvent;
@@ -58,6 +59,7 @@ public class RequestQueueImpl extends AbstractEventProducer implements java.io.S
     // -- PROTECTED MEMBERS -----------------------------------------------
     //
     protected CircularArrayList<Request> requestQueue;
+    protected Body body;
     protected UniqueID ownerID;
     protected RequestFilterOnMethodName requestFilterOnMethodName;
     protected static final boolean SEND_ADD_REMOVE_EVENT = false;
@@ -66,8 +68,9 @@ public class RequestQueueImpl extends AbstractEventProducer implements java.io.S
     //
     // -- CONSTRUCTORS -----------------------------------------------
     //
-    public RequestQueueImpl(UniqueID ownerID) {
+    public RequestQueueImpl(Body body, UniqueID ownerID) {
         this.requestQueue = new CircularArrayList<Request>(20);
+        this.body = body;
         this.ownerID = ownerID;
         this.requestFilterOnMethodName = new RequestFilterOnMethodName();
         this.nfRequestsProcessor = new NonFunctionalRequestsProcessor();
@@ -199,12 +202,17 @@ public class RequestQueueImpl extends AbstractEventProducer implements java.io.S
         // FAULT-TOLERANCE  
         int ftres = FTManager.NON_FT;
         FTManager ftm = request.getFTManager();
-        if (ftm != null) {
+        if (ftm != null && !request.getMethodName().equals(FTDecorator.keyMethod)) {
             // null if FT is disable OR if request is an awaited request         
-            ftres = ftm.onDeliverRequest(request);
+            ftres = ftm.getBody().getDecorator().onDeliverRequest(request);
             if (request.ignoreIt()) {
                 return ftres;
             }
+        }
+        else {
+        	if (!request.getMethodName().equals(FTDecorator.keyMethod)) {
+        		this.body.getDecorator().onDeliverRequest(request);
+        	}
         }
 
         //if the request is non functional and priority, a reference on it is added in a nonFunctionalRequestsQueue.

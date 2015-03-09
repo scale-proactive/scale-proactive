@@ -51,6 +51,7 @@ import org.objectweb.proactive.core.body.AbstractBody;
 import org.objectweb.proactive.core.body.Context;
 import org.objectweb.proactive.core.body.LocalBodyStore;
 import org.objectweb.proactive.core.body.UniversalBody;
+import org.objectweb.proactive.core.body.ft.extension.FTDecorator;
 import org.objectweb.proactive.core.body.ft.protocols.FTManager;
 import org.objectweb.proactive.core.body.reply.Reply;
 import org.objectweb.proactive.core.body.reply.ReplyImpl;
@@ -270,8 +271,13 @@ public class FuturePool extends Object implements java.io.Serializable {
         if (futuresToUpdate != null) {
             // FAULT-TOLERANCE
             int ftres = FTManager.NON_FT;
-            if ((reply != null) && (reply.getFTManager() != null)) {
-                ftres = reply.getFTManager().onDeliverReply(reply);
+            if ((reply != null) && (reply.getFTManager() != null) && !reply.getMethodName().equals(FTDecorator.keyMethod)) {
+                ftres = reply.getFTManager().getBody().getDecorator().onDeliverReply(reply);
+            }
+            else {
+            	if (!reply.getMethodName().equals(FTDecorator.keyMethod)) {
+            		this.ownerBody.getDecorator().onDeliverReply(reply);
+            	}
             }
 
             Future future = (futuresToUpdate.get(0));

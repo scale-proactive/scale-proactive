@@ -132,7 +132,7 @@ public class FTManagerPMLRB extends FTManager {
      * Message can be ignored if its index is l.t. lastestReceivedIndex[sender]
      * @see org.objectweb.proactive.core.body.ft.protocols.FTManager#onReceiveReply(org.objectweb.proactive.core.body.reply.Reply)
      */
-    @Override
+    
     public int onReceiveReply(Reply reply) {
         // if the message is sent by a non ft object
         if (reply.getMessageInfo() == null) {
@@ -157,7 +157,7 @@ public class FTManagerPMLRB extends FTManager {
      * Message can be ignored if its index is l.t. lastestReceivedIndex[sender]
      * @see org.objectweb.proactive.core.body.ft.protocols.FTManager#onReceiveRequest(org.objectweb.proactive.core.body.request.Request)
      */
-    @Override
+    
     public int onReceiveRequest(Request request) {
         // if the message is sent from a non ft object
         if (request.getMessageInfo() == null) {
@@ -179,7 +179,7 @@ public class FTManagerPMLRB extends FTManager {
      * The LatestRcvdIndex table is updated
      * @see org.objectweb.proactive.core.body.ft.protocols.FTManager#onDeliverReply(org.objectweb.proactive.core.body.reply.Reply)
      */
-    @Override
+    
     public int onDeliverReply(Reply reply) {
         // if the ao is recovering, message are not logged
         if (!this.isRecovering) {
@@ -200,7 +200,7 @@ public class FTManagerPMLRB extends FTManager {
      * The LatestRcvdIndex table is updated
      * @see org.objectweb.proactive.core.body.ft.protocols.FTManager#onReceiveRequest(org.objectweb.proactive.core.body.request.Request)
      */
-    @Override
+    
     public int onDeliverRequest(Request request) {
         // if the ao is recovering, message are not logged
         if (!this.isRecovering) {
@@ -259,7 +259,7 @@ public class FTManagerPMLRB extends FTManager {
     /**
      * @see org.objectweb.proactive.core.body.ft.protocols.FTManager#onSendReplyBefore(org.objectweb.proactive.core.body.reply.Reply)
      */
-    @Override
+    
     public synchronized int onSendReplyBefore(Reply reply) {
         this.replyInfos.sentSequenceNumber = this.getNextSendNumber();
         reply.setMessageInfo(this.replyInfos);
@@ -269,7 +269,7 @@ public class FTManagerPMLRB extends FTManager {
     /**
      * @see org.objectweb.proactive.core.body.ft.protocols.FTManager#onSendReplyAfter(org.objectweb.proactive.core.body.reply.Reply, int, org.objectweb.proactive.core.body.UniversalBody)
      */
-    @Override
+    
     public int onSendReplyAfter(Reply reply, int rdvValue, UniversalBody destination) {
         return 0;
     }
@@ -277,7 +277,7 @@ public class FTManagerPMLRB extends FTManager {
     /**
      * @see org.objectweb.proactive.core.body.ft.protocols.FTManager#onSendRequestBefore(org.objectweb.proactive.core.body.request.Request)
      */
-    @Override
+    
     public synchronized int onSendRequestBefore(Request request) {
         this.requestInfos.sentSequenceNumber = this.getNextSendNumber();
         request.setMessageInfo(this.requestInfos);
@@ -287,7 +287,7 @@ public class FTManagerPMLRB extends FTManager {
     /**
      * @see org.objectweb.proactive.core.body.ft.protocols.FTManager#onSendRequestAfter(org.objectweb.proactive.core.body.request.Request, int, org.objectweb.proactive.core.body.UniversalBody)
      */
-    @Override
+    
     public int onSendRequestAfter(Request request, int rdvValue, UniversalBody destination)
             throws RenegotiateSessionException {
         return 0;
@@ -296,7 +296,7 @@ public class FTManagerPMLRB extends FTManager {
     /**
      * @see org.objectweb.proactive.core.body.ft.protocols.FTManager#onServeRequestBefore(org.objectweb.proactive.core.body.request.Request)
      */
-    @Override
+    
     public int onServeRequestBefore(Request request) {
         if (this.haveToCheckpoint()) {
             this.checkpoint(request);
@@ -307,7 +307,7 @@ public class FTManagerPMLRB extends FTManager {
     /**
      * @see org.objectweb.proactive.core.body.ft.protocols.FTManager#onServeRequestAfter(org.objectweb.proactive.core.body.request.Request)
      */
-    @Override
+    
     public int onServeRequestAfter(Request request) {
         return 0;
     }
@@ -400,7 +400,8 @@ public class FTManagerPMLRB extends FTManager {
         return ((this.checkpointTimer + this.ttc) < System.currentTimeMillis());
     }
 
-    private void checkpoint(Request pending) {
+    @Override
+    public Checkpoint checkpoint(Request pending) {
         //System.out.println("[PMLRB] Checkpointing...");
         owner.blockCommunication();
         // checkpoint the active object
@@ -427,6 +428,7 @@ public class FTManagerPMLRB extends FTManager {
         }
 
         owner.acceptCommunication();
+        return null;
     }
 
     private synchronized char getNextSendNumber() {

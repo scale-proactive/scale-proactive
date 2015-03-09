@@ -44,6 +44,7 @@ import org.objectweb.proactive.ActiveObjectCreationException;
 import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.body.BodyImpl;
 import org.objectweb.proactive.core.body.MetaObjectFactory;
+import org.objectweb.proactive.core.body.ReifiedObjectDecorator;
 import org.objectweb.proactive.core.body.UniversalBody;
 import org.objectweb.proactive.core.body.reply.ReplyReceiver;
 import org.objectweb.proactive.core.body.request.RequestReceiver;
@@ -351,4 +352,9 @@ public class MigratableBody extends BodyImpl implements Migratable, java.io.Seri
     public long getNextSequenceID() {
         return localBodyStrategy.getNextSequenceID();
     }
+
+	@Override
+	public void setReifiedObject(ReifiedObjectDecorator decoratedObject) {
+		this.localBodyStrategy.setReifiedObject(decoratedObject);
+	}
 }

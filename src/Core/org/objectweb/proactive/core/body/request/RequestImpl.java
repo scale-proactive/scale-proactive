@@ -38,6 +38,7 @@ package org.objectweb.proactive.core.body.request;
 
 import java.io.IOException;
 import java.io.StreamCorruptedException;
+import java.util.Iterator;
 
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.Body;
@@ -45,7 +46,9 @@ import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.core.ProActiveRuntimeException;
 import org.objectweb.proactive.core.body.AbstractBody;
 import org.objectweb.proactive.core.body.LocalBodyStore;
+import org.objectweb.proactive.core.body.ReifiedObjectDecorator;
 import org.objectweb.proactive.core.body.UniversalBody;
+import org.objectweb.proactive.core.body.ft.extension.FTDecorator;
 import org.objectweb.proactive.core.body.future.MethodCallResult;
 import org.objectweb.proactive.core.body.message.MessageImpl;
 import org.objectweb.proactive.core.body.reply.Reply;
@@ -249,8 +252,16 @@ public class RequestImpl extends MessageImpl implements Request, java.io.Seriali
     protected MethodCallResult serveInternal(Body targetBody) throws ServeException {
         Object result = null;
         Throwable exception = null;
-        try {
-            result = this.methodCall.execute(targetBody.getReifiedObject());
+        try {	
+        	Object decorator = targetBody.getDecorator();
+        	if (decorator != null && 
+        			decorator instanceof FTDecorator && 
+        				((FTDecorator)decorator).matchesKeyMethod(this.methodCall.getName())) { 
+        		result = this.methodCall.execute(decorator);
+        	}
+        	else {
+        		result = this.methodCall.execute(targetBody.getReifiedObject());
+        	}
         } catch (MethodCallExecutionFailedException e) {
             throw new ServeException("Error while serving", e);
         } catch (java.lang.reflect.InvocationTargetException e) {

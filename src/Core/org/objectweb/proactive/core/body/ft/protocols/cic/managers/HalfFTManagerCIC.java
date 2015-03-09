@@ -46,6 +46,7 @@ import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.ProActiveRuntimeException;
 import org.objectweb.proactive.core.body.AbstractBody;
 import org.objectweb.proactive.core.body.UniversalBody;
+import org.objectweb.proactive.core.body.ft.checkpointing.Checkpoint;
 import org.objectweb.proactive.core.body.ft.checkpointing.CheckpointInfo;
 import org.objectweb.proactive.core.body.ft.internalmsg.FTMessage;
 import org.objectweb.proactive.core.body.ft.protocols.FTManager;
@@ -116,86 +117,6 @@ public class HalfFTManagerCIC extends FTManager {
     }
 
     @Override
-    public int onReceiveReply(Reply reply) {
-        reply.setFTManager(this);
-        return 0;
-    }
-
-    @Override
-    public int onDeliverReply(Reply reply) {
-        return FTManager.NON_FT;
-    }
-
-    @Override
-    public int onSendRequestBefore(Request request) {
-        request.setMessageInfo(this.forSentMessage);
-        return 0;
-    }
-
-    @Override
-    public int onSendReplyBefore(Reply reply) {
-        reply.setMessageInfo(this.forSentMessage);
-        return 0;
-    }
-
-    @Override
-    public int onSendRequestAfter(Request request, int rdvValue, UniversalBody destination)
-            throws RenegotiateSessionException, CommunicationForbiddenException {
-        if (rdvValue == FTManagerCIC.RESEND_MESSAGE) {
-            try {
-                request.resetSendCounter();
-                request.setIgnoreIt(false);
-                Thread.sleep(FTManager.TIME_TO_RESEND);
-                int rdvValueBis = sendRequest(request, destination);
-                return this.onSendRequestAfter(request, rdvValueBis, destination);
-            } catch (RenegotiateSessionException e1) {
-                throw e1;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        return 0;
-    }
-
-    @Override
-    public synchronized int onSendReplyAfter(Reply reply, int rdvValue, UniversalBody destination) {
-        if (rdvValue == FTManagerCIC.RESEND_MESSAGE) {
-            try {
-                reply.setIgnoreIt(false);
-                Thread.sleep(FTManager.TIME_TO_RESEND);
-                int rdvValueBis = sendReply(reply, destination);
-                return this.onSendReplyAfter(reply, rdvValueBis, destination);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        return 0;
-    }
-
-    ////////////////////////
-    // UNCALLABLE METHODS //
-    ////////////////////////
-    @Override
-    public int onReceiveRequest(Request request) {
-        throw new ProActiveRuntimeException(HALF_BODY_EXCEPTION_MESSAGE);
-    }
-
-    @Override
-    public int onDeliverRequest(Request request) {
-        throw new ProActiveRuntimeException(HALF_BODY_EXCEPTION_MESSAGE);
-    }
-
-    @Override
-    public int onServeRequestBefore(Request request) {
-        throw new ProActiveRuntimeException(HALF_BODY_EXCEPTION_MESSAGE);
-    }
-
-    @Override
-    public int onServeRequestAfter(Request request) {
-        throw new ProActiveRuntimeException(HALF_BODY_EXCEPTION_MESSAGE);
-    }
-
-    @Override
     public int beforeRestartAfterRecovery(CheckpointInfo ci, int inc) {
         throw new ProActiveRuntimeException(HALF_BODY_EXCEPTION_MESSAGE);
     }
@@ -208,4 +129,9 @@ public class HalfFTManagerCIC extends FTManager {
     public Object handleFTMessage(FTMessage fte) {
         throw new ProActiveRuntimeException(HALF_BODY_EXCEPTION_MESSAGE);
     }
+
+	@Override
+	public Checkpoint checkpoint(Request r) {
+		throw new ProActiveRuntimeException(HALF_BODY_EXCEPTION_MESSAGE);
+	}
 }

@@ -29,6 +29,7 @@ log4j.logger.org.mortbay = WARN
 #log4j.logger.proactive.ft = DEBUG
 #log4j.logger.proactive.ft.cic = DEBUG
 #log4j.logger.proactive.ft.pml = DEBUG
+#log4j.logger.proactive.ft.extension = DEBUG
 #log4j.logger.proactive.communication.transport.http = DEBUG
 #log4j.logger.proactive.communication.rmi = DEBUG
 #log4j.logger.proactive.communication.ssh = DEBUG

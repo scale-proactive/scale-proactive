@@ -277,7 +277,11 @@ public abstract class FTManager implements java.io.Serializable {
         try {
         	this.owner.getDecorator().onSendReplyBefore(r);
             int res = r.send(destination);
-            ((FTDecorator) this.owner.getDecorator()).setOnSendReplyAfterParameters(res, destination);
+            // In case of a recovery, we need to handle the case where the reified object is not decorated 
+            // (because the service of this object is not restarted yet)
+            if (this.owner.getDecorator() instanceof FTDecorator) {
+            	((FTDecorator) this.owner.getDecorator()).setOnSendReplyAfterParameters(res, destination);
+            }
             this.owner.getDecorator().onSendReplyAfter(r);
             return res;
         } catch (BodyTerminatedException e) {
@@ -307,7 +311,11 @@ public abstract class FTManager implements java.io.Serializable {
         try {
             this.owner.getDecorator().onSendRequestBefore(r);
             int res = r.send(destination);
-            ((FTDecorator) this.owner.getDecorator()).setOnSendRequestAfterParameters(res, destination);
+            // In case of a recovery, we need to handle the case where the reified object is not decorated 
+            // (because the service of this object is not restarted yet)
+            if (this.owner.getDecorator() instanceof FTDecorator) {
+            	((FTDecorator) this.owner.getDecorator()).setOnSendRequestAfterParameters(res, destination);
+            }
             this.owner.getDecorator().onSendRequestAfter(r);
             return res;
         } catch (BodyTerminatedException e) {

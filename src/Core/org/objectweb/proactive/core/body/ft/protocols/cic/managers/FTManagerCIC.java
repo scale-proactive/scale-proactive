@@ -119,6 +119,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 	private int lastRecovery; // index of the last ckpt used for recovery
 	private int checkpointIndex; //index of the latest perfomred checkpoint
 	private long checkpointTimer;
+	private int nextMax;
 
 	// private int nextMin;
 	private int historyIndex; // index of the latest closed history
@@ -160,6 +161,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 		this.checkpointIndex = 0;
 		this.historyIndex = 0;
 		this.lastRecovery = 0;
+		this.nextMax = 1;
 		this.checkpointTimer = System.currentTimeMillis();
 		this.requestToResend = new Hashtable<Integer, Vector<RequestLog>>();
 		this.latestRequestLog = 0;
@@ -203,6 +205,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 		this.replyToResend = new Hashtable<Integer, Vector<ReplyLog>>();
 		this.requestToResend = new Hashtable<Integer, Vector<RequestLog>>();
 		this.checkpointIndex = index;
+		this.nextMax = index;
 		this.checkpointTimer = System.currentTimeMillis();
 		this.historyIndex = index;
 		this.lastRecovery = index;
@@ -684,6 +687,14 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 
 	public void setHistoryBaseIndex(long l) {
 		this.historyBaseIndex = l;
+	}
+
+	public int getNextMax() {
+		return this.nextMax;
+	}
+
+	public void setNextMax(int max) {
+		this.nextMax = max;
 	}
 
 }

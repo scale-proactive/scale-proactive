@@ -746,7 +746,7 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 
 			}
 			// FAULT-TOLERANCE
-			if (BodyImpl.this.ftmanager != null) {
+			if (BodyImpl.this.ftmanager != null && !reply.getMethodName().equals(FTDecorator.keyMethod)) {
 				BodyImpl.this.ftmanager.sendReply(reply, request.getSender());
 			} else {
 				// if the reply cannot be sent, try to sent the thrown exception
@@ -754,9 +754,13 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 				// Useful if the exception is due to the content of the result
 				// (e.g. InvalidClassException)
 				try {
-					this.getDecorator().onSendReplyBefore(reply);
+					if (!request.getMethodName().equals(FTDecorator.keyMethod)) {
+						this.getDecorator().onSendReplyBefore(reply);
+					}
 					reply.send(request.getSender());
-					this.getDecorator().onSendReplyAfter(reply);
+					if (!request.getMethodName().equals(FTDecorator.keyMethod)) {
+						this.getDecorator().onSendReplyAfter(reply);
+					}
 				} catch (Throwable e1) {
 					// see PROACTIVE-1172
 					// previously only IOException were caught but now that new communication protocols
@@ -862,12 +866,16 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 			// END JMX Notification
 
 			// FAULT TOLERANCE: the sendRequest operation needs to be wrapped to add exceptional clauses
-			if (BodyImpl.this.ftmanager != null) {
+			if (BodyImpl.this.ftmanager != null && !request.getMethodName().equals(FTDecorator.keyMethod)) {
 				BodyImpl.this.ftmanager.sendRequest(request, destinationBody);
 			} else {
-				this.getDecorator().onSendRequestBefore(request);
+				if (!request.getMethodName().equals(FTDecorator.keyMethod)) {
+					this.getDecorator().onSendRequestBefore(request);
+				}
 				request.send(destinationBody);
-				this.getDecorator().onSendRequestAfter(request);
+				if (!request.getMethodName().equals(FTDecorator.keyMethod)) {
+					this.getDecorator().onSendRequestAfter(request);
+				}
 			}
 		}
 

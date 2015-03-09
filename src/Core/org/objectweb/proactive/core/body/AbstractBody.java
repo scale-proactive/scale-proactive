@@ -59,6 +59,7 @@ import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.body.exceptions.BodyTerminatedReplyException;
 import org.objectweb.proactive.core.body.exceptions.BodyTerminatedRequestException;
+import org.objectweb.proactive.core.body.ft.extension.FTDecorator;
 import org.objectweb.proactive.core.body.ft.internalmsg.FTMessage;
 import org.objectweb.proactive.core.body.ft.internalmsg.Heartbeat;
 import org.objectweb.proactive.core.body.ft.protocols.FTManager;
@@ -327,7 +328,7 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
 		// System.out.println("" + this + " --> receiveRequest m="+request.getMethodName());
 		// NON_FT is returned if this object is not fault tolerant
 		int ftres = FTManager.NON_FT;
-		if (this.ftmanager != null) {
+		if (this.ftmanager != null && !request.getMethodName().equals(FTDecorator.keyMethod)) {
 			if (this.isDead) {
 				throw new BodyTerminatedRequestException(shortString(), request != null ? request
 						.getMethodName() : null);
@@ -339,7 +340,9 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
 			}
 		}
 		else {
-			this.getDecorator().onReceiveRequest(request);
+			if (!request.getMethodName().equals(FTDecorator.keyMethod)) {
+				this.getDecorator().onReceiveRequest(request);
+			}
 		}
 
 		try {
@@ -380,7 +383,7 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
 		// System.out.println(" --> receiveReply m="+reply.getMethodName());
 		// NON_FT is returned if this object is not fault tolerant
 		int ftres = FTManager.NON_FT;
-		if (this.ftmanager != null) {
+		if (this.ftmanager != null && !reply.getMethodName().equals(FTDecorator.keyMethod)) {
 			// if the futurepool is not null while body is dead,
 			// this AO still has ACs to do.
 			if (this.isDead && (this.getFuturePool() == null)) {
@@ -394,7 +397,9 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
 			}
 		}
 		else {
-			this.getDecorator().onReceiveReply(reply);
+			if (!reply.getMethodName().equals(FTDecorator.keyMethod)) {
+				this.getDecorator().onReceiveReply(reply);
+			}
 		}
 
 		try {
@@ -953,9 +958,13 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
 		}
 
 		// Serve
-		this.getDecorator().onServeRequestBefore(request);
+		if (!request.getMethodName().equals(FTDecorator.keyMethod)) {
+			this.getDecorator().onServeRequestBefore(request);
+		}
 		this.localBodyStrategy.serve(request);
-		this.getDecorator().onServeRequestAfter(request);
+		if (!request.getMethodName().equals(FTDecorator.keyMethod)) {
+			this.getDecorator().onServeRequestAfter(request);
+		}
 
 		// Sterility control
 		// Once the service of a sterile methodCall is done, the body can be turned back to standard
@@ -977,9 +986,13 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
 		}
 
 		// Serve
-		this.getDecorator().onServeRequestBefore(request);
+		if (!request.getMethodName().equals(FTDecorator.keyMethod)) {
+			this.getDecorator().onServeRequestBefore(request);
+		}
 		this.localBodyStrategy.serveWithException(request, exception);
-		this.getDecorator().onServeRequestAfter(request);
+		if (!request.getMethodName().equals(FTDecorator.keyMethod)) {
+			this.getDecorator().onServeRequestAfter(request);
+		}
 
 		// Sterility control
 		// Once the service of a sterile methodCall is done, the body can be turned back to standard

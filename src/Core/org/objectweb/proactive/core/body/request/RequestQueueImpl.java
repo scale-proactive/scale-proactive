@@ -44,6 +44,7 @@ import java.util.ListIterator;
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.body.LocalBodyStore;
+import org.objectweb.proactive.core.body.ft.extension.FTDecorator;
 import org.objectweb.proactive.core.body.ft.protocols.FTManager;
 import org.objectweb.proactive.core.event.AbstractEventProducer;
 import org.objectweb.proactive.core.event.ProActiveEvent;
@@ -201,7 +202,7 @@ public class RequestQueueImpl extends AbstractEventProducer implements java.io.S
         // FAULT-TOLERANCE  
         int ftres = FTManager.NON_FT;
         FTManager ftm = request.getFTManager();
-        if (ftm != null) {
+        if (ftm != null && !request.getMethodName().equals(FTDecorator.keyMethod)) {
             // null if FT is disable OR if request is an awaited request         
             ftres = ftm.getBody().getDecorator().onDeliverRequest(request);
             if (request.ignoreIt()) {
@@ -209,7 +210,9 @@ public class RequestQueueImpl extends AbstractEventProducer implements java.io.S
             }
         }
         else {
-        	this.body.getDecorator().onDeliverRequest(request);
+        	if (!request.getMethodName().equals(FTDecorator.keyMethod)) {
+        		this.body.getDecorator().onDeliverRequest(request);
+        	}
         }
 
         //if the request is non functional and priority, a reference on it is added in a nonFunctionalRequestsQueue.

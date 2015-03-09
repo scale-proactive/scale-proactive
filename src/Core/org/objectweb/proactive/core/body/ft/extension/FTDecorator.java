@@ -37,12 +37,11 @@ public class FTDecorator extends ReifiedObjectDecorator {
 
 	private static final long serialVersionUID = 1L;
 
-	public static final String keyMethod = "_checkpoint_request" ;
+	public static final String keyMethod = "_checkpoint_request";
 	public static final String FT_MAO_GROUP = "_ft_mao_group";
 
-
-	protected static Logger logger = ProActiveLogger.getLogger(
-			Loggers.FAULT_TOLERANCE_EXTENSION);
+	protected static Logger logger = ProActiveLogger
+			.getLogger(Loggers.FAULT_TOLERANCE_EXTENSION);
 
 	private FTManagerCIC manager;
 
@@ -58,8 +57,8 @@ public class FTDecorator extends ReifiedObjectDecorator {
 
 	public void _checkpoint_request() {
 		if (logger.isDebugEnabled()) {
-			logger.debug("About to checkpoint (through " + keyMethod + 
-					" method) from reified object decorator.");
+			logger.debug("About to checkpoint (through " + keyMethod
+					+ " method) from reified object decorator.");
 		}
 		((AbstractBody) this.body).getFTManager().checkpoint(null);
 	}
@@ -71,8 +70,8 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	@Override
 	public int onReceiveReply(Reply reply) {
 		if (logger.isDebugEnabled()) {
-			logger.debug("#onReceiveReply (for body:" +
-					this.body.getReifiedObject().getClass().getSimpleName() 
+			logger.debug("#onReceiveReply (for body:"
+					+ this.body.getReifiedObject().getClass().getSimpleName()
 					+ "): " + reply.getMethodName());
 		}
 		reply.setFTManager(this.manager);
@@ -82,8 +81,8 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	@Override
 	public int onReceiveRequest(Request request) {
 		if (logger.isDebugEnabled()) {
-			logger.debug("#onReceiveRequest (for body:" + 
-					this.body.getReifiedObject().getClass().getSimpleName() 
+			logger.debug("#onReceiveRequest (for body:"
+					+ this.body.getReifiedObject().getClass().getSimpleName()
 					+ "): " + request.getMethodName());
 		}
 		request.setFTManager(this.manager);
@@ -91,8 +90,8 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	}
 
 	/*
-	 * This method test if the message m has to be take into account by the receiver;
-	 * If not, set the ignore tag in m.
+	 * This method test if the message m has to be take into account by the
+	 * receiver; If not, set the ignore tag in m.
 	 */
 	private int incarnationTest(Message m) {
 		if (this.isSignificant(m)) {
@@ -109,14 +108,14 @@ public class FTDecorator extends ReifiedObjectDecorator {
 				return FTManagerCIC.RECOVER;
 			}
 		}
-		return 0; //This value is not returned to the sender
+		return 0; // This value is not returned to the sender
 	}
 
 	@Override
 	public synchronized int onDeliverReply(Reply reply) {
 		if (logger.isDebugEnabled()) {
-			logger.debug("#onDeliverReply (for body:" + 
-					this.body.getReifiedObject().getClass().getSimpleName() 
+			logger.debug("#onDeliverReply (for body:"
+					+ this.body.getReifiedObject().getClass().getSimpleName()
 					+ "): " + reply.getMethodName());
 		}
 		int currentCheckpointIndex = this.manager.getCheckpointIndex();
@@ -127,7 +126,9 @@ public class FTDecorator extends ReifiedObjectDecorator {
 			this.updateHistory(mi.historyIndex);
 			// udpate checkpoint index
 			if (mi.checkpointIndex > currentCheckpointIndex) {
-				generateCheckpointRequest();
+				this.manager.setNextMax(Math.max(this.manager.getNextMax(),
+						mi.checkpointIndex));
+				// generateCheckpointRequest();
 			}
 		}
 		return currentCheckpointIndex;
@@ -136,49 +137,58 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	@Override
 	public synchronized int onDeliverRequest(Request request) {
 		if (logger.isDebugEnabled()) {
-			logger.debug("#onDeliverRequest (for body:" + 
-					this.body.getReifiedObject().getClass().getSimpleName() 
+			logger.debug("#onDeliverRequest (for body:"
+					+ this.body.getReifiedObject().getClass().getSimpleName()
 					+ "): " + request.getMethodName());
 		}
 		int currentCheckpointIndex = this.manager.getCheckpointIndex();
 
-		//System.out.println(""+ this.bodyID + " receive " + request);
+		// System.out.println(""+ this.bodyID + " receive " + request);
 		if (this.isSignificant(request)) {
-			//System.out.println(""+ this.bodyID + " receive significant " + request);
+			// System.out.println(""+ this.bodyID + " receive significant " +
+			// request);
 			MessageInfoCIC mi = (MessageInfoCIC) request.getMessageInfo();
 
 			// history closure
 			this.updateHistory(mi.historyIndex);
-			//is there any corresponding awaited request ?
+			// is there any corresponding awaited request ?
 			if (!(this.updateAwaitedRequests(request))) {
-				if (FTManagerCIC.isOCEnable || this.manager.getCompletingCheckpoint()) {
+				if (FTManagerCIC.isOCEnable
+						|| this.manager.getCompletingCheckpoint()) {
 					synchronized (this.manager.getHistoryLock()) {
 						// if no, an awaited request is added to history
-						this.manager.getHistory().add(request.getSourceBodyID());
+						this.manager.getHistory()
+								.add(request.getSourceBodyID());
 					}
 
 					// inc the historized index
-					this.manager.setDeliveredRequestsCounter(this.manager.getDeliveredRequestsCounter()+1);
+					this.manager.setDeliveredRequestsCounter(this.manager
+							.getDeliveredRequestsCounter() + 1);
 					// manage local vector clock only if needed
 					if (FTManagerCIC.isOCEnable) {
 						// set the position in history of the request
-						mi.positionInHistory = this.manager.getDeliveredRequestsCounter();
+						mi.positionInHistory = this.manager
+								.getDeliveredRequestsCounter();
 						// update local vector clock
 						this.updateLocalVectorClock(mi.vectorClock);
 					}
 				}
 			} else {
-				//this request must be then ignored...
+				// this request must be then ignored...
 				request.setIgnoreIt(true);
 			}
 			// udpate checkpoint index
 			int ckptIndex = mi.checkpointIndex;
 			if (ckptIndex > currentCheckpointIndex) {
-				generateCheckpointRequest();
-				// mark the request that is orphan; it will be changed in awaited req in next ckpt
+				this.manager.setNextMax(Math.max(this.manager.getNextMax(),
+						ckptIndex));
+				// generateCheckpointRequest();
+				// mark the request that is orphan; it will be changed in
+				// awaited req in next ckpt
 				// oprhan du indexCkpt+1 a mi.ckptIndex compris
 				mi.isOrphanFor = (char) ckptIndex;
-				//System.out.println("" + this.bodyID + " will have orphans in checkpoint " + ckptIndex);
+				// System.out.println("" + this.bodyID +
+				// " will have orphans in checkpoint " + ckptIndex);
 			}
 		}
 		return currentCheckpointIndex;
@@ -188,18 +198,22 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	 * Creates a request for checkpointing and adds it in the body queue.
 	 */
 	private void generateCheckpointRequest() {
-		logger.debug("Creating a checkpoint request for object: " +
-				this.body.getReifiedObject().getClass().getSimpleName());
+		logger.debug("Creating a checkpoint request for object: "
+				+ this.body.getReifiedObject().getClass().getSimpleName());
 		try {
-			this.body.sendRequest(new MethodCall(this.body.getDecorator().
-					getClass().getDeclaredMethod(FTDecorator.keyMethod, 
-							new Class<?>[]{}), null, null), null, this.body);
-		} 
-		catch (NoSuchMethodException | SecurityException | IOException | RenegotiateSessionException | CommunicationForbiddenException e) {
+			this.body.sendRequest(
+					new MethodCall(this.body
+							.getDecorator()
+							.getClass()
+							.getDeclaredMethod(FTDecorator.keyMethod,
+									new Class<?>[] {}), null, null), null,
+					this.body);
+		} catch (NoSuchMethodException | SecurityException | IOException
+				| RenegotiateSessionException | CommunicationForbiddenException e) {
 			e.printStackTrace();
 		}
-		StringBuilder b = new StringBuilder("Request queue of object: " +
-				this.body.getReifiedObject() + ": ");
+		StringBuilder b = new StringBuilder("Request queue of object: "
+				+ this.body.getReifiedObject() + ": ");
 		Iterator<Request> i = this.body.getRequestQueue().iterator();
 		while (i.hasNext()) {
 			b.append(i.next().getMethodName() + " ");
@@ -213,7 +227,8 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	private void updateHistory(int index) {
 		if (index > this.manager.getHistoryIndex()) {
 			// commit minimal history to the server
-			this.manager.commitHistories(this.manager.getCheckpointIndex(), this.manager.getDeliveredRequestsCounter(), true, true);
+			this.manager.commitHistories(this.manager.getCheckpointIndex(),
+					this.manager.getDeliveredRequestsCounter(), true, true);
 			if (this.manager.getCompletingCheckpoint()) {
 				this.manager.setCompletingCheckpoint(false);
 			}
@@ -221,18 +236,20 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	}
 
 	/*
-	 * Return true if the message m is significant for the protocol, i.e
-	 * if it's not sent by a non_ft body nor a half body
+	 * Return true if the message m is significant for the protocol, i.e if it's
+	 * not sent by a non_ft body nor a half body
 	 */
 	private boolean isSignificant(Message m) {
-		return ((m.getMessageInfo() != null) && (!m.getMessageInfo().isFromHalfBody()));
+		return ((m.getMessageInfo() != null) && (!m.getMessageInfo()
+				.isFromHalfBody()));
 	}
 
 	/*
-	 * Update the local vector clock regarding the paramater.
-	 * if local[i]<param[i] or local[i] doesn't exist, then local[i]=param[i];
+	 * Update the local vector clock regarding the paramater. if
+	 * local[i]<param[i] or local[i] doesn't exist, then local[i]=param[i];
 	 */
-	private void updateLocalVectorClock(Hashtable<UniqueID, MutableLong> vectorClock) {
+	private void updateLocalVectorClock(
+			Hashtable<UniqueID, MutableLong> vectorClock) {
 		Enumeration<UniqueID> ids = vectorClock.keys();
 		MutableLong localClock;
 		MutableLong senderClock = null;
@@ -243,7 +260,8 @@ public class FTDecorator extends ReifiedObjectDecorator {
 			senderClock = (vectorClock.get(id));
 			if (localClock == null) {
 				// there is no clock for the AO id
-				this.manager.getLocalVectorClock().put(id, new MutableLong(senderClock.getValue()));
+				this.manager.getLocalVectorClock().put(id,
+						new MutableLong(senderClock.getValue()));
 			} else if (localClock.isLessThan(senderClock)) {
 				// local clock is not uptodate
 				localClock.setValue(senderClock.getValue());
@@ -254,15 +272,19 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	@Override
 	public synchronized int onSendReplyBefore(Reply reply) {
 		if (logger.isDebugEnabled()) {
-			logger.debug("#onSendReplyBefore (for body:" + 
-					this.body.getReifiedObject().getClass().getSimpleName() 
+			logger.debug("#onSendReplyBefore (for body:"
+					+ this.body.getReifiedObject().getClass().getSimpleName()
 					+ "): " + reply.getMethodName());
 		}
 		// set message info values
-		this.manager.getForSentReply().checkpointIndex = (char) this.manager.getCheckpointIndex();
-		this.manager.getForSentReply().historyIndex = (char) this.manager.getHistoryIndex();
-		this.manager.getForSentReply().incarnation = (char) this.manager.getIncarnation();
-		this.manager.getForSentReply().lastRecovery = (char) this.manager.getLastRecovery();
+		this.manager.getForSentReply().checkpointIndex = (char) this.manager
+				.getCheckpointIndex();
+		this.manager.getForSentReply().historyIndex = (char) this.manager
+				.getHistoryIndex();
+		this.manager.getForSentReply().incarnation = (char) this.manager
+				.getIncarnation();
+		this.manager.getForSentReply().lastRecovery = (char) this.manager
+				.getLastRecovery();
 		this.manager.getForSentReply().isOrphanFor = Character.MAX_VALUE;
 		this.manager.getForSentReply().fromHalfBody = false;
 		this.manager.getForSentReply().vectorClock = null;
@@ -272,9 +294,11 @@ public class FTDecorator extends ReifiedObjectDecorator {
 		if (FTManagerCIC.isOCEnable && this.isOutputCommit(reply)) {
 			try {
 				if (logger.isDebugEnabled()) {
-					logger.debug(this.body.getID() + " is output commiting for reply " + reply);
+					logger.debug(this.body.getID()
+							+ " is output commiting for reply " + reply);
 				}
-				this.manager.getStorage().outputCommit(this.manager.getForSentReply());
+				this.manager.getStorage().outputCommit(
+						this.manager.getForSentReply());
 			} catch (RemoteException e) {
 				logger.error("**ERROR** Cannot perform output commit");
 				e.printStackTrace();
@@ -287,19 +311,24 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	@Override
 	public synchronized int onSendRequestBefore(Request request) {
 		if (logger.isDebugEnabled()) {
-			logger.debug("#onSendRequestBefore (for body:" + 
-					this.body.getReifiedObject().getClass().getSimpleName() 
+			logger.debug("#onSendRequestBefore (for body:"
+					+ this.body.getReifiedObject().getClass().getSimpleName()
 					+ "): " + request.getMethodName());
 		}
 		// set message info values
-		this.manager.getForSentRequest().checkpointIndex = (char) this.manager.getCheckpointIndex();
-		this.manager.getForSentRequest().historyIndex = (char) this.manager.getHistoryIndex();
-		this.manager.getForSentRequest().incarnation = (char) this.manager.getIncarnation();
-		this.manager.getForSentRequest().lastRecovery = (char) this.manager.getLastRecovery();
+		this.manager.getForSentRequest().checkpointIndex = (char) this.manager
+				.getCheckpointIndex();
+		this.manager.getForSentRequest().historyIndex = (char) this.manager
+				.getHistoryIndex();
+		this.manager.getForSentRequest().incarnation = (char) this.manager
+				.getIncarnation();
+		this.manager.getForSentRequest().lastRecovery = (char) this.manager
+				.getLastRecovery();
 		this.manager.getForSentRequest().isOrphanFor = Character.MAX_VALUE;
 		this.manager.getForSentRequest().fromHalfBody = false;
 		if (FTManagerCIC.isOCEnable) {
-			this.manager.getForSentRequest().vectorClock = this.manager.getLocalVectorClock();
+			this.manager.getForSentRequest().vectorClock = this.manager
+					.getLocalVectorClock();
 		}
 		request.setMessageInfo(this.manager.getForSentRequest());
 
@@ -307,9 +336,11 @@ public class FTDecorator extends ReifiedObjectDecorator {
 		if (FTManagerCIC.isOCEnable && this.isOutputCommit(request)) {
 			try {
 				if (logger.isDebugEnabled()) {
-					logger.debug(this.body.getID() + " is output commiting for request " + request);
+					logger.debug(this.body.getID()
+							+ " is output commiting for request " + request);
 				}
-				this.manager.getStorage().outputCommit(this.manager.getForSentRequest());
+				this.manager.getStorage().outputCommit(
+						this.manager.getForSentRequest());
 			} catch (RemoteException e) {
 				logger.error("**ERROR** Cannot perform output commit");
 				e.printStackTrace();
@@ -319,8 +350,8 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	}
 
 	/*
-	 * Return true if the sending of the paramter message is an output commit
-	 * ** TEST IMPLEMENTATION **
+	 * Return true if the sending of the paramter message is an output commit **
+	 * TEST IMPLEMENTATION **
 	 */
 	private boolean isOutputCommit(Message m) {
 		if (FTManagerCIC.isOCEnable) {
@@ -338,17 +369,20 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	@Override
 	public synchronized int onSendReplyAfter(Reply reply) {
 		if (logger.isDebugEnabled()) {
-			logger.debug("#onSendReplyAfter (for body:" + 
-					this.body.getReifiedObject().getClass().getSimpleName() 
+			logger.debug("#onSendReplyAfter (for body:"
+					+ this.body.getReifiedObject().getClass().getSimpleName()
 					+ "): " + reply.getMethodName());
 		}
-		// if return value is RESEND, receiver have to recover --> resend the message
+		// if return value is RESEND, receiver have to recover --> resend the
+		// message
 		if (this.rdvValueReply == FTManagerCIC.RESEND_MESSAGE) {
 			try {
 				reply.setIgnoreIt(false);
 				Thread.sleep(FTManager.TIME_TO_RESEND);
-				int rdvValueBis = this.manager.sendReply(reply, this.destinationReply);
-				this.setOnSendReplyAfterParameters(rdvValueBis, this.destinationReply);
+				int rdvValueBis = this.manager.sendReply(reply,
+						this.destinationReply);
+				this.setOnSendReplyAfterParameters(rdvValueBis,
+						this.destinationReply);
 				return this.onSendReplyAfter(reply);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
@@ -358,25 +392,33 @@ public class FTDecorator extends ReifiedObjectDecorator {
 
 		// update checkpoint index
 		if (this.rdvValueReply > currentCheckpointIndex) {
-			generateCheckpointRequest();
+			this.manager.setNextMax(Math.max(this.manager.getNextMax(),
+					this.rdvValueReply));
+			// generateCheckpointRequest();
 			// log this in-transit message
 			this.manager.extendReplyLog(this.rdvValueReply);
 			// must make a deep copy of result !
 			try {
 				Reply toLog = null;
 
-				//try {
-				//    toLog = new ReplyImpl(reply.getSourceBodyID(),
-				//            reply.getSequenceNumber(), reply.getMethodName(),
-				//            (MethodCallResult) Utils.makeDeepCopy(reply.getResult()),
-				//            owner.getProActiveSecurityManager());
-				//} catch (SecurityNotAvailableException e1) {
-				toLog = new ReplyImpl(reply.getSourceBodyID(), reply.getSequenceNumber(), reply
-						.getMethodName(), (MethodCallResult) Utils.makeDeepCopy(reply.getResult()), null);
-				//}
-				ReplyLog log = new ReplyLog(toLog, this.destinationReply.getRemoteAdapter());
+				// try {
+				// toLog = new ReplyImpl(reply.getSourceBodyID(),
+				// reply.getSequenceNumber(), reply.getMethodName(),
+				// (MethodCallResult) Utils.makeDeepCopy(reply.getResult()),
+				// owner.getProActiveSecurityManager());
+				// } catch (SecurityNotAvailableException e1) {
+				toLog = new ReplyImpl(
+						reply.getSourceBodyID(),
+						reply.getSequenceNumber(),
+						reply.getMethodName(),
+						(MethodCallResult) Utils.makeDeepCopy(reply.getResult()),
+						null);
+				// }
+				ReplyLog log = new ReplyLog(toLog,
+						this.destinationReply.getRemoteAdapter());
 				for (int i = currentCheckpointIndex + 1; i <= this.rdvValueReply; i++) {
-					(this.manager.getReplyToResend().get(new Integer(i))).add(log);
+					(this.manager.getReplyToResend().get(new Integer(i)))
+							.add(log);
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -389,18 +431,21 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	public synchronized int onSendRequestAfter(Request request)
 			throws RenegotiateSessionException, CommunicationForbiddenException {
 		if (logger.isDebugEnabled()) {
-			logger.debug("#onSendRequestAfter (for body:" + 
-					this.body.getReifiedObject().getClass().getSimpleName() 
+			logger.debug("#onSendRequestAfter (for body:"
+					+ this.body.getReifiedObject().getClass().getSimpleName()
 					+ "): " + request.getMethodName());
 		}
-		//	if return value is RESEDN, receiver have to recover --> resend the message
+		// if return value is RESEDN, receiver have to recover --> resend the
+		// message
 		if (this.rdvValueRequest == FTManagerCIC.RESEND_MESSAGE) {
 			try {
 				request.resetSendCounter();
 				request.setIgnoreIt(false);
 				Thread.sleep(FTManager.TIME_TO_RESEND);
-				int rdvValueBis = this.manager.sendRequest(request, this.destinationRequest);
-				this.setOnSendRequestAfterParameters(rdvValueBis, this.destinationRequest);
+				int rdvValueBis = this.manager.sendRequest(request,
+						this.destinationRequest);
+				this.setOnSendRequestAfterParameters(rdvValueBis,
+						this.destinationRequest);
 				return this.onSendRequestAfter(request);
 			} catch (RenegotiateSessionException e1) {
 				throw e1;
@@ -413,18 +458,25 @@ public class FTDecorator extends ReifiedObjectDecorator {
 
 		// update checkpoint index
 		if (this.rdvValueRequest > currentCheckpointIndex) {
-			generateCheckpointRequest();
-			// log this in-transit message in the rdvValue-currentIndex next checkpoints
+			this.manager.setNextMax(Math.max(this.manager.getNextMax(),
+					this.rdvValueRequest));
+			// generateCheckpointRequest();
+			// log this in-transit message in the rdvValue-currentIndex next
+			// checkpoints
 			this.manager.extendRequestLog(this.rdvValueRequest);
 			try {
-				//must make deep copy of paramteres
+				// must make deep copy of paramteres
 				request.getMethodCall().makeDeepCopyOfArguments();
-				//must reset the send counter (this request has not been forwarded)
+				// must reset the send counter (this request has not been
+				// forwarded)
 				request.resetSendCounter();
-				RequestLog log = new RequestLog(request, this.destinationRequest.getRemoteAdapter());
+				RequestLog log = new RequestLog(request,
+						this.destinationRequest.getRemoteAdapter());
 				for (int i = currentCheckpointIndex + 1; i <= this.rdvValueRequest; i++) {
-					//System.out.println(""+this.bodyID + " logs a request for " + destination.getID());
-					this.manager.getRequestToResend().get(new Integer(i)).add(log);
+					// System.out.println(""+this.bodyID +
+					// " logs a request for " + destination.getID());
+					this.manager.getRequestToResend().get(new Integer(i))
+							.add(log);
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -436,14 +488,14 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	@Override
 	public int onServeRequestBefore(Request request) {
 		if (logger.isDebugEnabled()) {
-			logger.debug("#onServeRequestBefore (for body:" + 
-					this.body.getReifiedObject().getClass().getSimpleName() 
+			logger.debug("#onServeRequestBefore (for body:"
+					+ this.body.getReifiedObject().getClass().getSimpleName()
 					+ "): " + request.getMethodName());
 		}
 
 		// checkpoint if needed
-		if (!request.getMethodName().equals(FTDecorator.keyMethod) && 
-				this.haveToCheckpoint()) {
+		// if (!request.getMethodName().equals(FTDecorator.keyMethod) &&
+		if (this.haveToCheckpoint()) {
 			this.manager.checkpoint(request);
 		}
 
@@ -453,7 +505,8 @@ public class FTDecorator extends ReifiedObjectDecorator {
 			if (mi != null) {
 				long requestIndex = ((MessageInfoCIC) (mi)).positionInHistory;
 				if (this.manager.getLastServedRequestIndex().getValue() < requestIndex) {
-					this.manager.getLastServedRequestIndex().setValue(requestIndex);
+					this.manager.getLastServedRequestIndex().setValue(
+							requestIndex);
 				}
 			}
 		}
@@ -463,21 +516,22 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	@Override
 	public int onServeRequestAfter(Request request) {
 		if (logger.isDebugEnabled()) {
-			logger.debug("#onServeRequestAfter (for body:" + 
-					this.body.getReifiedObject().getClass().getSimpleName() 
+			logger.debug("#onServeRequestAfter (for body:"
+					+ this.body.getReifiedObject().getClass().getSimpleName()
 					+ "): " + request.getMethodName());
 		}
 		return 0;
 	}
 
 	/*
-	 * search for an awaited request from r.source.
-	 * if any, unfreeze ar and remove it from awaitedRequests list.
-	 * WARNING : this.awaitedRequests must be ordered. Do not use a map !
+	 * search for an awaited request from r.source. if any, unfreeze ar and
+	 * remove it from awaitedRequests list. WARNING : this.awaitedRequests must
+	 * be ordered. Do not use a map !
 	 */
 	private boolean updateAwaitedRequests(Request r) {
 		AwaitedRequest ar = null;
-		Iterator<AwaitedRequest> it = this.manager.getAwaitedRequests().iterator();
+		Iterator<AwaitedRequest> it = this.manager.getAwaitedRequests()
+				.iterator();
 		while (it.hasNext()) {
 			AwaitedRequest arq = (it.next());
 			if ((arq.getAwaitedSender()).equals(r.getSourceBodyID())) {
@@ -486,7 +540,8 @@ public class FTDecorator extends ReifiedObjectDecorator {
 			}
 		}
 		if (ar != null) {
-			//System.err.println(""+ this.bodyID + " Request is updated by " + r.getSourceBodyID());
+			// System.err.println(""+ this.bodyID + " Request is updated by " +
+			// r.getSourceBodyID());
 			ar.setAwaitedRequest(r);
 			this.manager.getAwaitedRequests().remove(ar);
 			return true;
@@ -496,39 +551,52 @@ public class FTDecorator extends ReifiedObjectDecorator {
 	}
 
 	/*
-	 * return true if this ao have to checkpoint
-	 * should checkpoint if TTC is elapsed
+	 * return true if this ao have to checkpoint should checkpoint if TTC is
+	 * elapsed
 	 */
 	private boolean haveToCheckpoint() {
-		if ((this.manager.getCheckpointTimer() + this.manager.getTTC()) < System.currentTimeMillis()) {
+		int currentCheckpointIndex = this.manager.getCheckpointIndex();
+		int currentNextMax = this.manager.getNextMax();
+
+		// checkpoint if next is greater than index
+		if (currentNextMax > currentCheckpointIndex) {
+			return true;
+		}
+		// checkpoint if TTC is elapsed
+		else if ((this.manager.getCheckpointTimer() + this.manager.getTTC()) < System
+				.currentTimeMillis()) {
 			return true;
 		} else {
 			return false;
 		}
+		/*
+		 * if ((this.manager.getCheckpointTimer() + this.manager.getTTC()) <
+		 * System.currentTimeMillis()) { return true; } else { return false; }
+		 */
 	}
 
 	public void setOnSendReplyAfterParameters(int res, UniversalBody destination) {
 		this.rdvValueReply = res;
 		this.destinationReply = destination;
 	}
-	
-	public void setOnSendRequestAfterParameters(int res, UniversalBody destination) {
+
+	public void setOnSendRequestAfterParameters(int res,
+			UniversalBody destination) {
 		this.rdvValueRequest = res;
 		this.destinationRequest = destination;
 	}
 
 	/*
-	 * Return the memory actually used
-	 * For debugging stuff.
+	 * Return the memory actually used For debugging stuff.
 	 */
 
-	//private long getUsedMem() {
-	//    return (FTManagerCIC.runtime.totalMemory() -
-	//    FTManagerCIC.runtime.freeMemory()) / 1024;
-	//}
-	//////////////////////////////////////////////////////////////////////////////////
-	///////// HANDLING EVENTS ////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////////
-
+	// private long getUsedMem() {
+	// return (FTManagerCIC.runtime.totalMemory() -
+	// FTManagerCIC.runtime.freeMemory()) / 1024;
+	// }
+	// ////////////////////////////////////////////////////////////////////////////////
+	// /////// HANDLING EVENTS
+	// ////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////
 
 }

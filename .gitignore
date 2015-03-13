@@ -35,3 +35,9 @@
 
 # /src/Tests/functionalTests/component/conform/membranes/
 /src/Tests/functionalTests/component/conform/membranes/julia.cfg
+
+# Intellij project files
+*.iml
+*.ipr
+*.iws
+.idea/

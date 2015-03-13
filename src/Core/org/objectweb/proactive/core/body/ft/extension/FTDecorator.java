@@ -208,8 +208,20 @@ public class FTDecorator extends ReifiedObjectDecorator {
 							.getDeclaredMethod(FTDecorator.keyMethod,
 									new Class<?>[] {}), null, null), null,
 					this.body);
-		} catch (NoSuchMethodException | SecurityException | IOException
-				| RenegotiateSessionException | CommunicationForbiddenException e) {
+		}
+        catch (NoSuchMethodException e){
+            e.printStackTrace();
+        }
+        catch (SecurityException e) {
+            e.printStackTrace();
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+        catch (RenegotiateSessionException e){
+            e.printStackTrace();
+        }
+        catch (CommunicationForbiddenException e) {
 			e.printStackTrace();
 		}
 		StringBuilder b = new StringBuilder("Request queue of object: "

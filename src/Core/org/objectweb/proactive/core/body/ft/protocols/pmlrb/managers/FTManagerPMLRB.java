@@ -396,11 +396,11 @@ public class FTManagerPMLRB extends FTManager {
     /////////////////////
     // private methods //
     /////////////////////
-    private boolean haveToCheckpoint() {
+    public boolean haveToCheckpoint() {
         return ((this.checkpointTimer + this.ttc) < System.currentTimeMillis());
     }
 
-    private void checkpoint(Request pending) {
+    public Checkpoint checkpoint(Request pending) {
         //System.out.println("[PMLRB] Checkpointing...");
         owner.blockCommunication();
         // checkpoint the active object
@@ -427,6 +427,7 @@ public class FTManagerPMLRB extends FTManager {
         }
 
         owner.acceptCommunication();
+        return null;
     }
 
     private synchronized char getNextSendNumber() {

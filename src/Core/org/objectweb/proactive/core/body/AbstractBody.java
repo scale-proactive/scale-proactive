@@ -137,10 +137,13 @@ import org.objectweb.proactive.core.util.profiling.TimerProvidable;
  * 
  */
 public abstract class AbstractBody extends AbstractUniversalBody implements Body, Serializable {
-    //
+
+	//
     // -- STATIC MEMBERS -----------------------------------------------
     //
     private static Logger logger = ProActiveLogger.getLogger(Loggers.BODY);
+    
+    private static final long serialVersionUID = 7753944707834970959L;
 
     //
     // -- PROTECTED MEMBERS -----------------------------------------------

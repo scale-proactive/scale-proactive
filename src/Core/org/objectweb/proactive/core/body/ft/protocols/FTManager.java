@@ -48,6 +48,7 @@ import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.body.AbstractBody;
 import org.objectweb.proactive.core.body.UniversalBody;
 import org.objectweb.proactive.core.body.exceptions.BodyTerminatedException;
+import org.objectweb.proactive.core.body.ft.checkpointing.Checkpoint;
 import org.objectweb.proactive.core.body.ft.checkpointing.CheckpointInfo;
 import org.objectweb.proactive.core.body.ft.internalmsg.FTMessage;
 import org.objectweb.proactive.core.body.ft.internalmsg.Heartbeat;
@@ -426,4 +427,9 @@ public abstract class FTManager implements java.io.Serializable {
      */
     public void updateLocationAtServer(UniqueID ownerID, UniversalBody remoteBodyAdapter) {
     }
+
+	public abstract boolean haveToCheckpoint();
+
+	public abstract Checkpoint checkpoint(Request pendingRequest);
+	
 }

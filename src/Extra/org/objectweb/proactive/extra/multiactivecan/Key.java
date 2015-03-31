@@ -44,7 +44,7 @@ import java.io.Serializable;
  * @author The ProActive Team
  *
  */
-public class Key implements Serializable {
+public class Key implements Serializable { 
 
     private int x, y;
 

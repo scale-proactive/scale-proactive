@@ -140,11 +140,13 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
     // -- STATIC MEMBERS -----------------------------------------------
     //
 
+	private static final long serialVersionUID = -9065523907038807850L;
+	
     //
     // -- PROTECTED MEMBERS -----------------------------------------------
     //
 
-    /**
+	/**
      * The component in charge of receiving reply
      */
     protected ReplyReceiver replyReceiver;

@@ -37,10 +37,14 @@
 package org.objectweb.proactive;
 
 import org.objectweb.proactive.annotation.PublicAPI;
+import org.objectweb.proactive.core.body.ft.protocols.FTManager;
 import org.objectweb.proactive.core.body.request.BlockingRequestQueue;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.body.request.RequestFilter;
+import org.objectweb.proactive.core.body.request.RequestImpl;
 import org.objectweb.proactive.core.body.request.RequestProcessor;
+import org.objectweb.proactive.core.body.AbstractBody;
+import org.objectweb.proactive.core.mop.MethodCall;
 
 
 /**
@@ -187,6 +191,24 @@ public class Service {
     public void blockingServeOldest(RequestFilter requestFilter, long timeout) {
         Request r = requestQueue.blockingRemoveOldest(requestFilter, timeout);
         if (r != null) {
+        	FTManager manager = ((AbstractBody) body).getFTManager();
+        	if (manager != null) {
+        		if (manager.haveToCheckpoint()) {
+        			manager.checkpoint(r);
+        			/*try {
+						requestQueue.add(new RequestImpl(
+								new MethodCall(
+										manager.getClass().getDeclaredMethod("checkpoint", new Class<?>[]{Request.class}), 
+										null, new Object[]{r}), true));
+					} 
+        			catch (NoSuchMethodException e) {
+						e.printStackTrace();
+					} 
+        			catch (SecurityException e) {
+						e.printStackTrace();
+					}*/
+        		}
+        	}
             body.serve(r);
         }
     }

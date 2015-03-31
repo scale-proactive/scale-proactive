@@ -507,9 +507,10 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     		multiactiveLogger.debug("#onServeRequestBefore " + request.getMethodName());
     	}
         // checkpoint if needed
-        while (this.haveToCheckpoint()) {
+    	// Displaced in Service.java
+        /*while (this.haveToCheckpoint()) {
             this.checkpoint(request);
-        }
+        }*/
 
         // update the last served request index only if needed
         if (FTManagerCIC.isOCEnable) {
@@ -642,7 +643,8 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     /*
      * return true if this ao have to checkpoint
      */
-    private boolean haveToCheckpoint() {
+    @Override
+    public boolean haveToCheckpoint() {
         int currentCheckpointIndex = this.checkpointIndex;
         int currentNextMax = this.nextMax;
 
@@ -661,7 +663,8 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     /*
      * Perform a checkpoint with index = current + 1
      */
-    private Checkpoint checkpoint(Request pendingRequest) {
+    @Override
+    public Checkpoint checkpoint(Request pendingRequest) {
         //stop accepting communication
         (owner).blockCommunication();
         // synchronized on hisotry to avoid hisot commit during checkpoint

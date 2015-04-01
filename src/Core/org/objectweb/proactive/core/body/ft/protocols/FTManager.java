@@ -73,7 +73,9 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
  * @since ProActive 2.2
  */
 public abstract class FTManager implements java.io.Serializable {
-    //logger
+   
+	private static final long serialVersionUID = 2476613432483925694L;
+
     final protected static Logger logger = ProActiveLogger.getLogger(Loggers.FAULT_TOLERANCE);
 
     /** This value is sent by an active object that is not fault tolerant*/
@@ -93,6 +95,8 @@ public abstract class FTManager implements java.io.Serializable {
 
     /** Error message when calling uncallable method on a halfbody */
     public static final String HALF_BODY_EXCEPTION_MESSAGE = "Cannot perform this call on a FTManager of a HalfBody";
+    
+    public static final String CHECKPOINT_METHOD_NAME = "__checkpoint__";
 
     // true is this is a checkpoint
     private boolean isACheckpoint;
@@ -430,6 +434,6 @@ public abstract class FTManager implements java.io.Serializable {
 
 	public abstract boolean haveToCheckpoint();
 
-	public abstract Checkpoint checkpoint(Request pendingRequest);
+	public abstract Checkpoint __checkpoint__(Request pendingRequest);
 	
 }

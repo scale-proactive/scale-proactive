@@ -65,7 +65,8 @@ public class TestCIC extends AbstractFTTezt {
         this.startFTServer("cic");
         int res = this.deployAndStartAgents();
         this.stopFTServer();
-        System.out.println("Test CIC result: " + res + " - Expected result: " + AbstractFTTezt.AWAITED_RESULT);
+        System.out.println("Test CIC result: " + res + " VS expected result: "
+        		+ "" + AbstractFTTezt.AWAITED_RESULT);
         assertTrue(res == AbstractFTTezt.AWAITED_RESULT);
     }
 }

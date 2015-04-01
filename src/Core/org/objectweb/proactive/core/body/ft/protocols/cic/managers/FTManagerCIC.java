@@ -90,11 +90,9 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
  */
 public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols.FTManager {
 
-    /**
-     *
-     */
-
-    /** Value returned by an object if the recieved message must be send again */
+	private static final long serialVersionUID = 8991238993564940963L;
+	
+	/** Value returned by an object if the recieved message must be send again */
     public static final int RESEND_MESSAGE = -3;
 
     /** Value returned by an object if the sender of the received message must recover asap */
@@ -507,7 +505,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
     		multiactiveLogger.debug("#onServeRequestBefore " + request.getMethodName());
     	}
         // checkpoint if needed
-    	// Displaced in Service.java
+    	// this has been displaced in Service.java
         /*while (this.haveToCheckpoint()) {
             this.checkpoint(request);
         }*/
@@ -566,6 +564,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
         Request pendingRequest = cic.pendingRequest;
 
         //pending request could be null with OOSPMD synchronization
+        //and pending request is null when checkpoint is done through a request
         if (pendingRequest != null) {
             queue.addToFront(pendingRequest);
         }
@@ -664,7 +663,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
      * Perform a checkpoint with index = current + 1
      */
     @Override
-    public Checkpoint checkpoint(Request pendingRequest) {
+    public Checkpoint __checkpoint__(Request pendingRequest) {
         //stop accepting communication
         (owner).blockCommunication();
         // synchronized on hisotry to avoid hisot commit during checkpoint

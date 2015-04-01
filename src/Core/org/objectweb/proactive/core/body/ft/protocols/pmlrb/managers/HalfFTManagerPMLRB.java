@@ -216,7 +216,7 @@ public class HalfFTManagerPMLRB extends FTManager {
 	}
 
 	@Override
-	public Checkpoint checkpoint(Request pendingRequest) {
+	public Checkpoint __checkpoint__(Request pendingRequest) {
 		return null;
 	}
 }

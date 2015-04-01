@@ -299,7 +299,7 @@ public class FTManagerPMLRB extends FTManager {
     @Override
     public int onServeRequestBefore(Request request) {
         if (this.haveToCheckpoint()) {
-            this.checkpoint(request);
+            this.__checkpoint__(request);
         }
         return 0;
     }
@@ -400,7 +400,8 @@ public class FTManagerPMLRB extends FTManager {
         return ((this.checkpointTimer + this.ttc) < System.currentTimeMillis());
     }
 
-    public Checkpoint checkpoint(Request pending) {
+    @Override
+    public Checkpoint __checkpoint__(Request pending) {
         //System.out.println("[PMLRB] Checkpointing...");
         owner.blockCommunication();
         // checkpoint the active object

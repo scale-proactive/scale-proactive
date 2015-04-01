@@ -252,7 +252,8 @@ public class RequestImpl extends MessageImpl implements Request, java.io.Seriali
         Throwable exception = null;
         try {
         	FTManager manager = ((AbstractBody) targetBody).getFTManager();
-        	if (this.methodCall.getName().equals("checkpoint") && manager != null) {
+        	if (this.methodCall.getName().equals(FTManager.CHECKPOINT_METHOD_NAME) 
+        			&& manager != null) {
         		result = this.methodCall.execute(manager);
         	}
         	else {

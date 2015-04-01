@@ -940,9 +940,12 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
 
         // Serve
         if (this.ftmanager != null) {
-            this.ftmanager.onServeRequestBefore(request);
-            this.localBodyStrategy.serve(request);
-            this.ftmanager.onServeRequestAfter(request);
+            int returnCode = this.ftmanager.onServeRequestBefore(request);
+            // If a checkpoint is needed, postpone current request
+            if (returnCode != FTManager.CHECKPOINT_CODE) {
+            	this.localBodyStrategy.serve(request);
+                this.ftmanager.onServeRequestAfter(request);
+            }
         } else {
             this.localBodyStrategy.serve(request);
         }

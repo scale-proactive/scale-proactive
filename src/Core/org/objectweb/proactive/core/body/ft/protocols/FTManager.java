@@ -96,7 +96,11 @@ public abstract class FTManager implements java.io.Serializable {
     /** Error message when calling uncallable method on a halfbody */
     public static final String HALF_BODY_EXCEPTION_MESSAGE = "Cannot perform this call on a FTManager of a HalfBody";
     
+    /** Name of request used to checkpoint */
     public static final String CHECKPOINT_METHOD_NAME = "__checkpoint__";
+    
+    /** Code used to postpone a request service after checkpoint */
+    public static final int CHECKPOINT_CODE = -579;
 
     // true is this is a checkpoint
     private boolean isACheckpoint;

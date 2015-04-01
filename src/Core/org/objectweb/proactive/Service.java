@@ -191,31 +191,7 @@ public class Service {
 	public void blockingServeOldest(RequestFilter requestFilter, long timeout) {
 		Request r = requestQueue.blockingRemoveOldest(requestFilter, timeout);
 		if (r != null) {
-			FTManager manager = ((AbstractBody) body).getFTManager();
-			if (manager != null && manager.haveToCheckpoint() && 
-					!r.getMethodName().equals(FTManager.CHECKPOINT_METHOD_NAME)) {
-				// Old manner
-				//manager.checkpoint(r);
-				try {
-					//System.out.println("Postponed: " + r.getMethodName() + " " + r.getSequenceNumber());
-					requestQueue.addToFront(r);
-					// Request does not need to be specified since it is in queue already
-					requestQueue.addToFront(new RequestImpl(
-							new MethodCall(manager.getClass().getDeclaredMethod(
-									FTManager.CHECKPOINT_METHOD_NAME, new Class<?>[]{Request.class}), 
-									null, new Object[]{null}), true));
-				} 
-				catch (NoSuchMethodException e) {
-					e.printStackTrace();
-				} 
-				catch (SecurityException e) {
-					e.printStackTrace();
-				}
-			}
-			else {
-				//System.out.println("Serving: " + r.getMethodName() + " " + r.getSequenceNumber());
-				body.serve(r);
-			}
+			body.serve(r);
 		}
 	}
 

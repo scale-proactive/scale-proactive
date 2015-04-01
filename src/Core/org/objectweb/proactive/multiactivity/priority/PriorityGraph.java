@@ -85,6 +85,31 @@ public class PriorityGraph implements PriorityMap {
 			}
 		}
 	}
+	
+	/**
+	 * Inserts a priority node at the top of the hierarchy. 
+	 * All the former roots are then successors of the new priority node.
+	 * if the priority node already exist, it is removed from its position 
+	 * and reinserted.
+	 * @param group The group that has a super priority
+	 */
+	public void insertSuperPriority(MethodGroup group) {
+		if (this.contains(group)) {
+			PriorityNode predecessor = this.findPredecessor(group);
+			if (predecessor != null) {
+				this.suppress(group, predecessor.group);
+			}
+			else {
+				this.suppress(group, new MethodGroup("", false, false));
+			}
+		}
+		PriorityNode superPriority = new PriorityNode(group);
+		for (PriorityNode node : this.roots) {
+			superPriority.addSuccessor(node);
+		}
+		this.roots = new HashSet<PriorityNode>();
+		this.roots.add(superPriority);
+	}
 
 	/**
 	 * Search for cycles in the graph.
@@ -235,6 +260,51 @@ public class PriorityGraph implements PriorityMap {
 			}
 		}
 		return node;
+	}
+	
+	/**
+	 * Search for a particular node in the graph.
+	 * @param group The searched group
+	 * @return The node corresponding to the group in the graph or null if the 
+	 * group does not exist in the graph
+	 */
+	private PriorityNode findPredecessor(MethodGroup group) {
+		PriorityNode node = null;
+		for (PriorityNode root : this.roots) {
+			node = this.recursiveFindPredecessor(group, root, null);
+			if (node != null) {
+				break;
+			}
+		}
+		return node;
+	}
+
+	/**
+	 * Utility method for the findNode method.
+	 * @param group
+	 * @param currentNode
+	 * @return
+	 */
+	private PriorityNode recursiveFindPredecessor(MethodGroup group, 
+			PriorityNode currentNode, PriorityNode currentPredecessorNode) {
+		PriorityNode predecessor = null;
+		if (group.equals(currentNode.group)) {
+			predecessor = currentPredecessorNode;
+		}
+		else {
+			if (!currentNode.hasSuccessors()) {
+				predecessor = null;
+			}
+			else {
+				for (PriorityNode pn : currentNode.successors) {
+					predecessor = recursiveFindPredecessor(group, pn, currentNode);
+					if (predecessor != null) {
+						break;
+					}
+				}
+			}
+		}
+		return predecessor;
 	}
 
 	/**

@@ -55,7 +55,7 @@ import org.objectweb.proactive.multiactivity.priority.PriorityManager;
 import org.objectweb.proactive.multiactivity.priority.PriorityTracker;
 import org.objectweb.proactive.multiactivity.policy.DefaultServingPolicy;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
-import org.objectweb.proactive.utils.loggingRequests.RequestLoggerDecorator;
+import org.objectweb.proactive.utils.loggingRequests.ActiveObjectLoggerDecorator;
 
 
 /**
@@ -119,7 +119,7 @@ public class MultiActiveService extends Service {
         		compatibilityManager, annotationProcessor.getThreadMap());
         
         // Building executor and configuring it with all required information for scheduling
-        executor = new RequestLoggerDecorator(body, compatibilityManager, priorityManager, threadManager);
+        executor = new ActiveObjectLoggerDecorator(body, compatibilityManager, priorityManager, threadManager);
         executor.configure(threadManager.getThreadPoolSize(), 
         		threadManager.getHardLimit(), threadManager.getHostReentrant());
     }

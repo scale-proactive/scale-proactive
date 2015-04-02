@@ -50,6 +50,7 @@ import org.objectweb.proactive.core.body.request.RequestProcessor;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.node.NodeException;
 import org.objectweb.proactive.core.node.NodeFactory;
+import org.objectweb.proactive.utils.loggingRequests.RequestLoggerDecorator;
 
 
 /**
@@ -114,9 +115,10 @@ public class Service {
         this.requestQueue = body.getRequestQueue();
         try {
 			Node node = NodeFactory.getNode(this.body.getNodeURL());
-			if ("true".equals(node.getProperty(FaultToleranceTechnicalService.FT_ENABLED))) {
-				this.body.setReifiedObject(new FTDecorator(this.body, (FTManagerCIC) ((AbstractBody) this.body).getFTManager()));
-			}
+            this.body.setReifiedObject(new RequestLoggerDecorator(this.body));
+//			if ("true".equals(node.getProperty(FaultToleranceTechnicalService.FT_ENABLED))) {
+//				this.body.setReifiedObject(new FTDecorator(this.body, (FTManagerCIC) ((AbstractBody) this.body).getFTManager()));
+//			}
         }
         catch (NodeException e) {
         	e.printStackTrace();

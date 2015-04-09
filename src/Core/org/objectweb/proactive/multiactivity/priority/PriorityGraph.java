@@ -85,7 +85,7 @@ public class PriorityGraph implements PriorityMap {
 			}
 		}
 	}
-	
+
 	/**
 	 * Inserts a priority node at the top of the hierarchy. 
 	 * All the former roots are then successors of the new priority node.
@@ -96,12 +96,7 @@ public class PriorityGraph implements PriorityMap {
 	public void insertSuperPriority(MethodGroup group) {
 		if (this.contains(group)) {
 			PriorityNode predecessor = this.findPredecessor(group);
-			if (predecessor != null) {
-				this.suppress(group, predecessor.group);
-			}
-			else {
-				this.suppress(group, new MethodGroup("", false, false));
-			}
+			this.suppress(group, predecessor == null ? null:predecessor.group);
 		}
 		PriorityNode superPriority = new PriorityNode(group);
 		for (PriorityNode node : this.roots) {
@@ -130,8 +125,17 @@ public class PriorityGraph implements PriorityMap {
 
 	public void suppress(MethodGroup group, MethodGroup predecessorGroup) {
 		PriorityNode groupNode = this.findNode(group);
-		PriorityNode predecessorNode = this.findNode(predecessorGroup);
-		if (groupNode != null && predecessorNode != null) {
+		if (this.roots.contains(groupNode)) {
+			for (PriorityNode p : groupNode.successors) {
+				this.roots.add(p);
+			}
+			this.roots.remove(groupNode);
+		}
+		else {
+			// If the node to suppress is not a root, then we do not take back 
+			// the successors of the suppressed node, to avoid any risk of 
+			// cycle in the graph
+			PriorityNode predecessorNode = this.findNode(predecessorGroup);
 			predecessorNode.removeSuccessor(groupNode);
 		}
 	}
@@ -261,7 +265,7 @@ public class PriorityGraph implements PriorityMap {
 		}
 		return node;
 	}
-	
+
 	/**
 	 * Search for a particular node in the graph.
 	 * @param group The searched group
@@ -556,61 +560,63 @@ public class PriorityGraph implements PriorityMap {
 		System.out.println("- " + g1.name + " inserted");
 		System.out.println("- Contains cycle? " +
 				"" + graph.containsCycle());
-		System.out.println("- Graph:\n" + graph);
+		System.out.println("- Graph: " + graph);
 
 		graph.insert(g2, g1);
 		System.out.println("- " + g2.name + " inserted");
 		System.out.println("- Contains cycle? " +
 				"" + graph.containsCycle());
-		System.out.println("- Graph:\n" + graph);
+		System.out.println("- Graph: " + graph);
 
 		graph.insert(g3, g2);
 		System.out.println("- " + g3.name + " inserted");
-		System.out.println("Contains cycle? " +
-				"" + graph.containsCycle());
-		System.out.println("- Graph:\n" + graph);
-
-		graph.insert(g4, g3);
-		System.out.println(" " + g4.name + " inserted");
 		System.out.println("- Contains cycle? " +
 				"" + graph.containsCycle());
-		System.out.println("- Graph:\n" + graph);
+		System.out.println("- Graph: " + graph);
+
+		graph.insert(g4, g3);
+		System.out.println("- " + g4.name + " inserted");
+		System.out.println("- Contains cycle? " +
+				"" + graph.containsCycle());
+		System.out.println("- Graph: " + graph);
 
 		graph.insert(g2, null);
 		System.out.println("- " + g2.name + "  inserted");
 		System.out.println("- Contains cycle? " +
 				"" + graph.containsCycle());
-		System.out.println("- Graph:\n" + graph);
+		System.out.println("- Graph: " + graph);
 
 		graph.insert(g5, g2);
 		System.out.println("- " + g5.name + " inserted");
-		System.out.println("Contains cycle? " +
+		System.out.println("- Contains cycle? " +
 				"" + graph.containsCycle());
-		System.out.println("- Graph:\n" + graph);
+		System.out.println("- Graph: " + graph);
 
 		graph.insert(g4, g5);
 		System.out.println("- " + g4.name + " inserted");
 		System.out.println("- Contains cycle? " +
 				"" + graph.containsCycle());
-		System.out.println("- Graph:\n" + graph);
+		System.out.println("- Graph: " + graph);
 
 		// Creation of predecessor test
 		graph.insert(g1, g0);
 		System.out.println("- " + g1.name + " inserted");
 		System.out.println("- Contains cycle? " +
 				"" + graph.containsCycle());
-		System.out.println("- Graph:\n" + graph);
+		System.out.println("- Graph: " + graph);
 
 		// This should introduce a cycle in the graph
 		graph.insert(g1, g4);
-		System.out.println("m4 inserted");
+		System.out.println("- " + g1.name + " inserted");
 		System.out.println("- Contains cycle? " +
 				"" + graph.containsCycle());
 		if (graph.containsCycle()) {
 			System.out.println("- Cycle detected; now removing dependency");
 			graph.suppress(g1, g4);
+			System.out.println("- Contains cycle? " +
+					"" + graph.containsCycle());
 		}
-		System.out.println("- Graph:\n" + graph);
+		System.out.println("- Graph: " + graph);
 
 		// Overtake tests
 		System.out.println("- Can g4 overtake g3 (no)? " +
@@ -626,8 +632,9 @@ public class PriorityGraph implements PriorityMap {
 
 		// Checking node listing functionality
 		Set<PriorityNode> list = graph.listNodes();
+		System.out.print("- Graph list: ");
 		for (PriorityNode node : list) {
-			System.out.println(node.group.name);
+			System.out.print(node.group.name + " ");
 		}
 	}
 

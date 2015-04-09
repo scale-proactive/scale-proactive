@@ -126,7 +126,7 @@ public class AnnotationProcessor {
 		List<Class<?>> parents = new LinkedList<Class<?>>();
 		parents.add(c);
 		Class<?> p;
-		while ((p = parents.get(0).getSuperclass()) != null) {
+		while ((p = parents.get(0).getSuperclass()) != Object.class) {
 			parents.add(0, p);
 		}
 

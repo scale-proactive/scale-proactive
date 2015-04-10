@@ -49,7 +49,7 @@ public class RequestLoggerDecorator extends ReifiedObjectDecorator{
         if (identifier == null){
             identifier = generateIdentifier();
         }
-        String log = "deliverrequest " + body.getID() + " " + request.getMethodName()+ " " + request.getSequenceNumber() + " " + System.currentTimeMillis() + " " + request.getSourceBodyID() + "\n";
+        String log = "deliverrequest " + body.getID() + " " + Thread.currentThread().getId() + " " + request.getMethodName()+ " " + request.getSequenceNumber() + " " + System.currentTimeMillis() + " " + request.getSourceBodyID() + "\n";
         writeToFile(log);
         return 0;
     }
@@ -66,16 +66,16 @@ public class RequestLoggerDecorator extends ReifiedObjectDecorator{
 
     @Override
     public int onSendRequestBefore(Request request) {
+        if (identifier == null){
+            identifier = generateIdentifier();
+        }
+        String log = "beforerequestsent " + body.getID() + " " + Thread.currentThread().getId() + " " + request.getMethodName()+ " " + request.getSequenceNumber() + " " + System.currentTimeMillis() + " " + request.getSourceBodyID() + "\n";
+        writeToFile(log);
         return 0;
     }
 
     @Override
     public int onSendRequestAfter(Request request) throws RenegotiateSessionException, CommunicationForbiddenException {
-        if (identifier == null){
-            identifier = generateIdentifier();
-        }
-        String log = "requestsent " + body.getID() + " " + request.getMethodName()+ " " + request.getSequenceNumber() + " " + System.currentTimeMillis() + " " + request.getSourceBodyID() + "\n";
-        writeToFile(log);
         return 0;
     }
 

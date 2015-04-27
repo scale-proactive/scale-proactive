@@ -17,14 +17,11 @@ import java.io.PrintWriter;
  * Created by pkhvoros on 3/12/15.
  */
 public class ActiveObjectLoggerDecorator extends RequestExecutor {
-    private final String folderPath = "/user/pkhvoros/home/Documents/Projects/ViewerToolForActiveObject/logs/";
+    private String folderPath;
     private String identifier;
-    public ActiveObjectLoggerDecorator(Body body, CompatibilityManager compatibilityManager, PriorityManager priorityManager, ThreadManager threadManager) {
+    public ActiveObjectLoggerDecorator(Body body, CompatibilityManager compatibilityManager, PriorityManager priorityManager, ThreadManager threadManager, String folderPath) {
         super(body, compatibilityManager, priorityManager, threadManager);
-    }
-
-    public ActiveObjectLoggerDecorator(Body body, CompatibilityTracker compatibility, PriorityManager priority, ThreadManager threadManager, int activeLimit, boolean hardLimit, boolean hostReentrant) {
-        super(body, compatibility, priority, threadManager, activeLimit, hardLimit, hostReentrant);
+        this.folderPath = folderPath;
     }
 
     public void serveStarted(RunnableRequest r){

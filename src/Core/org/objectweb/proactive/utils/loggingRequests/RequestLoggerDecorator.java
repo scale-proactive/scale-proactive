@@ -16,7 +16,7 @@ import java.io.PrintWriter;
  * Created by pkhvoros on 3/27/15.
  */
 public class RequestLoggerDecorator extends ReifiedObjectDecorator{
-    private final String folderPath = "/user/pkhvoros/home/Documents/Projects/ViewerToolForActiveObject/logs/";
+    private String folderPath;
     private String identifier;
 //    private ReifiedObjectDecorator decoratedObject;
 //    public RequestLoggerDecorator(ReifiedObjectDecorator decorator, Body body1) {
@@ -25,8 +25,9 @@ public class RequestLoggerDecorator extends ReifiedObjectDecorator{
 //    }
 
 
-    public RequestLoggerDecorator(Body body) {
+    public RequestLoggerDecorator(Body body, String folderPath) {
         super(body);
+        this.folderPath = folderPath;
     }
 
     @Override

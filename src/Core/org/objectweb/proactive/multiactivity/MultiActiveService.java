@@ -42,7 +42,11 @@ import java.util.List;
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.Service;
+import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.body.request.Request;
+import org.objectweb.proactive.core.node.Node;
+import org.objectweb.proactive.core.node.NodeException;
+import org.objectweb.proactive.core.node.NodeFactory;
 import org.objectweb.proactive.core.util.log.Loggers;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.compatibility.AnnotationProcessor;
@@ -56,6 +60,7 @@ import org.objectweb.proactive.multiactivity.priority.PriorityTracker;
 import org.objectweb.proactive.multiactivity.policy.DefaultServingPolicy;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 import org.objectweb.proactive.utils.loggingRequests.ActiveObjectLoggerDecorator;
+import org.objectweb.proactive.utils.loggingRequests.LoggerTechnicalService;
 
 
 /**
@@ -119,7 +124,19 @@ public class MultiActiveService extends Service {
         		compatibilityManager, annotationProcessor.getThreadMap());
         
         // Building executor and configuring it with all required information for scheduling
-        executor = new ActiveObjectLoggerDecorator(body, compatibilityManager, priorityManager, threadManager);
+        Node node = null;
+        try {
+            node = NodeFactory.getNode(this.body.getNodeURL());
+            if("true".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))) {
+                executor = new ActiveObjectLoggerDecorator(body, compatibilityManager, priorityManager, threadManager, node.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER));
+            }
+            else
+                executor = new RequestExecutor(body, compatibilityManager, priorityManager, threadManager);
+        } catch (NodeException e) {
+            e.printStackTrace();
+        } catch (ProActiveException e) {
+            e.printStackTrace();
+        }
         executor.configure(threadManager.getThreadPoolSize(), 
         		threadManager.getHardLimit(), threadManager.getHostReentrant());
     }

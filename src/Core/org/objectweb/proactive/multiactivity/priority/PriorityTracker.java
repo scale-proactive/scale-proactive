@@ -90,13 +90,15 @@ public class PriorityTracker extends PriorityManager {
 			boolean isOvertakable = false;
 
 			// Search for the first request that has a lower priority
-			while (!isOvertakable && currentElement != null) {
-				isOvertakable = 
-						this.priorityMap.canOvertake(
-								group, currentElement.belongingGroup);
-				if (!isOvertakable) {
-					previousElement = currentElement;
-					currentElement = currentElement.next;
+			if (group != null) {
+				while (!isOvertakable && currentElement != null) {
+					isOvertakable = 
+							this.priorityMap.canOvertake(
+									group, currentElement.belongingGroup);
+					if (!isOvertakable) {
+						previousElement = currentElement;
+						currentElement = currentElement.next;
+					}
 				}
 			}
 

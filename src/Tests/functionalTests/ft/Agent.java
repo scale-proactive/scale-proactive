@@ -70,6 +70,7 @@ public class Agent implements Serializable {
 
     public ReInt doStuff(ReInt param) {
         this.counter += param.getValue();
+        System.out.println("Counting");
         return new ReInt(this.counter);
     }
 

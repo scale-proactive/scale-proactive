@@ -273,6 +273,9 @@ public class FuturePool extends Object implements java.io.Serializable {
             if ((reply != null) && (reply.getFTManager() != null)) {
                 ftres = reply.getFTManager().onDeliverReply(reply);
             }
+            else {
+            	this.ownerBody.getDecorator().onDeliverReply(reply);
+            }
 
             Future future = (futuresToUpdate.get(0));
             if (future != null) {

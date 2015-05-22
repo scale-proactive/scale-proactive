@@ -353,9 +353,7 @@ public class ProActiveMetaObjectFactory implements MetaObjectFactory, java.io.Se
     // end inner class RequestReceiverFactoryImpl
     protected class RequestQueueFactoryImpl implements RequestQueueFactory, java.io.Serializable {
 
-		private static final long serialVersionUID = 6259178762614610249L;
-
-		public BlockingRequestQueue newRequestQueue(UniqueID ownerID) {
+        public BlockingRequestQueue newRequestQueue(Body body, UniqueID ownerID) {
             if ("true".equals(ProActiveMetaObjectFactory.this.parameters
                     .get(SYNCHRONOUS_COMPOSITE_COMPONENT_KEY))) {
                 return null; 
@@ -366,7 +364,7 @@ public class ProActiveMetaObjectFactory implements MetaObjectFactory, java.io.Se
             // we need a request queue for components
             //return new ComponentRequestQueueImpl(ownerID);
             //} else {
-            return new org.objectweb.proactive.core.body.request.BlockingRequestQueueImpl(ownerID);
+            return new org.objectweb.proactive.core.body.request.BlockingRequestQueueImpl(body, ownerID);
             //}
         }
     }

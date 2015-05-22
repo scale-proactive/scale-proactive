@@ -36,6 +36,7 @@
  */
 package org.objectweb.proactive.core.body.request;
 
+import org.objectweb.proactive.Body;
 import org.objectweb.proactive.core.UniqueID;
 
 
@@ -57,5 +58,5 @@ public interface RequestQueueFactory {
      * @param ownerID the unique id of the object that request queue is owned by
      * @return the newly created or already existing RequestQueue object.
      */
-    public BlockingRequestQueue newRequestQueue(UniqueID ownerID);
+    public BlockingRequestQueue newRequestQueue(Body body, UniqueID ownerID);
 }

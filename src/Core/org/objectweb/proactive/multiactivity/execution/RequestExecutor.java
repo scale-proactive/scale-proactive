@@ -137,7 +137,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	/**
 	 * Threadpool
 	 */
-	private ExecutorService executorService;
+	protected ExecutorService executorService;
 
 	/**
 	 * Requests currently being executed.
@@ -345,10 +345,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
 		synchronized (requestQueue) {
 
-			// Used for microbenchmarks
-			/*long insertionTimeBefore;
-			long insertionTimeAfter;*/
-
 			while (body.isActive()) {
 
 				// get compatible ones from the queue
@@ -360,15 +356,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 						for (int i = 0; i < rc.size(); i++) {
 							RunnableRequest runnableRequest = wrapRequest(rc.get(i));
 
-							// Used only for microbenchmarks
-							/*if (PriorityUtils.LOG_ENABLED) {
-								insertionTimeBefore = System.nanoTime();
-							}*/
-
 							priorityManager.register(runnableRequest);
-
-							// Used only for microbenchmarks
-							//logTime(runnableRequest, MultiactivityUtils.INSERTION_TIME, insertionTimeBefore);
 						}
 
 						// if anything can be done, let the other thread know
@@ -733,7 +721,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 * 
 	 * @param r
 	 */
-	private void serveStopped(RunnableRequest r) {
+	protected void serveStopped(RunnableRequest r) {
 		synchronized (this) {
 			active.remove(r);
 			Long tId = Thread.currentThread().getId();
@@ -888,5 +876,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	public RequestQueue getRequestQueue() {
 		return this.requestQueue;
 	}
+
+    protected String getBodyId(){
+        return body.getID().toString();
+    }
 
 }

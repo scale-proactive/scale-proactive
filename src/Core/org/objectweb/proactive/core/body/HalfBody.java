@@ -43,6 +43,7 @@ import org.objectweb.proactive.core.ProActiveRuntimeException;
 import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.body.exceptions.HalfBodyException;
 import org.objectweb.proactive.core.body.ft.protocols.FTManager;
+import org.objectweb.proactive.core.body.ft.protocols.cic.managers.FTManagerCIC;
 import org.objectweb.proactive.core.body.ft.service.FaultToleranceTechnicalService;
 import org.objectweb.proactive.core.body.future.Future;
 import org.objectweb.proactive.core.body.future.FuturePool;
@@ -120,10 +121,10 @@ public class HalfBody extends AbstractBody {
             Node node = NodeFactory.getNode(this.getNodeURL());
             if ("true".equals(node.getProperty(FaultToleranceTechnicalService.FT_ENABLED))) {
                 try {
-                    // create the fault-tolerance manager
+                	// create the fault-tolerance manager
                     int protocolSelector = FTManager.getProtoSelector(node
                             .getProperty(FaultToleranceTechnicalService.PROTOCOL));
-                    this.ftmanager = factory.newFTManagerFactory().newHalfFTManager(protocolSelector);
+                    this.ftmanager = (FTManagerCIC) factory.newFTManagerFactory().newHalfFTManager(protocolSelector);
                     this.ftmanager.init(this);
                     if (bodyLogger.isDebugEnabled()) {
                         bodyLogger.debug("Init FTManager on " + this.getNodeURL());
@@ -330,6 +331,17 @@ public class HalfBody extends AbstractBody {
         public synchronized long getNextSequenceID() {
             return HalfBody.this.bodyID.hashCode() + ++this.absoluteSequenceID;
         }
+
+		@Override
+		public void setReifiedObject(ReifiedObjectDecorator decoratedObject) {
+			throw new HalfBodyException();
+		}
+
+		@Override
+		public ReifiedObjectDecorator getDecorator() {
+			return ReifiedObjectDecorator.emptyDecorator;
+		}
+        
     }
 
     public long getNextSequenceID() {
@@ -343,6 +355,16 @@ public class HalfBody extends AbstractBody {
     public boolean checkMethod(String methodName) {
         throw new HalfBodyException();
     }
+
+	@Override
+	public void setReifiedObject(ReifiedObjectDecorator decoratedObject) {
+		throw new HalfBodyException();
+	}
+
+	@Override
+	public ReifiedObjectDecorator getDecorator() {
+		return ReifiedObjectDecorator.emptyDecorator;
+	}
 
     //    @Override
     //    protected RemoteRemoteObject register(URI uri)

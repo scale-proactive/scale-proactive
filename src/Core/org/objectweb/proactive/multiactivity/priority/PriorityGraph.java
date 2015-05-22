@@ -182,7 +182,7 @@ public class PriorityGraph implements PriorityMap {
 	 * @return true if the given group belongs to the graph (according to the 
 	 * equals method).
 	 */
-	private boolean contains(MethodGroup group) {
+	public boolean contains(MethodGroup group) {
 		boolean contains = false;
 		for (PriorityNode root : this.roots) {
 			contains = this.recursiveContains(group, root);

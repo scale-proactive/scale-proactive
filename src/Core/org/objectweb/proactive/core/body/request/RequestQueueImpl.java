@@ -58,6 +58,7 @@ public class RequestQueueImpl extends AbstractEventProducer implements java.io.S
     // -- PROTECTED MEMBERS -----------------------------------------------
     //
     protected CircularArrayList<Request> requestQueue;
+    protected Body body;
     protected UniqueID ownerID;
     protected RequestFilterOnMethodName requestFilterOnMethodName;
     protected static final boolean SEND_ADD_REMOVE_EVENT = false;
@@ -66,8 +67,9 @@ public class RequestQueueImpl extends AbstractEventProducer implements java.io.S
     //
     // -- CONSTRUCTORS -----------------------------------------------
     //
-    public RequestQueueImpl(UniqueID ownerID) {
+    public RequestQueueImpl(Body body, UniqueID ownerID) {
         this.requestQueue = new CircularArrayList<Request>(20);
+        this.body = body;
         this.ownerID = ownerID;
         this.requestFilterOnMethodName = new RequestFilterOnMethodName();
         this.nfRequestsProcessor = new NonFunctionalRequestsProcessor();
@@ -205,6 +207,9 @@ public class RequestQueueImpl extends AbstractEventProducer implements java.io.S
             if (request.ignoreIt()) {
                 return ftres;
             }
+        }
+        else {
+        	this.body.getDecorator().onDeliverRequest(request);
         }
 
         //if the request is non functional and priority, a reference on it is added in a nonFunctionalRequestsQueue.

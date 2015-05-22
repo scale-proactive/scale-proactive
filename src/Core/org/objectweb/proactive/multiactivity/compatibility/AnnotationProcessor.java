@@ -302,10 +302,7 @@ public class AnnotationProcessor {
 						" is: thread pool size=" + poolSize + ", hard limit=" + 
 						threadConfig.hardLimit() + "" + ", host reentrant=" + threadConfig.hostReentrant());
 			}
-		}
-
-
-		
+		}	
 		
 		// If fault tolerance is enabled, we need to tweak the structures so 
 		// that they include a special request for checkpointing
@@ -319,7 +316,6 @@ public class AnnotationProcessor {
 		}
 		// A checkpoint has a super priority compared to other methods
 		priorityGraph.insertSuperPriority(faultToleranceGroup);
-
 		if (logger.isInfoEnabled()) {
 			logger.info("Priority graph for MAO " + this.processedClass.getSimpleName() + 
 					" is:" + priorityGraph.toString());

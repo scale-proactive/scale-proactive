@@ -102,7 +102,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 	//loggers
 	protected static Logger logger = ProActiveLogger.getLogger(Loggers.FAULT_TOLERANCE_CIC);
 	protected static Logger multiactiveLogger = ProActiveLogger.getLogger(
-			Loggers.FAULT_TOLERANCE_MULTIACTIVITY);
+			Loggers.FAULT_TOLERANCE_EXTENSION);
 
 	// local runtime
 	// private static final Runtime runtime = Runtime.getRuntime();

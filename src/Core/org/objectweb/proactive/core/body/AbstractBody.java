@@ -62,6 +62,7 @@ import org.objectweb.proactive.core.body.exceptions.BodyTerminatedRequestExcepti
 import org.objectweb.proactive.core.body.ft.internalmsg.FTMessage;
 import org.objectweb.proactive.core.body.ft.internalmsg.Heartbeat;
 import org.objectweb.proactive.core.body.ft.protocols.FTManager;
+import org.objectweb.proactive.core.body.ft.protocols.cic.managers.FTManagerCIC;
 import org.objectweb.proactive.core.body.ft.servers.faultdetection.FaultDetector;
 import org.objectweb.proactive.core.body.future.Future;
 import org.objectweb.proactive.core.body.future.FuturePool;
@@ -165,7 +166,7 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
     protected ProActiveSPMDGroupManager spmdManager;
 
     // FAULT TOLERANCE
-    protected FTManager ftmanager;
+    protected FTManagerCIC ftmanager;
 
     // FORGET ON SEND
     protected boolean isSterileBody;
@@ -341,6 +342,9 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
                 }
             }
         }
+        else {
+			this.getDecorator().onReceiveRequest(request);
+		}
         try {
             this.enterInThreadStore();
             if (this.isDead) {
@@ -392,7 +396,9 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
                 }
             }
         }
-
+        else {
+			this.getDecorator().onReceiveReply(reply);
+		}
         try {
             enterInThreadStore();
             if (this.isDead && (this.getFuturePool() == null)) {
@@ -1196,7 +1202,7 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
      *            The ftm to set.
      */
     public void setFTManager(FTManager ftm) {
-        this.ftmanager = ftm;
+        this.ftmanager = (FTManagerCIC) ftm;
     }
 
     public GCResponse receiveGCMessage(GCMessage msg) {

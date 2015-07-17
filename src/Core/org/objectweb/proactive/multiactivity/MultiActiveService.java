@@ -60,6 +60,7 @@ import org.objectweb.proactive.multiactivity.priority.PriorityTracker;
 import org.objectweb.proactive.multiactivity.policy.DefaultServingPolicy;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 import org.objectweb.proactive.utils.loggingRequests.ActiveObjectLoggerDecorator;
+import org.objectweb.proactive.utils.loggingRequests.CompatibilityLogger;
 import org.objectweb.proactive.utils.loggingRequests.LoggerTechnicalService;
 
 
@@ -128,10 +129,12 @@ public class MultiActiveService extends Service {
         try {
             node = NodeFactory.getNode(this.body.getNodeURL());
             if("true".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))) {
+                CompatibilityLogger.logCompatibility(annotationProcessor.getCompatibilityMap(), node.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER), body.getID().toString());
                 executor = new ActiveObjectLoggerDecorator(body, compatibilityManager, priorityManager, threadManager, node.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER));
             }
-            else
+            else {
                 executor = new RequestExecutor(body, compatibilityManager, priorityManager, threadManager);
+            }
         } catch (NodeException e) {
             e.printStackTrace();
         } catch (ProActiveException e) {

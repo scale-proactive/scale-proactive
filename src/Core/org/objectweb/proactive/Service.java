@@ -117,7 +117,6 @@ public class Service {
         try {
 			Node node = NodeFactory.getNode(this.body.getNodeURL());
             if("true".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))) {
-                System.out.println("technical service");
                 this.body.setReifiedObject(new RequestLoggerDecorator(this.body, node.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER)));
             }
 //			if ("true".equals(node.getProperty(FaultToleranceTechnicalService.FT_ENABLED))) {

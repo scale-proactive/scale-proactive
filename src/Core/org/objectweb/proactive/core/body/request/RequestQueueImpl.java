@@ -58,6 +58,7 @@ public class RequestQueueImpl extends AbstractEventProducer implements java.io.S
     // -- PROTECTED MEMBERS -----------------------------------------------
     //
     protected CircularArrayList<Request> requestQueue;
+    protected Body body;
     protected UniqueID ownerID;
     protected RequestFilterOnMethodName requestFilterOnMethodName;
     protected static final boolean SEND_ADD_REMOVE_EVENT = false;
@@ -66,8 +67,9 @@ public class RequestQueueImpl extends AbstractEventProducer implements java.io.S
     //
     // -- CONSTRUCTORS -----------------------------------------------
     //
-    public RequestQueueImpl(UniqueID ownerID) {
+    public RequestQueueImpl(Body body, UniqueID ownerID) {
         this.requestQueue = new CircularArrayList<Request>(20);
+        this.body = body;
         this.ownerID = ownerID;
         this.requestFilterOnMethodName = new RequestFilterOnMethodName();
         this.nfRequestsProcessor = new NonFunctionalRequestsProcessor();
@@ -196,6 +198,12 @@ public class RequestQueueImpl extends AbstractEventProducer implements java.io.S
 
     public synchronized int add(Request request) {
         //System.out.println("  --> RequestQueue.add m="+request.getMethodName());
+    	
+    	// CALLBACK ON EVENTS
+        if (this.body.getAttachedCallback() != null) {
+        	this.body.getAttachedCallback().onDeliverRequest(request);
+        }
+    	
         // FAULT-TOLERANCE  
         int ftres = FTManager.NON_FT;
         FTManager ftm = request.getFTManager();

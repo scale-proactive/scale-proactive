@@ -268,6 +268,12 @@ public class FuturePool extends Object implements java.io.Serializable {
         ArrayList<Future> futuresToUpdate = futures.getFuturesToUpdate(id, creatorID);
 
         if (futuresToUpdate != null) {
+        	
+        	// CALLBACK ON EVENTS
+            if (this.ownerBody.getAttachedCallback() != null) {
+            	this.ownerBody.getAttachedCallback().onDeliverReply(reply);
+            }
+        	
             // FAULT-TOLERANCE
             int ftres = FTManager.NON_FT;
             if ((reply != null) && (reply.getFTManager() != null)) {

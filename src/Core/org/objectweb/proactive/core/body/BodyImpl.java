@@ -198,7 +198,7 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
         this.replyReceiver = factory.newReplyReceiverFactory().newReplyReceiver();
 
         setLocalBodyImpl(new ActiveLocalBodyStrategy(reifiedObject, factory.newRequestQueueFactory()
-                .newRequestQueue(this.bodyID), factory.newRequestFactory()));
+                .newRequestQueue(this, this.bodyID), factory.newRequestFactory()));
         this.localBodyStrategy.getFuturePool().setOwnerBody(this);
 
         // FAULT TOLERANCE=
@@ -749,7 +749,18 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
                 // Useful if the exception is due to the content of the result
                 // (e.g. InvalidClassException)
                 try {
+                	
+                	// CALLBACK ON EVENTS
+                	if (BodyImpl.this.attachedCallback != null) {
+                		BodyImpl.this.attachedCallback.onSendReplyBefore(reply);
+                	}
+                	
                     reply.send(request.getSender());
+                    
+                    // CALLBACK ON EVENTS
+                	if (BodyImpl.this.attachedCallback != null) {
+                		BodyImpl.this.attachedCallback.onSendReplyAfter(reply);
+                	}
                 } catch (Throwable e1) {
                     // see PROACTIVE-1172
                     // previously only IOException were caught but now that new communication protocols
@@ -858,7 +869,18 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
             if (BodyImpl.this.ftmanager != null) {
                 BodyImpl.this.ftmanager.sendRequest(request, destinationBody);
             } else {
+            	
+            	// CALLBACK ON EVENTS
+            	if (BodyImpl.this.attachedCallback != null) {
+            		BodyImpl.this.attachedCallback.onSendRequestBefore(request);
+            	}
+            	
                 request.send(destinationBody);
+                
+                // CALLBACK ON EVENTS
+            	if (BodyImpl.this.attachedCallback != null) {
+            		BodyImpl.this.attachedCallback.onSendRequestAfter(request);
+            	}
             }
         }
 

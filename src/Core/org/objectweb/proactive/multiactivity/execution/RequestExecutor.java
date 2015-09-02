@@ -137,7 +137,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	/**
 	 * Threadpool
 	 */
-	private ExecutorService executorService;
+	protected ExecutorService executorService;
 
 	/**
 	 * Requests currently being executed.
@@ -733,7 +733,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 * 
 	 * @param r
 	 */
-	private void serveStopped(RunnableRequest r) {
+	protected void serveStopped(RunnableRequest r) {
 		synchronized (this) {
 			active.remove(r);
 			Long tId = Thread.currentThread().getId();
@@ -887,6 +887,10 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
 	public RequestQueue getRequestQueue() {
 		return this.requestQueue;
+	}
+	
+	protected String getBodyId(){
+		return body.getID().toString();
 	}
 
 }

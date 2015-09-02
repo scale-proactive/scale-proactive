@@ -38,6 +38,7 @@ package org.objectweb.proactive;
 
 import org.objectweb.proactive.annotation.PublicAPI;
 import org.objectweb.proactive.core.UniqueID;
+import org.objectweb.proactive.core.body.AttachedCallback;
 import org.objectweb.proactive.core.body.LocalBodyStrategy;
 import org.objectweb.proactive.core.body.UniversalBody;
 import org.objectweb.proactive.core.component.representative.ItfID;
@@ -306,5 +307,19 @@ public interface Body extends LocalBodyStrategy, UniversalBody {
     public boolean checkMethod(String methodName);
 
     public void registerIncomingFutures();
+    
+    /**
+     * Attaches an object that enables making some callback on the events of 
+     * a body like request sending, serving, etc...
+     * @param a callback object.
+     */
+    public void attach(AttachedCallback a);
+    
+    /**
+     * Returns the callback object in order to be able to call a method on 
+     * the occurrence of an an event.
+     * @return
+     */
+    public AttachedCallback getAttachedCallback();
 }
 //@snippet-end body

@@ -37,10 +37,16 @@
 package org.objectweb.proactive;
 
 import org.objectweb.proactive.annotation.PublicAPI;
+import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.body.request.BlockingRequestQueue;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.body.request.RequestFilter;
 import org.objectweb.proactive.core.body.request.RequestProcessor;
+import org.objectweb.proactive.core.node.Node;
+import org.objectweb.proactive.core.node.NodeException;
+import org.objectweb.proactive.core.node.NodeFactory;
+import org.objectweb.proactive.utils.loggingRequests.LoggerTechnicalService;
+import org.objectweb.proactive.utils.loggingRequests.RequestLoggerDecorator;
 
 
 /**
@@ -103,6 +109,18 @@ public class Service {
     public Service(Body body) {
         this.body = body;
         this.requestQueue = body.getRequestQueue();
+        try {
+ 			Node node = NodeFactory.getNode(this.body.getNodeURL());
+ 			if("true".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))) {
+ 				this.body.attach(new RequestLoggerDecorator(this.body, node.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER)));
+        	}
+        }
+        catch (NodeException e) {
+        	e.printStackTrace();
+        } 
+        catch (ProActiveException e) {
+			e.printStackTrace();
+		}
     }
 
     //

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="src" output="classes/Benchmarks" path="src/Benchmarks"/>
 	<classpathentry kind="src" output="classes/Core" path="src/Core"/>
 	<classpathentry excluding="org/objectweb/proactive/examples/nbody/common/NBody3DFrame.java" kind="src" output="classes/Examples" path="src/Examples"/>
@@ -138,5 +137,6 @@
 	<classpathentry kind="lib" path="lib/cxf/wsdl4j-1.6.2.jar"/>
 	<classpathentry kind="lib" path="lib/cxf/xmlschema-core-2.0.1.jar"/>
 	<classpathentry kind="lib" path="lib/winp-1.17-patched.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

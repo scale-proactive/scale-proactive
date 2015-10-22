@@ -7,86 +7,45 @@ import junit.framework.Assert;
 import org.junit.Test;
 import org.objectweb.proactive.ActiveObjectCreationException;
 import org.objectweb.proactive.api.PAActiveObject;
-import org.objectweb.proactive.core.ProActiveException;
-import org.objectweb.proactive.core.node.Node;
+import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
+import org.objectweb.proactive.core.config.ProActiveConfiguration;
 import org.objectweb.proactive.core.node.NodeException;
-import org.objectweb.proactive.extensions.gcmdeployment.PAGCMDeployment;
-import org.objectweb.proactive.gcmdeployment.GCMApplication;
-import org.objectweb.proactive.gcmdeployment.GCMVirtualNode;
-import org.objectweb.proactive.utils.loggingRequests.LoggerTechnicalService;
 
-import functionalTests.GCMFunctionalTest;
 import functionalTests.loggingRequests.deadlock.FirstActiveObject;
 
-/**
- * Checks that log folder is created and contains what it should,
- * and that logger test produces the right result.
- */
-public class LoggerDeadlockSolutionTest extends GCMFunctionalTest {
+public class LoggerDeadlockSolutionTest {
 
-	private static final String DEADLOCK_APP_DESCRIPTOR_PATH = 
-			"/functionalTests/loggingRequests/deadlock/GCMADeadlock.xml";
-	private static final String DEADLOCK_VN1_NAME = "FirstActiveObject";
-	public static final String DEADLOCK_VN2_NAME = "SecondActiveObject";
 	public static final String SEARCHED_STRING = "needed result";
-
-	private GCMApplication gcmApplication;
-	private Node mainNode;
-
-	public LoggerDeadlockSolutionTest() {
-		super(LoggerDeadlockSolutionTest.class.getResource(DEADLOCK_APP_DESCRIPTOR_PATH));
-	}
 
 	@Test
 	public void runDeadlockExample(){
-		initTechnicalService();
 		cleanLogFolder();
 		deadlockExample();
 	}
-	
-	private void initTechnicalService(){
-		try {
-			this.gcmApplication = PAGCMDeployment.loadApplicationDescriptor(
-					this.applicationDescriptor);
-		}
-		catch (ProActiveException e1) {
-			e1.printStackTrace();
-		}
-		this.gcmApplication.startDeployment();
-		this.gcmApplication.waitReady();
-	}
-	
+
 	private void cleanLogFolder() {
-		GCMVirtualNode vn = this.gcmApplication.getVirtualNode(DEADLOCK_VN1_NAME);
-		this.mainNode = vn.getANode();
 		File logFolder;
-		try {
-			logFolder = new File(
-					this.mainNode.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER));
-			if (logFolder.exists()) {
-				File[] logFiles = logFolder.listFiles();
-				for (File logFile: logFiles) {
-					logFile.delete();
-				}
+		logFolder = new File(ProActiveConfiguration.getInstance().getProperty(
+				CentralPAPropertyRepository.PA_MULTIACTIVITY_DEFAULT_LOGGING.getName()));
+		if (logFolder.exists()) {
+			File[] logFiles = logFolder.listFiles();
+			for (File logFile: logFiles) {
+				logFile.delete();
 			}
-		} catch (ProActiveException e) {
-			e.printStackTrace();
+			logFolder.delete();
 		}
 	}
 
 	private void deadlockExample(){
 		FirstActiveObject firstExample;
 		try {
-			firstExample = PAActiveObject.newActive(FirstActiveObject.class, null, this.mainNode);
-			String str = firstExample.start(this.gcmApplication);
+			firstExample = PAActiveObject.newActive(FirstActiveObject.class, null);
+			String str = firstExample.start();
 			// Check app logic
 			Assert.assertTrue(str.equals(SEARCHED_STRING));
-			// Check logs activation
-			Assert.assertTrue("true".equals(
-					this.mainNode.getProperty(LoggerTechnicalService.IS_ENABLED)));
 			// Check log location 
-			File logFolder = new File(
-					this.mainNode.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER));
+			File logFolder = new File(ProActiveConfiguration.getInstance().getProperty(
+						CentralPAPropertyRepository.PA_MULTIACTIVITY_DEFAULT_LOGGING.getName()));
 			Assert.assertTrue(logFolder.exists());
 			// Check number of log files
 			String[] logFiles = logFolder.list();
@@ -110,9 +69,6 @@ public class LoggerDeadlockSolutionTest extends GCMFunctionalTest {
 			e.printStackTrace();
 		} catch (NodeException e) {
 			e.printStackTrace();
-		} catch (ProActiveException e) {
-			e.printStackTrace();
 		}
 	}
-
 }

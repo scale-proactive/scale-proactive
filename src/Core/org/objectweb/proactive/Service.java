@@ -42,6 +42,8 @@ import org.objectweb.proactive.core.body.request.BlockingRequestQueue;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.body.request.RequestFilter;
 import org.objectweb.proactive.core.body.request.RequestProcessor;
+import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
+import org.objectweb.proactive.core.config.ProActiveConfiguration;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.node.NodeException;
 import org.objectweb.proactive.core.node.NodeFactory;
@@ -114,6 +116,9 @@ public class Service {
  			if("true".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))) {
  				this.body.attach(new RequestLoggerDecorator(this.body, node.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER)));
         	}
+ 			else if (! "false".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))){
+				this.body.attach(new RequestLoggerDecorator(this.body, CentralPAPropertyRepository.PA_MULTIACTIVITY_DEFAULT_LOGGING.getValue()));
+ 			}
         }
         catch (NodeException e) {
         	e.printStackTrace();

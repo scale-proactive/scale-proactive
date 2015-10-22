@@ -1,6 +1,4 @@
-package functionalTests.loggingRequests.deadlock;
-
-import java.io.Serializable;
+package functionalTests.loggingRequests.deployment.deadlock;
 
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.RunActive;
@@ -9,11 +7,12 @@ import org.objectweb.proactive.core.mop.StubObject;
 import org.objectweb.proactive.core.util.wrapper.StringWrapper;
 import org.objectweb.proactive.multiactivity.MultiActiveService;
 
+import java.io.Serializable;
 
 /**
  * Created by pkhvoros on 6/5/15.
  */
-public class SecondActiveObject implements RunActive,Serializable { 
+public class SecondActiveObjectDeployment implements RunActive,Serializable { 
 	
 	private static final long serialVersionUID = 1L;
 
@@ -26,7 +25,7 @@ public class SecondActiveObject implements RunActive,Serializable {
     }
 
     public StringWrapper run(StubObject first){
-        return ((FirstActiveObject) first).run(PAActiveObject.getStubOnThis());
+        return ((FirstActiveObjectDeployment) first).run(PAActiveObject.getStubOnThis());
     }
 
 }

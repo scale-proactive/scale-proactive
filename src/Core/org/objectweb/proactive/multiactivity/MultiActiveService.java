@@ -44,6 +44,7 @@ import org.objectweb.proactive.Body;
 import org.objectweb.proactive.Service;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.body.request.Request;
+import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.node.NodeException;
 import org.objectweb.proactive.core.node.NodeFactory;
@@ -133,7 +134,12 @@ public class MultiActiveService extends Service {
 				executor = new ActiveObjectLoggerDecorator(body, compatibilityManager, priorityManager, threadManager, node.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER));
 			}
 			else {
-				executor = new RequestExecutor(body, compatibilityManager, priorityManager, threadManager);
+				if (! "false".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))){
+					executor = new ActiveObjectLoggerDecorator(body, compatibilityManager, priorityManager, threadManager, CentralPAPropertyRepository.PA_MULTIACTIVITY_DEFAULT_LOGGING.getValue());
+				}
+				else {
+					executor = new RequestExecutor(body, compatibilityManager, priorityManager, threadManager);
+				}
 			}
 		} catch (NodeException e) {
 			e.printStackTrace();

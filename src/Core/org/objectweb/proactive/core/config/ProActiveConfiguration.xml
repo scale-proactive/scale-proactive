@@ -58,8 +58,12 @@
 		<prop key="proactive.tag.dsf" value="false" />
 
 		<!-- Workaround to fix rmissh conflict -->
-        <prop key="proactive.runtime.stayalive" value="true" />		
-
+        <prop key="proactive.runtime.stayalive" value="true" />	
+        
+        <!-- Default folder to log events for the multiactive object viewer -->	
+        <!-- Default can be overriden with LoggerTechnicalService (as well as log off) -->
+ 		<prop key="proactive.multiactivity.defaultlogfolder" value="/tmp/proactive-multiactivity-logging/" />	
+ 
 		<!-- File Transfer Properties -->
         <prop key="proactive.filetransfer.services_number" value="16" />
         <prop key="proactive.filetransfer.blocks_number" value="8" />

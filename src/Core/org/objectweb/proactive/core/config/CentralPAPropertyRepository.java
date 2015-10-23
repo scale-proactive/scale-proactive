@@ -551,7 +551,7 @@ public class CentralPAPropertyRepository implements PAPropertiesLoaderSPI {
     /* ------------------------------------
      *  MULTIACTIVITY
      */
-    static public PAPropertyString PA_MULTIACTIVITY_DEFAULT_LOGGING = new PAPropertyString("proactive.multiactivity.defaultlogfolder", true);
+    static public PAPropertyString PA_MULTIACTIVITY_DEFAULT_LOGGING = new PAPropertyString("proactive.multiactivity.defaultlogfolder", false);
     
     /* ------------------------------------
      *  MESSAGE TAGGING

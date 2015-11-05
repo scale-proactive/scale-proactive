@@ -5,14 +5,6 @@ ProActive 2015-01-27
 You can find the documentation of ProActive in the docs directory:
 
 	* Documentation in PDF format
-	* Documentation in HTML format 
-
-Javadoc and updated documentation are available online:
-
-	* Public API Javadoc   http://proactive.inria.fr/{version}/javadoc
-	* Full API Javadoc     http://proactive.inria.fr/{version}/javadoc.full
-	* HTML documentation   htpp://proactive.inria.fr/{version}/html
-
 
 In order to start experimenting with ProActive:
 
@@ -57,8 +49,9 @@ If you want only to compile all sources (and not the jar files):
 	o Under Windows:
 	  cd compile
 	  build.bat compile
+	  
+	  
+If you encounter Security exceptions, you might need to set up a Java policy file.
 
-
-If you have any problems or questions when using ProActive feel free to contact us at proactive@ow2.org
 
 Enjoy ProActive !

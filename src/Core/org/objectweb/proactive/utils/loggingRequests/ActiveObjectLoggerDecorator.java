@@ -61,7 +61,7 @@ public class ActiveObjectLoggerDecorator extends RequestExecutor {
 	private void writeToFile(StringBuilder log){
 		File folder = new File(folderPath);
 		if (!folder.exists()) {
-			folder.mkdir();
+			folder.mkdirs();
 		}
 		try {
 			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(folderPath + identifier + ".txt", true)));

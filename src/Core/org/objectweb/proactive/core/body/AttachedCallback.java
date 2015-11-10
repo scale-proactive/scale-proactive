@@ -1,10 +1,14 @@
 package org.objectweb.proactive.core.body;
 
+import java.io.Serializable;
+
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.core.body.reply.Reply;
 import org.objectweb.proactive.core.body.request.Request;
 
-public abstract class AttachedCallback {
+public abstract class AttachedCallback implements Serializable {
+	
+	private static final long serialVersionUID = 1L;
 	
 	protected Body body;
 	

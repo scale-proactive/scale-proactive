@@ -15,6 +15,9 @@ import java.io.PrintWriter;
  * Created by pkhvoros on 3/27/15.
  */
 public class RequestLoggerDecorator extends AttachedCallback {
+
+	private static final long serialVersionUID = 1L;
+	
 	private String folderPath;
 	private String identifier;
 	private boolean activated;

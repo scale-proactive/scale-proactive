@@ -44,6 +44,7 @@ import org.objectweb.proactive.Body;
 import org.objectweb.proactive.Service;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.body.request.Request;
+import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.node.NodeException;
 import org.objectweb.proactive.core.node.NodeFactory;
@@ -61,7 +62,7 @@ import org.objectweb.proactive.multiactivity.policy.DefaultServingPolicy;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 import org.objectweb.proactive.utils.loggingRequests.ActiveObjectLoggerDecorator;
 import org.objectweb.proactive.utils.loggingRequests.LoggerTechnicalService;
-
+import org.objectweb.proactive.utils.loggingRequests.RequestLoggerDecorator;
 
 /**
  * This class extends the {@link Service} class and adds the capability of serving more methods in parallel. 
@@ -72,189 +73,196 @@ import org.objectweb.proactive.utils.loggingRequests.LoggerTechnicalService;
  */
 public class MultiActiveService extends Service {
 
-    public static final boolean LIMIT_ALL_THREADS = true;
-    public static final boolean LIMIT_ACTIVE_THREADS = false;
-    public static final boolean REENTRANT_SAME_THREAD = true;
-    public static final boolean REENTRANT_SEPARATE_THREAD = false;
+	public static final boolean LIMIT_ALL_THREADS = true;
+	public static final boolean LIMIT_ACTIVE_THREADS = false;
+	public static final boolean REENTRANT_SAME_THREAD = true;
+	public static final boolean REENTRANT_SEPARATE_THREAD = false;
 
-    public int activeServes = 0;
-    public LinkedList<Integer> serveHistory = new LinkedList<Integer>();
-    public LinkedList<Integer> serveTsts = new LinkedList<Integer>();
+	public int activeServes = 0;
+	public LinkedList<Integer> serveHistory = new LinkedList<Integer>();
+	public LinkedList<Integer> serveTsts = new LinkedList<Integer>();
 
-    private static final Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
-    
-    private boolean isConfiguredThroughAnnot = false;
-    private int totalReservedThreads;
-    
-    RequestExecutor executor;
-    
+	private static final Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
-    /**
-     * MultiActiveService that will be able to optionally use a policy, and will deploy each serving request on a 
-     * separate physical thread.
-     * 
-     * @param body The body of the active object.
-     */
-    public MultiActiveService(Body body) {
-        super(body);
+	private boolean isConfiguredThroughAnnot = false;
+	private int totalReservedThreads;
 
-        //not doing the initialization here because after creating the request executor
-        //we are not compatible with 'fifoServing' any more.
+	RequestExecutor executor;
 
-    }
-    
-    private void init() {
-        if (executor != null)
-            return;
 
-        AnnotationProcessor annotationProcessor = new AnnotationProcessor(body.getReifiedObject().getClass());
+	/**
+	 * MultiActiveService that will be able to optionally use a policy, and will deploy each serving request on a 
+	 * separate physical thread.
+	 * 
+	 * @param body The body of the active object.
+	 */
+	public MultiActiveService(Body body) {
+		super(body);
 
-        // Setting the compatibility manager from what was extracted from annotations
-        CompatibilityManager compatibilityManager = new CompatibilityTracker(
-        		requestQueue, annotationProcessor.getCompatibilityMap());
-        
-        // Filling priority structures according to what was extracted from annotations
-        PriorityManager priorityManager = new PriorityTracker(
-        		compatibilityManager, annotationProcessor.getPriorityMap());
-        
-        // Setting thread configuration from what was extracted from annotations
-        isConfiguredThroughAnnot = annotationProcessor.getThreadMap().isConfiguredThroughAnnot();
-        totalReservedThreads = annotationProcessor.getThreadMap().getTotalConfiguredThread();
-        ThreadManager threadManager = new ThreadTracker(
-        		compatibilityManager, annotationProcessor.getThreadMap());
-        
-        // Building executor and configuring it with all required information for scheduling
-        Node node = null;
-        try {
-            node = NodeFactory.getNode(this.body.getNodeURL());
-            if("true".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))) {
-                executor = new ActiveObjectLoggerDecorator(body, compatibilityManager, priorityManager, threadManager, node.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER));
-            }
-            else
-                executor = new RequestExecutor(body, compatibilityManager, priorityManager, threadManager);
-        } catch (NodeException e) {
-            e.printStackTrace();
-        } catch (ProActiveException e) {
-            e.printStackTrace();
-        }
-        executor.configure(threadManager.getThreadPoolSize(), 
-        		threadManager.getHardLimit(), threadManager.getHostReentrant());
-    }
+		//not doing the initialization here because after creating the request executor
+		//we are not compatible with 'fifoServing' any more.
 
-    /**
-     * Service that relies on the default parallel policy to extract requests from the queue.
-     * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
-     * @param hardLimit false if the above limit is applicable only to active (running) threads, but not the waiting ones
-     * @param hostReentrant true if re-entrant calls should be hosted on the issuer's thread
-     */
-    public void multiActiveServing(int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
-        init();
+	}
 
-        if (!isConfiguredThroughAnnot) {
-        	executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
-        			ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, hardLimit, hostReentrant);
-        }
-        executor.execute(createServingPolicy());
-    }
+	private void init() {
+		if (executor != null)
+			return;
 
-    /**
-     * Service that relies on the default parallel policy to extract requests from the queue. Threads are soft-limited and re-entrance on the same thread is disabled.
-     * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
-     */
-    public void multiActiveServing(int maxActiveThreads) {
-        init();
-        if (!isConfiguredThroughAnnot) {
-        	executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
-        			ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, false, false);
-        }
-        executor.execute(createServingPolicy());
-    }
+		AnnotationProcessor annotationProcessor = new AnnotationProcessor(body.getReifiedObject().getClass());
 
-    /**
-     * Service that relies on the default parallel policy to extract requests from the queue. Threads are not limited and re-entrance on the same thread is disabled.
-     */
-    public void multiActiveServing() {
-        init();
-        if (!isConfiguredThroughAnnot) {
-        	executor.configure(Integer.MAX_VALUE, false, false);
-        }
-        executor.execute(createServingPolicy());
-    }
+		// Setting the compatibility manager from what was extracted from annotations
+		CompatibilityManager compatibilityManager = new CompatibilityTracker(
+				requestQueue, annotationProcessor.getCompatibilityMap());
 
-    /**
-     * Creates the serving policy to use to schedule requests.
-     * 
-     * @return The serving policy to use to schedule requests.
-     */
-    protected ServingPolicy createServingPolicy() {
-        return new DefaultServingPolicy();
-    }
+		// Filling priority structures according to what was extracted from annotations
+		PriorityManager priorityManager = new PriorityTracker(
+				compatibilityManager, annotationProcessor.getPriorityMap());
 
-    /**
-     * Service that relies on a user-defined policy to extract requests from the queue.
-     * @param policy
-     * @param priorityConstraints priority constraints to apply
-     * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
-     * @param hardLimit false if the above limit is applicable only to active (running) threads, but not the waiting ones
-     * @param hostReentrant true if re-entrant calls should be hosted on the issuer's thread
-     */
-    public void policyServing(ServingPolicy policy, int maxActiveThreads, boolean hardLimit,
-            boolean hostReentrant) {
-        init();
-        if (!isConfiguredThroughAnnot) {
-        	executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
-        			ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, hardLimit, hostReentrant);
-        }
-        executor.execute(policy);
-    }
+		// Setting thread configuration from what was extracted from annotations
+		isConfiguredThroughAnnot = annotationProcessor.getThreadMap().isConfiguredThroughAnnot();
+		totalReservedThreads = annotationProcessor.getThreadMap().getTotalConfiguredThread();
+		ThreadManager threadManager = new ThreadTracker(
+				compatibilityManager, annotationProcessor.getThreadMap());
 
-    /**
-     * Service that relies on a user-defined policy to extract requests from the queue. Threads are soft-limited and re-entrance on the same thread is disabled.
-     * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
-     */
-    public void policyServing(ServingPolicy policy, int maxActiveThreads) {
-        init();
-        if (!isConfiguredThroughAnnot) {
-        	executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
-        			ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, false, false);
-        }
-        executor.execute(policy);
-    }
+		// Building executor and configuring it with all required information for scheduling
+		// executor = new RequestExecutor(body, compatibilityManager, priorityManager, threadManager);
+		Node node = null;
+		try {
+			node = NodeFactory.getNode(this.body.getNodeURL());
+			if("true".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))) {
+				executor = new ActiveObjectLoggerDecorator(body, compatibilityManager, priorityManager, threadManager, node.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER));
+			}
+			else {
+				if (! "false".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))){
+					executor = new ActiveObjectLoggerDecorator(body, compatibilityManager, priorityManager, threadManager, CentralPAPropertyRepository.PA_MULTIACTIVITY_DEFAULT_LOGGING.getValue());
+				}
+				else {
+					executor = new RequestExecutor(body, compatibilityManager, priorityManager, threadManager);
+				}
+			}
+		} catch (NodeException e) {
+			e.printStackTrace();
+		} catch (ProActiveException e) {
+			e.printStackTrace();
+		}
+		executor.configure(threadManager.getThreadPoolSize(), 
+				threadManager.getHardLimit(), threadManager.getHostReentrant());
+	}
 
-    /**
-     * Service that relies on a user-defined policy to extract requests from the queue. Threads are not limited and re-entrance on the same thread is disabled.
-     * @param policy Serving policy to use
-     */
-    public void policyServing(ServingPolicy policy) {
-        init();
-        if (!isConfiguredThroughAnnot) {
-        	executor.configure(Integer.MAX_VALUE, false, false);
-        }
-        executor.execute(policy);
-    }
+	/**
+	 * Service that relies on the default parallel policy to extract requests from the queue.
+	 * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
+	 * @param hardLimit false if the above limit is applicable only to active (running) threads, but not the waiting ones
+	 * @param hostReentrant true if re-entrant calls should be hosted on the issuer's thread
+	 */
+	public void multiActiveServing(int maxActiveThreads, boolean hardLimit, boolean hostReentrant) {
+		init();
 
-    /**
-     * Returns the object through which the service's properties can be modified at run-time.
-     * @return serving controller
-     */
-    public ServingController getServingController() {
-        //this init runs only once even if invoked many times
-        init();
+		if (!isConfiguredThroughAnnot) {
+			executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
+					ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, hardLimit, hostReentrant);
+		}
+		executor.execute(createServingPolicy());
+	}
 
-        return executor;
-    }
-    
-    /**
-     * Returns the list of requests that have been served by this multiactive 
-     * service (from oldest to latest).
-     * @return Served requests
-     */
-    public List<Request> getServingHistory() {
-    	return this.executor.getServingHistory();
-    }
+	/**
+	 * Service that relies on the default parallel policy to extract requests from the queue. Threads are soft-limited and re-entrance on the same thread is disabled.
+	 * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
+	 */
+	public void multiActiveServing(int maxActiveThreads) {
+		init();
+		if (!isConfiguredThroughAnnot) {
+			executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
+					ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, false, false);
+		}
+		executor.execute(createServingPolicy());
+	}
 
-    public RequestExecutor getRequestExecutor() {
-        return this.executor;
-    }
+	/**
+	 * Service that relies on the default parallel policy to extract requests from the queue. Threads are not limited and re-entrance on the same thread is disabled.
+	 */
+	public void multiActiveServing() {
+		init();
+		if (!isConfiguredThroughAnnot) {
+			executor.configure(Integer.MAX_VALUE, false, false);
+		}
+		executor.execute(createServingPolicy());
+	}
 
+	/**
+	 * Creates the serving policy to use to schedule requests.
+	 * 
+	 * @return The serving policy to use to schedule requests.
+	 */
+	protected ServingPolicy createServingPolicy() {
+		return new DefaultServingPolicy();
+	}
+
+	/**
+	 * Service that relies on a user-defined policy to extract requests from the queue.
+	 * @param policy
+	 * @param priorityConstraints priority constraints to apply
+	 * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
+	 * @param hardLimit false if the above limit is applicable only to active (running) threads, but not the waiting ones
+	 * @param hostReentrant true if re-entrant calls should be hosted on the issuer's thread
+	 */
+	public void policyServing(ServingPolicy policy, int maxActiveThreads, boolean hardLimit,
+			boolean hostReentrant) {
+		init();
+		if (!isConfiguredThroughAnnot) {
+			executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
+					ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, hardLimit, hostReentrant);
+		}
+		executor.execute(policy);
+	}
+
+	/**
+	 * Service that relies on a user-defined policy to extract requests from the queue. Threads are soft-limited and re-entrance on the same thread is disabled.
+	 * @param maxActiveThreads maximum number of allowed threads inside the multi-active object
+	 */
+	public void policyServing(ServingPolicy policy, int maxActiveThreads) {
+		init();
+		if (!isConfiguredThroughAnnot) {
+			executor.configure(maxActiveThreads <= totalReservedThreads ? totalReservedThreads + 
+					ThreadManager.THREAD_POOL_MARGIN : maxActiveThreads, false, false);
+		}
+		executor.execute(policy);
+	}
+
+	/**
+	 * Service that relies on a user-defined policy to extract requests from the queue. Threads are not limited and re-entrance on the same thread is disabled.
+	 * @param policy Serving policy to use
+	 */
+	public void policyServing(ServingPolicy policy) {
+		init();
+		if (!isConfiguredThroughAnnot) {
+			executor.configure(Integer.MAX_VALUE, false, false);
+		}
+		executor.execute(policy);
+	}
+
+	/**
+	 * Returns the object through which the service's properties can be modified at run-time.
+	 * @return serving controller
+	 */
+	public ServingController getServingController() {
+		//this init runs only once even if invoked many times
+		init();
+
+		return executor;
+	}
+
+	/**
+	 * Returns the list of requests that have been served by this multiactive 
+	 * service (from oldest to latest).
+	 * @return Served requests
+	 */
+	public List<Request> getServingHistory() {
+		return this.executor.getServingHistory();
+	}
+
+	public RequestExecutor getRequestExecutor() {
+		return this.executor;
+	}
+	
 }

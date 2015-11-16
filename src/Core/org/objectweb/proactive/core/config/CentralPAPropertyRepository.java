@@ -549,6 +549,11 @@ public class CentralPAPropertyRepository implements PAPropertiesLoaderSPI {
     static public PAPropertyBoolean PA_DEBUG = new PAPropertyBoolean("proactive.debug", false);
 
     /* ------------------------------------
+     *  MULTIACTIVITY
+     */
+    static public PAPropertyString PA_MULTIACTIVITY_DEFAULT_LOGGING = new PAPropertyString("proactive.multiactivity.defaultlogfolder", false);
+    
+    /* ------------------------------------
      *  MESSAGE TAGGING
      */
     /** Set the max period for LocalMemoryTag lease time */

@@ -352,7 +352,6 @@ public class ProActiveMetaObjectFactory implements MetaObjectFactory, java.io.Se
 
     // end inner class RequestReceiverFactoryImpl
     protected class RequestQueueFactoryImpl implements RequestQueueFactory, java.io.Serializable {
-
         public BlockingRequestQueue newRequestQueue(Body body, UniqueID ownerID) {
             if ("true".equals(ProActiveMetaObjectFactory.this.parameters
                     .get(SYNCHRONOUS_COMPOSITE_COMPONENT_KEY))) {

@@ -330,18 +330,7 @@ public class HalfBody extends AbstractBody {
          */
         public synchronized long getNextSequenceID() {
             return HalfBody.this.bodyID.hashCode() + ++this.absoluteSequenceID;
-        }
-
-		@Override
-		public void setReifiedObject(ReifiedObjectDecorator decoratedObject) {
-			throw new HalfBodyException();
-		}
-
-		@Override
-		public ReifiedObjectDecorator getDecorator() {
-			return ReifiedObjectDecorator.emptyDecorator;
-		}
-        
+        }        
     }
 
     public long getNextSequenceID() {
@@ -355,16 +344,6 @@ public class HalfBody extends AbstractBody {
     public boolean checkMethod(String methodName) {
         throw new HalfBodyException();
     }
-
-	@Override
-	public void setReifiedObject(ReifiedObjectDecorator decoratedObject) {
-		throw new HalfBodyException();
-	}
-
-	@Override
-	public ReifiedObjectDecorator getDecorator() {
-		return ReifiedObjectDecorator.emptyDecorator;
-	}
 
     //    @Override
     //    protected RemoteRemoteObject register(URI uri)

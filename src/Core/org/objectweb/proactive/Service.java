@@ -39,14 +39,13 @@ package org.objectweb.proactive;
 
 import org.objectweb.proactive.annotation.PublicAPI;
 import org.objectweb.proactive.core.ProActiveException;
-import org.objectweb.proactive.core.body.AbstractBody;
-import org.objectweb.proactive.core.body.ft.protocols.cic.managers.FTManagerCIC;
-import org.objectweb.proactive.core.body.ft.service.FaultToleranceTechnicalService;
 import org.objectweb.proactive.core.body.request.BlockingRequestQueue;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.body.request.RequestFilter;
 import org.objectweb.proactive.core.body.request.RequestImpl;
 import org.objectweb.proactive.core.body.request.RequestProcessor;
+import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
+import org.objectweb.proactive.core.config.ProActiveConfiguration;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.node.NodeException;
 import org.objectweb.proactive.core.node.NodeFactory;
@@ -115,14 +114,13 @@ public class Service {
         this.body = body;
         this.requestQueue = body.getRequestQueue();
         try {
-			Node node = NodeFactory.getNode(this.body.getNodeURL());
-            if("true".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))) {
-                System.out.println("technical service");
-                this.body.setReifiedObject(new RequestLoggerDecorator(this.body, node.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER)));
-            }
-//			if ("true".equals(node.getProperty(FaultToleranceTechnicalService.FT_ENABLED))) {
-//				this.body.setReifiedObject(new FTDecorator(this.body, (FTManagerCIC) ((AbstractBody) this.body).getFTManager()));
-//			}
+ 			Node node = NodeFactory.getNode(this.body.getNodeURL());
+ 			if("true".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))) {
+ 				this.body.attach(new RequestLoggerDecorator(this.body, node.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER)));
+        	}
+ 			else if (! "false".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))){
+				this.body.attach(new RequestLoggerDecorator(this.body, CentralPAPropertyRepository.PA_MULTIACTIVITY_DEFAULT_LOGGING.getValue()));
+ 			}
         }
         catch (NodeException e) {
         	e.printStackTrace();

@@ -73,7 +73,7 @@ public class BlockingRequestQueueImpl extends RequestQueueImpl implements java.i
     // -- CONSTRUCTORS -----------------------------------------------
     //
     public BlockingRequestQueueImpl(Body body, UniqueID ownerID) {
-        super(body, ownerID);
+    	super(body, ownerID);
         shouldWait = true;
     }
 

@@ -136,813 +136,811 @@ import org.objectweb.proactive.multiactivity.execution.FutureWaiterRegistry;
  * @since ProActive 0.9
  */
 public abstract class BodyImpl extends AbstractBody implements java.io.Serializable, BodyImplMBean {
-	//
-	// -- STATIC MEMBERS -----------------------------------------------
-	//
-
-	//
-	// -- PROTECTED MEMBERS -----------------------------------------------
-	//
-
-	/**
-	 * The component in charge of receiving reply
-	 */
-	protected ReplyReceiver replyReceiver;
-
-	/**
-	 * The component in charge of receiving request
-	 */
-	protected RequestReceiver requestReceiver;
-
-	// already checked methods
-	private HashMap<String, HashSet<List<Class<?>>>> checkedMethodNames;
-
-	//
-	// -- CONSTRUCTORS -----------------------------------------------
-	//
-
-	/**
-	 * Creates a new AbstractBody. Used for serialization.
-	 */
-	public BodyImpl() {
-	}
-
-	/**
-	 * Creates a new AbstractBody for an active object attached to a given node.
-	 *
-	 * @param reifiedObject the active object that body is for
-	 * @param nodeURL       the URL of the node that body is attached to
-	 * @param factory       the factory able to construct new factories for each type of meta objects
-	 *                      needed by this body
-	 */
-	public BodyImpl(Object reifiedObject, String nodeURL, MetaObjectFactory factory)
-			throws ActiveObjectCreationException {
-		super(reifiedObject, nodeURL, factory);
-
-		super.isProActiveInternalObject = reifiedObject instanceof ProActiveInternalObject;
-
-		// TIMING
-		if (!super.isProActiveInternalObject) {
-			super.timersContainer = CoreTimersContainer.create(super.bodyID, reifiedObject, factory, nodeURL);
-
-			if (super.timersContainer != null) {
-				TimerWarehouse.enableTimers();
-				// START TOTAL TIMER
-				TimerWarehouse.startTimer(super.bodyID, TimerWarehouse.TOTAL);
-			}
-		}
-
-		this.checkedMethodNames = new HashMap<String, HashSet<List<Class<?>>>>();
-
-		this.requestReceiver = factory.newRequestReceiverFactory().newRequestReceiver();
-		this.replyReceiver = factory.newReplyReceiverFactory().newReplyReceiver();
-
-		setLocalBodyImpl(new ActiveLocalBodyStrategy(reifiedObject, factory.newRequestQueueFactory()
-				.newRequestQueue(this, this.bodyID), factory.newRequestFactory()));
-		this.localBodyStrategy.getFuturePool().setOwnerBody(this);
-
-		// FAULT TOLERANCE=
-		try {
-			Node node = NodeFactory.getNode(this.getNodeURL());
-			if ("true".equals(node.getProperty(FaultToleranceTechnicalService.FT_ENABLED))) {
-				// if the object is a ProActive internal object, FT is disabled
-				if (!super.isProActiveInternalObject) {
-					// if the object is not serializable or instance of non static enclosing class (PROACTIVE-277), FT is disabled
-					Class reifiedClass = this.localBodyStrategy.getReifiedObject().getClass();
-					if ((this.localBodyStrategy.getReifiedObject() instanceof Serializable) ||
-							(reifiedClass.isMemberClass() && !Modifier.isStatic(reifiedClass.getModifiers()))) {
-						try {
-							// create the fault tolerance manager
-							int protocolSelector = FTManager.getProtoSelector(node
-									.getProperty(FaultToleranceTechnicalService.PROTOCOL));
-							this.ftmanager = (FTManagerCIC) factory.newFTManagerFactory().newFTManager(protocolSelector);
-							this.ftmanager.init(this);
-							if (bodyLogger.isDebugEnabled()) {
-								bodyLogger.debug("Init FTManager on " + this.getNodeURL());
-							}
-						} catch (ProActiveException e) {
-							bodyLogger
-							.error("**ERROR** Unable to init FTManager. Fault-tolerance is disabled " +
-									e);
-							this.ftmanager = null;
-						}
-					} else {
-						// target body is not serilizable
-						bodyLogger
-						.error("**WARNING** Activated object is not serializable or instance of non static member class (" +
-								this.localBodyStrategy.getReifiedObject().getClass() +
-								"). Fault-tolerance is disabled for this active object");
-						this.ftmanager = null;
-					}
-				}
-			} else {
-				this.ftmanager = null;
-			}
-		} catch (ProActiveException e) {
-			bodyLogger.error("**ERROR** Unable to read node configuration. Fault-tolerance is disabled");
-			this.ftmanager = null;
-		}
-
-		this.gc = new GarbageCollector(this);
-
-		// JMX registration
-		if (!super.isProActiveInternalObject) {
-			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-			ObjectName oname = FactoryName.createActiveObjectName(this.bodyID);
-			if (!mbs.isRegistered(oname)) {
-				super.mbean = new BodyWrapper(oname, this);
-				try {
-					mbs.registerMBean(mbean, oname);
-				} catch (InstanceAlreadyExistsException e) {
-					bodyLogger.error("A MBean with the object name " + oname + " already exists", e);
-				} catch (MBeanRegistrationException e) {
-					bodyLogger.error("Can't register the MBean of the body", e);
-				} catch (NotCompliantMBeanException e) {
-					bodyLogger.error("The MBean of the body is not JMX compliant", e);
-				}
-			}
-		}
-
-		// ImmediateService 
-		initializeImmediateService(reifiedObject);
-	}
-
-	//
-	// -- PROTECTED METHODS -----------------------------------------------
-	//
-
-	/**
-	 * Receives a request for later processing. The call to this method is non blocking unless the
-	 * body cannot temporary receive the request.
-	 *
-	 * @param request the request to process
-	 * @throws java.io.IOException if the request cannot be accepted
-	 */
-	@Override
-	protected int internalReceiveRequest(Request request) throws java.io.IOException,
-	RenegotiateSessionException {
-		// JMX Notification
-		if (!isProActiveInternalObject && (this.mbean != null)) {
-			String tagNotification = createTagNotification(request.getTags());
-			RequestNotificationData requestNotificationData = new RequestNotificationData(request
-					.getSourceBodyID(), request.getSenderNodeURL(), this.bodyID, this.nodeURL, request
-					.getMethodName(), getRequestQueue().size() + 1, request.getSequenceNumber(),
-					tagNotification);
-			this.mbean.sendNotification(NotificationType.requestReceived, requestNotificationData);
-		}
-
-		// END JMX Notification
-
-		// request queue length = number of requests in queue
-		// + the one to add now
-		try {
-			return this.requestReceiver.receiveRequest(request, this);
-		} catch (CommunicationForbiddenException e) {
-			e.printStackTrace();
-		}
-
-		return 0;
-	}
-
-	/**
-	 * Receives a reply in response to a former request.
-	 *
-	 * @param reply the reply received
-	 * @throws java.io.IOException if the reply cannot be accepted
-	 */
-	@Override
-	protected int internalReceiveReply(Reply reply) throws java.io.IOException {
-		// JMX Notification
-		if (!isProActiveInternalObject && (this.mbean != null) && reply.getResult().getException() == null) {
-			String tagNotification = createTagNotification(reply.getTags());
-			RequestNotificationData requestNotificationData = new RequestNotificationData(
-					BodyImpl.this.bodyID, BodyImpl.this.getNodeURL(), reply.getSourceBodyID(), this.nodeURL,
-					reply.getMethodName(), getRequestQueue().size() + 1, reply.getSequenceNumber(),
-					tagNotification);
-			this.mbean.sendNotification(NotificationType.replyReceived, requestNotificationData);
-		}
-
-		// END JMX Notification
-		return replyReceiver.receiveReply(reply, this, getFuturePool());
-	}
-
-	/**
-	 * Signals that the activity of this body, managed by the active thread has just stopped.
-	 *
-	 * @param completeACs if true, and if there are remaining AC in the futurepool, the AC thread is
-	 *                    not killed now; it will be killed after the sending of the last remaining AC.
-	 */
-	@Override
-	protected void activityStopped(boolean completeACs) {
-		super.activityStopped(completeACs);
-
-		try {
-			this.localBodyStrategy.getRequestQueue().destroy();
-		} catch (ProActiveRuntimeException e) {
-			// this method can be called twos times if the automatic
-			// continuation thread
-			// is killed *after* the activity thread.
-			bodyLogger.debug("Terminating already terminated body " + this.getID());
-		}
-
-		this.getFuturePool().terminateAC(completeACs);
-
-		if (!completeACs) {
-			setLocalBodyImpl(new InactiveLocalBodyStrategy());
-		} else {
-			// the futurepool is still needed for remaining ACs
-			setLocalBodyImpl(new InactiveLocalBodyStrategy(this.getFuturePool()));
-		}
-
-		// terminate request receiver
-		this.requestReceiver.terminate();
-	}
-
-	public boolean checkMethod(String methodName) {
-		return checkMethod(methodName, null);
-	}
-
-	@Deprecated
-	public void setImmediateService(String methodName) {
-		setImmediateService(methodName, false);
-	}
-
-	public void setImmediateService(String methodName, boolean uniqueThread) {
-		checkImmediateServiceMode(methodName, null, uniqueThread);
-		((RequestReceiverImpl) this.requestReceiver).setImmediateService(methodName, uniqueThread);
-	}
-
-	public void setImmediateService(String methodName, Class<?>[] parametersTypes, boolean uniqueThread) {
-		checkImmediateServiceMode(methodName, parametersTypes, uniqueThread);
-		((RequestReceiverImpl) this.requestReceiver).setImmediateService(methodName, parametersTypes,
-				uniqueThread);
-	}
-
-	protected void initializeImmediateService(Object reifiedObject) {
-		Method[] methods = reifiedObject.getClass().getMethods();
-		for (int i = 0; i < methods.length; i++) {
-			Method m = methods[i];
-			ImmediateService is = m.getAnnotation(ImmediateService.class);
-			if (is != null) {
-				setImmediateService(m.getName(), m.getParameterTypes(), is.uniqueThread());
-			}
-		}
-	}
-
-	private void checkImmediateServiceMode(String methodName, Class<?>[] parametersTypes, boolean uniqueThread) {
-		// see PROACTIVE-309
-		if (!((ComponentBodyImpl) this).isComponent()) {
-			if (parametersTypes == null) { // all args
-				if (!((ComponentBodyImpl) this).isComponent()) {
-					if (!checkMethod(methodName)) {
-						throw new NoSuchMethodError(methodName + " is not defined in " +
-								getReifiedObject().getClass().getName());
-					}
-				}
-			} else { // args are specified
-				if (!checkMethod(methodName, parametersTypes)) {
-					String signature = methodName + "(";
-					for (int i = 0; i < parametersTypes.length; i++) {
-						signature += parametersTypes[i] + ((i < parametersTypes.length - 1) ? "," : "");
-					}
-					signature += " is not defined in " + getReifiedObject().getClass().getName();
-					throw new NoSuchMethodError(signature);
-				}
-			}
-		}
-
-		// cannot use IS with unique thread with fault-tolerant active object
-		if (uniqueThread && this.ftmanager != null) {
-			throw new ProActiveRuntimeException("The method " + methodName +
-					" cannot be set as immediate service with unique thread since the active object " +
-					this.getID() + " has enabled fault-tolerance.");
-		}
-	}
-
-	public void removeImmediateService(String methodName) {
-		((RequestReceiverImpl) this.requestReceiver).removeImmediateService(methodName);
-	}
-
-	public void removeImmediateService(String methodName, Class<?>[] parametersTypes) {
-		((RequestReceiverImpl) this.requestReceiver).removeImmediateService(methodName, parametersTypes);
-	}
-
-	public void updateNodeURL(String newNodeURL) {
-		this.nodeURL = newNodeURL;
-	}
-
-	@Override
-	public boolean isInImmediateService() throws IOException {
-		return this.requestReceiver.isInImmediateService();
-	}
-
-	public boolean checkMethod(String methodName, Class<?>[] parametersTypes) {
-		if (this.checkedMethodNames.containsKey(methodName)) {
-			if (parametersTypes != null) {
-				// the method name with the right signature has already been
-				// checked
-				List<Class<?>> parameterTlist = Arrays.asList(parametersTypes);
-				HashSet<List<Class<?>>> signatures = this.checkedMethodNames.get(methodName);
-
-				if (signatures.contains(parameterTlist)) {
-					return true;
-				}
-			} else {
-				// the method name has already been checked
-				return true;
-			}
-		}
-
-		// check if the method is defined as public
-		Class<?> reifiedClass = getReifiedObject().getClass();
-		boolean exists = org.objectweb.proactive.core.mop.Utils.checkMethodExistence(reifiedClass,
-				methodName, parametersTypes);
-
-		if (exists) {
-			storeInMethodCache(methodName, parametersTypes);
-
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Stores the given method name with the given parameters types inside our method signature
-	 * cache to avoid re-testing them
-	 *
-	 * @param methodName      name of the method
-	 * @param parametersTypes parameter type list
-	 */
-	private void storeInMethodCache(String methodName, Class<?>[] parametersTypes) {
-		List<Class<?>> parameterTlist = null;
-
-		if (parametersTypes != null) {
-			parameterTlist = Arrays.asList(parametersTypes);
-		}
-
-		// if we already know a version of this method, we store the new version
-		// in the existing set
-		if (this.checkedMethodNames.containsKey(methodName) && (parameterTlist != null)) {
-			HashSet<List<Class<?>>> signatures = this.checkedMethodNames.get(methodName);
-			signatures.add(parameterTlist);
-		}
-		// otherwise, we create a set containing a single element
-		else {
-			HashSet<List<Class<?>>> signatures = new HashSet<List<Class<?>>>();
-
-			if (parameterTlist != null) {
-				signatures.add(parameterTlist);
-			}
-
-			checkedMethodNames.put(methodName, signatures);
-		}
-	}
-
-	// Create the string from tag data for the notification
-	private String createTagNotification(MessageTags tags) {
-		String result = "";
-		if (tags != null) {
-			for (Tag tag : tags.getTags()) {
-				result += tag.getNotificationMessage();
-			}
-		}
-		return result;
-	}
-
-	//
-	// -- PRIVATE METHODS -----------------------------------------------
-	//
-	//
-	// -- inner classes -----------------------------------------------
-	//
-	private class ActiveLocalBodyStrategy implements LocalBodyStrategy, java.io.Serializable {
-		/**
-		 * A pool future that contains the pending future objects
-		 */
-		protected FuturePool futures;
-
-		/**
-		 * The reified object target of the request processed by this body
-		 */
-		protected Object reifiedObject;
-		protected BlockingRequestQueue requestQueue;
-		protected RequestFactory internalRequestFactory;
-		private long absoluteSequenceID;
-
-		//
-		// -- CONSTRUCTORS -----------------------------------------------
-		//
-		public ActiveLocalBodyStrategy(Object reifiedObject, BlockingRequestQueue requestQueue,
-				RequestFactory requestFactory) {
-			this.reifiedObject = reifiedObject;
-			this.futures = new FuturePool();
-			this.requestQueue = requestQueue;
-			this.internalRequestFactory = requestFactory;
-		}
-
-		//
-		// -- PUBLIC METHODS -----------------------------------------------
-		//
-		//
-		// -- implements LocalBody
-		// -----------------------------------------------
-		//
-		public FuturePool getFuturePool() {
-			return this.futures;
-		}
-
-		public BlockingRequestQueue getRequestQueue() {
-			return this.requestQueue;
-		}
-
-		public Object getReifiedObject() {
-	    	if (this.reifiedObject instanceof ReifiedObjectDecorator) {
-	    		return ((ReifiedObjectDecorator) this.reifiedObject).getReifiedObject();
-	    	}
-	    	else {
-	    		return this.reifiedObject;
-	    	}
-		}
-
-		/**
-		 * Serves the request. The request should be removed from the request queue before serving,
-		 * which is correctly done by all methods of the Service class. However, this condition is
-		 * not ensured for custom calls on serve.
-		 */
-		public void serve(Request request) {
-			if (Profiling.TIMERS_COMPILED) {
-				TimerWarehouse.startServeTimer(bodyID, request.getMethodCall().getReifiedMethod());
-			}
-
-			// push the new context
-			LocalBodyStore.getInstance().pushContext(
-					new Context(BodyImpl.this, request, FutureWaiterRegistry
-							.getForBody(BodyImpl.this.getID())));
-
-			try {
-				serveInternal(request, null);
-			} finally {
-				LocalBodyStore.getInstance().popContext();
-			}
-
-			if (Profiling.TIMERS_COMPILED) {
-				TimerWarehouse.stopServeTimer(BodyImpl.this.bodyID);
-			}
-		}
-
-		/**
-		 * Serves the request with the given exception as result instead of the normal execution.
-		 * The request should be removed from the request queue before serving,
-		 * which is correctly done by all methods of the Service class. However, this condition is
-		 * not ensured for custom calls on serve.
-		 */
-		public void serveWithException(Request request, Throwable exception) {
-			if (Profiling.TIMERS_COMPILED) {
-				TimerWarehouse.startServeTimer(bodyID, request.getMethodCall().getReifiedMethod());
-			}
-
-			// push the new context
-			LocalBodyStore.getInstance().pushContext(new Context(BodyImpl.this, request));
-
-			try {
-				serveInternal(request, exception);
-			} finally {
-				LocalBodyStore.getInstance().popContext();
-			}
-
-			if (Profiling.TIMERS_COMPILED) {
-				TimerWarehouse.stopServeTimer(BodyImpl.this.bodyID);
-			}
-		}
-
-		private void serveInternal(Request request, Throwable exception) {
-			if (request == null) {
-				return;
-			}
-
-			if (!isProActiveInternalObject) {
-				if (((RequestReceiverImpl) requestReceiver).immediateExecution(request)) {
-					debugger.breakpoint(BreakpointType.NewImmediateService, request);
-				} else {
-					debugger.breakpoint(BreakpointType.NewService, request);
-				}
-			}
-
-			// JMX Notification
-			if (!isProActiveInternalObject && (mbean != null)) {
-				String tagNotification = createTagNotification(request.getTags());
-				RequestNotificationData data = new RequestNotificationData(request.getSourceBodyID(), request
-						.getSenderNodeURL(), BodyImpl.this.bodyID, BodyImpl.this.nodeURL, request
-						.getMethodName(), getRequestQueue().size(), request.getSequenceNumber(),
-						tagNotification);
-				mbean.sendNotification(NotificationType.servingStarted, data);
-			}
-
-			// END JMX Notification
-			Reply reply = null;
-
-			// If the request is not a "terminate Active Object" request,
-			// it is served normally.
-			if (!isTerminateAORequest(request)) {
-				if (exception != null) {
-
-					if ((exception instanceof Exception) && !(exception instanceof RuntimeException)) {
-						// if the exception is a checked exception, the method must declare in its throws statement, otherwise
-						// the future sent to the user will be invalid
-						boolean thrownFound = false;
-						for (Class exptype : request.getMethodCall().getReifiedMethod().getExceptionTypes()) {
-							thrownFound = thrownFound || exptype.isAssignableFrom(exception.getClass());
-						}
-						if (!thrownFound) {
-							throw new IllegalArgumentException("Invalid Exception " + exception.getClass() +
-									". The method " + request.getMethodCall().getReifiedMethod() +
-									" don't declare it to be thrown.");
-						}
-						reply = new ReplyImpl(BodyImpl.this.getID(), request.getSequenceNumber(), request
-								.getMethodName(), new MethodCallResult(null, exception), securityManager);
-					} else {
-						reply = new ReplyImpl(BodyImpl.this.getID(), request.getSequenceNumber(), request
-								.getMethodName(), new MethodCallResult(null, exception), securityManager);
-					}
-
-				} else {
-					reply = request.serve(BodyImpl.this);
-				}
-			}
-
-			if (!isProActiveInternalObject) {
-				try {
-					if (isInImmediateService())
-						debugger.breakpoint(BreakpointType.EndImmediateService, request);
-					else
-						debugger.breakpoint(BreakpointType.EndService, request);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-
-			if (reply == null) {
-				if (!isActive()) {
-					return; // test if active in case of terminate() method
-					// otherwise eventProducer would be null
-				}
-
-				// JMX Notification
-				if (!isProActiveInternalObject && (mbean != null)) {
-					String tagNotification = createTagNotification(request.getTags());
-					RequestNotificationData data = new RequestNotificationData(request.getSourceBodyID(),
-							request.getSenderNodeURL(), BodyImpl.this.bodyID, BodyImpl.this.nodeURL, request
-							.getMethodName(), getRequestQueue().size(), request.getSequenceNumber(),
-							tagNotification);
-					mbean.sendNotification(NotificationType.voidRequestServed, data);
-				}
-
-				// END JMX Notification
-				return;
-			}
-
-			if (Profiling.TIMERS_COMPILED) {
-				TimerWarehouse.startTimer(BodyImpl.this.bodyID, TimerWarehouse.SEND_REPLY);
-			}
-
-			// JMX Notification
-			if (!isProActiveInternalObject && (mbean != null) && reply.getResult().getException() == null) {
-				String tagNotification = createTagNotification(request.getTags());
-				RequestNotificationData data = new RequestNotificationData(request.getSourceBodyID(), request
-						.getSenderNodeURL(), BodyImpl.this.bodyID, BodyImpl.this.nodeURL, request
-						.getMethodName(), getRequestQueue().size(), request.getSequenceNumber(),
-						tagNotification);
-				mbean.sendNotification(NotificationType.replySent, data);
-			}
-
-			// END JMX Notification
-			ArrayList<UniversalBody> destinations = new ArrayList<UniversalBody>();
-			destinations.add(request.getSender());
-			this.getFuturePool().registerDestinations(destinations);
-
-			// Modify result object
-			Object initialObject = null;
-			Object stubOnActiveObject = null;
-			Object modifiedObject = null;
-			ObjectReplacer objectReplacer = null;
-			if (CentralPAPropertyRepository.PA_IMPLICITGETSTUBONTHIS.isTrue()) {
-				initialObject = reply.getResult().getResultObjet();
-				try {
-					PAActiveObject.getStubOnThis();
-					stubOnActiveObject = (Object) MOP.createStubObject(BodyImpl.this.getReifiedObject()
-							.getClass().getName(), BodyImpl.this.getRemoteAdapter());
-					objectReplacer = new ObjectReferenceReplacer(BodyImpl.this.getReifiedObject(),
-							stubOnActiveObject);
-					modifiedObject = objectReplacer.replaceObject(initialObject);
-					reply.getResult().setResult(modifiedObject);
-				} catch (InactiveBodyException e) {
-					e.printStackTrace();
-				} catch (MOPException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-			}
-			// FAULT-TOLERANCE
-			if (BodyImpl.this.ftmanager != null) {
+    //
+    // -- STATIC MEMBERS -----------------------------------------------
+    //
+
+    //
+    // -- PROTECTED MEMBERS -----------------------------------------------
+    //
+
+    /**
+     * The component in charge of receiving reply
+     */
+    protected ReplyReceiver replyReceiver;
+
+    /**
+     * The component in charge of receiving request
+     */
+    protected RequestReceiver requestReceiver;
+
+    // already checked methods
+    private HashMap<String, HashSet<List<Class<?>>>> checkedMethodNames;
+
+    //
+    // -- CONSTRUCTORS -----------------------------------------------
+    //
+
+    /**
+     * Creates a new AbstractBody. Used for serialization.
+     */
+    public BodyImpl() {
+    }
+
+    /**
+     * Creates a new AbstractBody for an active object attached to a given node.
+     *
+     * @param reifiedObject the active object that body is for
+     * @param nodeURL       the URL of the node that body is attached to
+     * @param factory       the factory able to construct new factories for each type of meta objects
+     *                      needed by this body
+     */
+    public BodyImpl(Object reifiedObject, String nodeURL, MetaObjectFactory factory)
+            throws ActiveObjectCreationException {
+        super(reifiedObject, nodeURL, factory);
+
+        super.isProActiveInternalObject = reifiedObject instanceof ProActiveInternalObject;
+
+        // TIMING
+        if (!super.isProActiveInternalObject) {
+            super.timersContainer = CoreTimersContainer.create(super.bodyID, reifiedObject, factory, nodeURL);
+
+            if (super.timersContainer != null) {
+                TimerWarehouse.enableTimers();
+                // START TOTAL TIMER
+                TimerWarehouse.startTimer(super.bodyID, TimerWarehouse.TOTAL);
+            }
+        }
+
+        this.checkedMethodNames = new HashMap<String, HashSet<List<Class<?>>>>();
+
+        this.requestReceiver = factory.newRequestReceiverFactory().newRequestReceiver();
+        this.replyReceiver = factory.newReplyReceiverFactory().newReplyReceiver();
+
+        setLocalBodyImpl(new ActiveLocalBodyStrategy(reifiedObject, factory.newRequestQueueFactory()
+                .newRequestQueue(this, this.bodyID), factory.newRequestFactory()));
+        this.localBodyStrategy.getFuturePool().setOwnerBody(this);
+
+        // FAULT TOLERANCE=
+        try {
+            Node node = NodeFactory.getNode(this.getNodeURL());
+            if ("true".equals(node.getProperty(FaultToleranceTechnicalService.FT_ENABLED))) {
+                // if the object is a ProActive internal object, FT is disabled
+                if (!super.isProActiveInternalObject) {
+                    // if the object is not serializable or instance of non static enclosing class (PROACTIVE-277), FT is disabled
+                    Class reifiedClass = this.localBodyStrategy.getReifiedObject().getClass();
+                    if ((this.localBodyStrategy.getReifiedObject() instanceof Serializable) ||
+                        (reifiedClass.isMemberClass() && !Modifier.isStatic(reifiedClass.getModifiers()))) {
+                        try {
+                            // create the fault tolerance manager
+                            int protocolSelector = FTManager.getProtoSelector(node
+                                    .getProperty(FaultToleranceTechnicalService.PROTOCOL));
+                            this.ftmanager = factory.newFTManagerFactory().newFTManager(protocolSelector);
+                            this.ftmanager.init(this);
+                            if (bodyLogger.isDebugEnabled()) {
+                                bodyLogger.debug("Init FTManager on " + this.getNodeURL());
+                            }
+                        } catch (ProActiveException e) {
+                            bodyLogger
+                                    .error("**ERROR** Unable to init FTManager. Fault-tolerance is disabled " +
+                                        e);
+                            this.ftmanager = null;
+                        }
+                    } else {
+                        // target body is not serilizable
+                        bodyLogger
+                                .error("**WARNING** Activated object is not serializable or instance of non static member class (" +
+                                    this.localBodyStrategy.getReifiedObject().getClass() +
+                                    "). Fault-tolerance is disabled for this active object");
+                        this.ftmanager = null;
+                    }
+                }
+            } else {
+                this.ftmanager = null;
+            }
+        } catch (ProActiveException e) {
+            bodyLogger.error("**ERROR** Unable to read node configuration. Fault-tolerance is disabled");
+            this.ftmanager = null;
+        }
+
+        this.gc = new GarbageCollector(this);
+
+        // JMX registration
+        if (!super.isProActiveInternalObject) {
+            MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+            ObjectName oname = FactoryName.createActiveObjectName(this.bodyID);
+            if (!mbs.isRegistered(oname)) {
+                super.mbean = new BodyWrapper(oname, this);
+                try {
+                    mbs.registerMBean(mbean, oname);
+                } catch (InstanceAlreadyExistsException e) {
+                    bodyLogger.error("A MBean with the object name " + oname + " already exists", e);
+                } catch (MBeanRegistrationException e) {
+                    bodyLogger.error("Can't register the MBean of the body", e);
+                } catch (NotCompliantMBeanException e) {
+                    bodyLogger.error("The MBean of the body is not JMX compliant", e);
+                }
+            }
+        }
+
+        // ImmediateService 
+        initializeImmediateService(reifiedObject);
+    }
+
+    //
+    // -- PROTECTED METHODS -----------------------------------------------
+    //
+
+    /**
+     * Receives a request for later processing. The call to this method is non blocking unless the
+     * body cannot temporary receive the request.
+     *
+     * @param request the request to process
+     * @throws java.io.IOException if the request cannot be accepted
+     */
+    @Override
+    protected int internalReceiveRequest(Request request) throws java.io.IOException,
+            RenegotiateSessionException {
+        // JMX Notification
+        if (!isProActiveInternalObject && (this.mbean != null)) {
+            String tagNotification = createTagNotification(request.getTags());
+            RequestNotificationData requestNotificationData = new RequestNotificationData(request
+                    .getSourceBodyID(), request.getSenderNodeURL(), this.bodyID, this.nodeURL, request
+                    .getMethodName(), getRequestQueue().size() + 1, request.getSequenceNumber(),
+                tagNotification);
+            this.mbean.sendNotification(NotificationType.requestReceived, requestNotificationData);
+        }
+
+        // END JMX Notification
+
+        // request queue length = number of requests in queue
+        // + the one to add now
+        try {
+            return this.requestReceiver.receiveRequest(request, this);
+        } catch (CommunicationForbiddenException e) {
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Receives a reply in response to a former request.
+     *
+     * @param reply the reply received
+     * @throws java.io.IOException if the reply cannot be accepted
+     */
+    @Override
+    protected int internalReceiveReply(Reply reply) throws java.io.IOException {
+        // JMX Notification
+        if (!isProActiveInternalObject && (this.mbean != null) && reply.getResult().getException() == null) {
+            String tagNotification = createTagNotification(reply.getTags());
+            RequestNotificationData requestNotificationData = new RequestNotificationData(
+                BodyImpl.this.bodyID, BodyImpl.this.getNodeURL(), reply.getSourceBodyID(), this.nodeURL,
+                reply.getMethodName(), getRequestQueue().size() + 1, reply.getSequenceNumber(),
+                tagNotification);
+            this.mbean.sendNotification(NotificationType.replyReceived, requestNotificationData);
+        }
+
+        // END JMX Notification
+        return replyReceiver.receiveReply(reply, this, getFuturePool());
+    }
+
+    /**
+     * Signals that the activity of this body, managed by the active thread has just stopped.
+     *
+     * @param completeACs if true, and if there are remaining AC in the futurepool, the AC thread is
+     *                    not killed now; it will be killed after the sending of the last remaining AC.
+     */
+    @Override
+    protected void activityStopped(boolean completeACs) {
+        super.activityStopped(completeACs);
+
+        try {
+            this.localBodyStrategy.getRequestQueue().destroy();
+        } catch (ProActiveRuntimeException e) {
+            // this method can be called twos times if the automatic
+            // continuation thread
+            // is killed *after* the activity thread.
+            bodyLogger.debug("Terminating already terminated body " + this.getID());
+        }
+
+        this.getFuturePool().terminateAC(completeACs);
+
+        if (!completeACs) {
+            setLocalBodyImpl(new InactiveLocalBodyStrategy());
+        } else {
+            // the futurepool is still needed for remaining ACs
+            setLocalBodyImpl(new InactiveLocalBodyStrategy(this.getFuturePool()));
+        }
+
+        // terminate request receiver
+        this.requestReceiver.terminate();
+    }
+
+    public boolean checkMethod(String methodName) {
+        return checkMethod(methodName, null);
+    }
+
+    @Deprecated
+    public void setImmediateService(String methodName) {
+        setImmediateService(methodName, false);
+    }
+
+    public void setImmediateService(String methodName, boolean uniqueThread) {
+        checkImmediateServiceMode(methodName, null, uniqueThread);
+        ((RequestReceiverImpl) this.requestReceiver).setImmediateService(methodName, uniqueThread);
+    }
+
+    public void setImmediateService(String methodName, Class<?>[] parametersTypes, boolean uniqueThread) {
+        checkImmediateServiceMode(methodName, parametersTypes, uniqueThread);
+        ((RequestReceiverImpl) this.requestReceiver).setImmediateService(methodName, parametersTypes,
+                uniqueThread);
+    }
+
+    protected void initializeImmediateService(Object reifiedObject) {
+        Method[] methods = reifiedObject.getClass().getMethods();
+        for (int i = 0; i < methods.length; i++) {
+            Method m = methods[i];
+            ImmediateService is = m.getAnnotation(ImmediateService.class);
+            if (is != null) {
+                setImmediateService(m.getName(), m.getParameterTypes(), is.uniqueThread());
+            }
+        }
+    }
+
+    private void checkImmediateServiceMode(String methodName, Class<?>[] parametersTypes, boolean uniqueThread) {
+        // see PROACTIVE-309
+        if (!((ComponentBodyImpl) this).isComponent()) {
+            if (parametersTypes == null) { // all args
+                if (!((ComponentBodyImpl) this).isComponent()) {
+                    if (!checkMethod(methodName)) {
+                        throw new NoSuchMethodError(methodName + " is not defined in " +
+                            getReifiedObject().getClass().getName());
+                    }
+                }
+            } else { // args are specified
+                if (!checkMethod(methodName, parametersTypes)) {
+                    String signature = methodName + "(";
+                    for (int i = 0; i < parametersTypes.length; i++) {
+                        signature += parametersTypes[i] + ((i < parametersTypes.length - 1) ? "," : "");
+                    }
+                    signature += " is not defined in " + getReifiedObject().getClass().getName();
+                    throw new NoSuchMethodError(signature);
+                }
+            }
+        }
+
+        // cannot use IS with unique thread with fault-tolerant active object
+        if (uniqueThread && this.ftmanager != null) {
+            throw new ProActiveRuntimeException("The method " + methodName +
+                " cannot be set as immediate service with unique thread since the active object " +
+                this.getID() + " has enabled fault-tolerance.");
+        }
+    }
+
+    public void removeImmediateService(String methodName) {
+        ((RequestReceiverImpl) this.requestReceiver).removeImmediateService(methodName);
+    }
+
+    public void removeImmediateService(String methodName, Class<?>[] parametersTypes) {
+        ((RequestReceiverImpl) this.requestReceiver).removeImmediateService(methodName, parametersTypes);
+    }
+
+    public void updateNodeURL(String newNodeURL) {
+        this.nodeURL = newNodeURL;
+    }
+
+    @Override
+    public boolean isInImmediateService() throws IOException {
+        return this.requestReceiver.isInImmediateService();
+    }
+
+    public boolean checkMethod(String methodName, Class<?>[] parametersTypes) {
+        if (this.checkedMethodNames.containsKey(methodName)) {
+            if (parametersTypes != null) {
+                // the method name with the right signature has already been
+                // checked
+                List<Class<?>> parameterTlist = Arrays.asList(parametersTypes);
+                HashSet<List<Class<?>>> signatures = this.checkedMethodNames.get(methodName);
+
+                if (signatures.contains(parameterTlist)) {
+                    return true;
+                }
+            } else {
+                // the method name has already been checked
+                return true;
+            }
+        }
+
+        // check if the method is defined as public
+        Class<?> reifiedClass = getReifiedObject().getClass();
+        boolean exists = org.objectweb.proactive.core.mop.Utils.checkMethodExistence(reifiedClass,
+                methodName, parametersTypes);
+
+        if (exists) {
+            storeInMethodCache(methodName, parametersTypes);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Stores the given method name with the given parameters types inside our method signature
+     * cache to avoid re-testing them
+     *
+     * @param methodName      name of the method
+     * @param parametersTypes parameter type list
+     */
+    private void storeInMethodCache(String methodName, Class<?>[] parametersTypes) {
+        List<Class<?>> parameterTlist = null;
+
+        if (parametersTypes != null) {
+            parameterTlist = Arrays.asList(parametersTypes);
+        }
+
+        // if we already know a version of this method, we store the new version
+        // in the existing set
+        if (this.checkedMethodNames.containsKey(methodName) && (parameterTlist != null)) {
+            HashSet<List<Class<?>>> signatures = this.checkedMethodNames.get(methodName);
+            signatures.add(parameterTlist);
+        }
+        // otherwise, we create a set containing a single element
+        else {
+            HashSet<List<Class<?>>> signatures = new HashSet<List<Class<?>>>();
+
+            if (parameterTlist != null) {
+                signatures.add(parameterTlist);
+            }
+
+            checkedMethodNames.put(methodName, signatures);
+        }
+    }
+
+    // Create the string from tag data for the notification
+    private String createTagNotification(MessageTags tags) {
+        String result = "";
+        if (tags != null) {
+            for (Tag tag : tags.getTags()) {
+                result += tag.getNotificationMessage();
+            }
+        }
+        return result;
+    }
+
+    //
+    // -- PRIVATE METHODS -----------------------------------------------
+    //
+    //
+    // -- inner classes -----------------------------------------------
+    //
+    private class ActiveLocalBodyStrategy implements LocalBodyStrategy, java.io.Serializable {
+        /**
+         * A pool future that contains the pending future objects
+         */
+        protected FuturePool futures;
+
+        /**
+         * The reified object target of the request processed by this body
+         */
+        protected Object reifiedObject;
+        protected BlockingRequestQueue requestQueue;
+        protected RequestFactory internalRequestFactory;
+        private long absoluteSequenceID;
+
+        //
+        // -- CONSTRUCTORS -----------------------------------------------
+        //
+        public ActiveLocalBodyStrategy(Object reifiedObject, BlockingRequestQueue requestQueue,
+                RequestFactory requestFactory) {
+            this.reifiedObject = reifiedObject;
+            this.futures = new FuturePool();
+            this.requestQueue = requestQueue;
+            this.internalRequestFactory = requestFactory;
+        }
+
+        //
+        // -- PUBLIC METHODS -----------------------------------------------
+        //
+        //
+        // -- implements LocalBody
+        // -----------------------------------------------
+        //
+        public FuturePool getFuturePool() {
+            return this.futures;
+        }
+
+        public BlockingRequestQueue getRequestQueue() {
+            return this.requestQueue;
+        }
+
+        public Object getReifiedObject() {
+            return this.reifiedObject;
+        }
+
+        /**
+         * Serves the request. The request should be removed from the request queue before serving,
+         * which is correctly done by all methods of the Service class. However, this condition is
+         * not ensured for custom calls on serve.
+         */
+        public void serve(Request request) {
+            if (Profiling.TIMERS_COMPILED) {
+                TimerWarehouse.startServeTimer(bodyID, request.getMethodCall().getReifiedMethod());
+            }
+
+            // push the new context
+            LocalBodyStore.getInstance().pushContext(
+                    new Context(BodyImpl.this, request, FutureWaiterRegistry
+                            .getForBody(BodyImpl.this.getID())));
+
+            try {
+                serveInternal(request, null);
+            } finally {
+                LocalBodyStore.getInstance().popContext();
+            }
+
+            if (Profiling.TIMERS_COMPILED) {
+                TimerWarehouse.stopServeTimer(BodyImpl.this.bodyID);
+            }
+        }
+
+        /**
+         * Serves the request with the given exception as result instead of the normal execution.
+         * The request should be removed from the request queue before serving,
+         * which is correctly done by all methods of the Service class. However, this condition is
+         * not ensured for custom calls on serve.
+         */
+        public void serveWithException(Request request, Throwable exception) {
+            if (Profiling.TIMERS_COMPILED) {
+                TimerWarehouse.startServeTimer(bodyID, request.getMethodCall().getReifiedMethod());
+            }
+
+            // push the new context
+            LocalBodyStore.getInstance().pushContext(new Context(BodyImpl.this, request));
+
+            try {
+                serveInternal(request, exception);
+            } finally {
+                LocalBodyStore.getInstance().popContext();
+            }
+
+            if (Profiling.TIMERS_COMPILED) {
+                TimerWarehouse.stopServeTimer(BodyImpl.this.bodyID);
+            }
+        }
+
+        private void serveInternal(Request request, Throwable exception) {
+            if (request == null) {
+                return;
+            }
+
+            if (!isProActiveInternalObject) {
+                if (((RequestReceiverImpl) requestReceiver).immediateExecution(request)) {
+                    debugger.breakpoint(BreakpointType.NewImmediateService, request);
+                } else {
+                    debugger.breakpoint(BreakpointType.NewService, request);
+                }
+            }
+
+            // JMX Notification
+            if (!isProActiveInternalObject && (mbean != null)) {
+                String tagNotification = createTagNotification(request.getTags());
+                RequestNotificationData data = new RequestNotificationData(request.getSourceBodyID(), request
+                        .getSenderNodeURL(), BodyImpl.this.bodyID, BodyImpl.this.nodeURL, request
+                        .getMethodName(), getRequestQueue().size(), request.getSequenceNumber(),
+                    tagNotification);
+                mbean.sendNotification(NotificationType.servingStarted, data);
+            }
+
+            // END JMX Notification
+            Reply reply = null;
+
+            // If the request is not a "terminate Active Object" request,
+            // it is served normally.
+            if (!isTerminateAORequest(request)) {
+                if (exception != null) {
+
+                    if ((exception instanceof Exception) && !(exception instanceof RuntimeException)) {
+                        // if the exception is a checked exception, the method must declare in its throws statement, otherwise
+                        // the future sent to the user will be invalid
+                        boolean thrownFound = false;
+                        for (Class exptype : request.getMethodCall().getReifiedMethod().getExceptionTypes()) {
+                            thrownFound = thrownFound || exptype.isAssignableFrom(exception.getClass());
+                        }
+                        if (!thrownFound) {
+                            throw new IllegalArgumentException("Invalid Exception " + exception.getClass() +
+                                ". The method " + request.getMethodCall().getReifiedMethod() +
+                                " don't declare it to be thrown.");
+                        }
+                        reply = new ReplyImpl(BodyImpl.this.getID(), request.getSequenceNumber(), request
+                                .getMethodName(), new MethodCallResult(null, exception), securityManager);
+                    } else {
+                        reply = new ReplyImpl(BodyImpl.this.getID(), request.getSequenceNumber(), request
+                                .getMethodName(), new MethodCallResult(null, exception), securityManager);
+                    }
+
+                } else {
+                    reply = request.serve(BodyImpl.this);
+                }
+            }
+
+            if (!isProActiveInternalObject) {
+                try {
+                    if (isInImmediateService())
+                        debugger.breakpoint(BreakpointType.EndImmediateService, request);
+                    else
+                        debugger.breakpoint(BreakpointType.EndService, request);
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+
+            if (reply == null) {
+                if (!isActive()) {
+                    return; // test if active in case of terminate() method
+                    // otherwise eventProducer would be null
+                }
+
+                // JMX Notification
+                if (!isProActiveInternalObject && (mbean != null)) {
+                    String tagNotification = createTagNotification(request.getTags());
+                    RequestNotificationData data = new RequestNotificationData(request.getSourceBodyID(),
+                        request.getSenderNodeURL(), BodyImpl.this.bodyID, BodyImpl.this.nodeURL, request
+                                .getMethodName(), getRequestQueue().size(), request.getSequenceNumber(),
+                        tagNotification);
+                    mbean.sendNotification(NotificationType.voidRequestServed, data);
+                }
+
+                // END JMX Notification
+                return;
+            }
+
+            if (Profiling.TIMERS_COMPILED) {
+                TimerWarehouse.startTimer(BodyImpl.this.bodyID, TimerWarehouse.SEND_REPLY);
+            }
+
+            // JMX Notification
+            if (!isProActiveInternalObject && (mbean != null) && reply.getResult().getException() == null) {
+                String tagNotification = createTagNotification(request.getTags());
+                RequestNotificationData data = new RequestNotificationData(request.getSourceBodyID(), request
+                        .getSenderNodeURL(), BodyImpl.this.bodyID, BodyImpl.this.nodeURL, request
+                        .getMethodName(), getRequestQueue().size(), request.getSequenceNumber(),
+                    tagNotification);
+                mbean.sendNotification(NotificationType.replySent, data);
+            }
+
+            // END JMX Notification
+            ArrayList<UniversalBody> destinations = new ArrayList<UniversalBody>();
+            destinations.add(request.getSender());
+            this.getFuturePool().registerDestinations(destinations);
+
+            // Modify result object
+            Object initialObject = null;
+            Object stubOnActiveObject = null;
+            Object modifiedObject = null;
+            ObjectReplacer objectReplacer = null;
+            if (CentralPAPropertyRepository.PA_IMPLICITGETSTUBONTHIS.isTrue()) {
+                initialObject = reply.getResult().getResultObjet();
+                try {
+                    PAActiveObject.getStubOnThis();
+                    stubOnActiveObject = (Object) MOP.createStubObject(BodyImpl.this.getReifiedObject()
+                            .getClass().getName(), BodyImpl.this.getRemoteAdapter());
+                    objectReplacer = new ObjectReferenceReplacer(BodyImpl.this.getReifiedObject(),
+                        stubOnActiveObject);
+                    modifiedObject = objectReplacer.replaceObject(initialObject);
+                    reply.getResult().setResult(modifiedObject);
+                } catch (InactiveBodyException e) {
+                    e.printStackTrace();
+                } catch (MOPException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+
+            }
+            // FAULT-TOLERANCE
+            if (BodyImpl.this.ftmanager != null) {
                 BodyImpl.this.ftmanager.sendReply(reply, request.getSender());
-			} else {
-				// if the reply cannot be sent, try to sent the thrown exception
-				// as result
-				// Useful if the exception is due to the content of the result
-				// (e.g. InvalidClassException)
-				try {
-					this.getDecorator().onSendReplyBefore(reply);
-					reply.send(request.getSender());
-					this.getDecorator().onSendReplyAfter(reply);
-				} catch (Throwable e1) {
-					// see PROACTIVE-1172
-					// previously only IOException were caught but now that new communication protocols
-					// can be added dynamically (remote objects) we can no longer suppose that only IOException
-					// will be thrown i.e. a runtime exception sent by the protocol can go through the stack and
-					// kill the service thread if not caught here.
-					// We do not want the AO to be killed if he cannot send the result.
-					try {
-						// trying to send the exception as result to fill the future.
-						// we want to inform the caller that the result cannot be set in
-						// the future for any reason. let's see if we can put the exception instead.
-						// works only if the exception is not due to a communication issue.
-						this.retrySendReplyWithException(reply, e1, request.getSender());
-					} catch (Throwable retryException1) {
-						// log the issue on the AO side for debugging purpose
-						// the initial exception must be the one to appear in the log.
-						sendReplyExceptionsLogger.error(shortString() + " : Failed to send reply to method:" +
-								request.getMethodName() + " sequence: " + request.getSequenceNumber() + " by " +
-								request.getSenderNodeURL() + "/" + request.getSender(), e1);
-					}
-				}
-			}
+            } else {
+                // if the reply cannot be sent, try to sent the thrown exception
+                // as result
+                // Useful if the exception is due to the content of the result
+                // (e.g. InvalidClassException)
+                try {
+                	
+                	// CALLBACK ON EVENTS
+                	if (BodyImpl.this.attachedCallback != null) {
+                		BodyImpl.this.attachedCallback.onSendReplyBefore(reply);
+                	}
+                	
+                    reply.send(request.getSender());
+                    
+                    // CALLBACK ON EVENTS
+                	if (BodyImpl.this.attachedCallback != null) {
+                		BodyImpl.this.attachedCallback.onSendReplyAfter(reply);
+                	}
+                } catch (Throwable e1) {
+                    // see PROACTIVE-1172
+                    // previously only IOException were caught but now that new communication protocols
+                    // can be added dynamically (remote objects) we can no longer suppose that only IOException
+                    // will be thrown i.e. a runtime exception sent by the protocol can go through the stack and
+                    // kill the service thread if not caught here.
+                    // We do not want the AO to be killed if he cannot send the result.
+                    try {
+                        // trying to send the exception as result to fill the future.
+                        // we want to inform the caller that the result cannot be set in
+                        // the future for any reason. let's see if we can put the exception instead.
+                        // works only if the exception is not due to a communication issue.
+                        this.retrySendReplyWithException(reply, e1, request.getSender());
+                    } catch (Throwable retryException1) {
+                        // log the issue on the AO side for debugging purpose
+                        // the initial exception must be the one to appear in the log.
+                        sendReplyExceptionsLogger.error(shortString() + " : Failed to send reply to method:" +
+                            request.getMethodName() + " sequence: " + request.getSequenceNumber() + " by " +
+                            request.getSenderNodeURL() + "/" + request.getSender(), e1);
+                    }
+                }
+            }
 
-			if (Profiling.TIMERS_COMPILED) {
-				TimerWarehouse.stopTimer(BodyImpl.this.bodyID, TimerWarehouse.SEND_REPLY);
-			}
+            if (Profiling.TIMERS_COMPILED) {
+                TimerWarehouse.stopTimer(BodyImpl.this.bodyID, TimerWarehouse.SEND_REPLY);
+            }
 
-			this.getFuturePool().removeDestinations();
+            this.getFuturePool().removeDestinations();
 
-			// Restore Result Object
-			if (CentralPAPropertyRepository.PA_IMPLICITGETSTUBONTHIS.isTrue() && (objectReplacer != null)) {
-				try {
-					objectReplacer.restoreObject();
-				} catch (IllegalArgumentException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IllegalAccessException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
+            // Restore Result Object
+            if (CentralPAPropertyRepository.PA_IMPLICITGETSTUBONTHIS.isTrue() && (objectReplacer != null)) {
+                try {
+                    objectReplacer.restoreObject();
+                } catch (IllegalArgumentException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (IllegalAccessException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        }
 
-		// If a reply sending has failed, try to send the exception as reply
-		private void retrySendReplyWithException(Reply reply, Throwable e, UniversalBody destination)
-				throws Exception {
+        // If a reply sending has failed, try to send the exception as reply
+        private void retrySendReplyWithException(Reply reply, Throwable e, UniversalBody destination)
+                throws Exception {
 
-			//            Get current request TAGs from current context
-			//            Request currentreq = LocalBodyStore.getInstance().getContext().getCurrentRequest();
-			//            MessageTags tags = null;
-			//
-			//            if (currentreq != null)
-			//                tags = currentreq.getTags();
+            //            Get current request TAGs from current context
+            //            Request currentreq = LocalBodyStore.getInstance().getContext().getCurrentRequest();
+            //            MessageTags tags = null;
+            //
+            //            if (currentreq != null)
+            //                tags = currentreq.getTags();
 
-			Reply exceptionReply = new ReplyImpl(reply.getSourceBodyID(), reply.getSequenceNumber(), reply
-					.getMethodName(), new MethodCallResult(null, e), BodyImpl.this.securityManager/*, tags*/);
-			exceptionReply.send(destination);
-		}
+            Reply exceptionReply = new ReplyImpl(reply.getSourceBodyID(), reply.getSequenceNumber(), reply
+                    .getMethodName(), new MethodCallResult(null, e), BodyImpl.this.securityManager/*, tags*/);
+            exceptionReply.send(destination);
+        }
 
-		public void sendRequest(MethodCall methodCall, Future future, UniversalBody destinationBody)
-				throws IOException, RenegotiateSessionException, CommunicationForbiddenException {
-			long sequenceID = getNextSequenceID();
+        public void sendRequest(MethodCall methodCall, Future future, UniversalBody destinationBody)
+                throws IOException, RenegotiateSessionException, CommunicationForbiddenException {
+            long sequenceID = getNextSequenceID();
 
-			MessageTags tags = applyTags(sequenceID);
+            MessageTags tags = applyTags(sequenceID);
 
-			Request request = this.internalRequestFactory.newRequest(methodCall, BodyImpl.this,
-					future == null, sequenceID, tags);
+            Request request = this.internalRequestFactory.newRequest(methodCall, BodyImpl.this,
+                    future == null, sequenceID, tags);
 
-			// COMPONENTS : generate ComponentRequest for component messages
-			if (methodCall.getComponentMetadata() != null) {
-				request = new ComponentRequestImpl(request);
-			}
+            // COMPONENTS : generate ComponentRequest for component messages
+            if (methodCall.getComponentMetadata() != null) {
+                request = new ComponentRequestImpl(request);
+            }
 
-			if (future != null) {
-				future.setID(sequenceID);
-				this.futures.receiveFuture(future);
-			}
+            if (future != null) {
+                future.setID(sequenceID);
+                this.futures.receiveFuture(future);
+            }
 
-			// JMX Notification
-			// TODO Write this section, after the commit of Arnaud
-			// TODO Send a notification only if the destination doesn't
-			// implement ProActiveInternalObject
-			if (!isProActiveInternalObject && (mbean != null)) {
-				ServerConnector serverConnector = ProActiveRuntimeImpl.getProActiveRuntime()
-						.getJMXServerConnector();
+            // JMX Notification
+            // TODO Write this section, after the commit of Arnaud
+            // TODO Send a notification only if the destination doesn't
+            // implement ProActiveInternalObject
+            if (!isProActiveInternalObject && (mbean != null)) {
+                ServerConnector serverConnector = ProActiveRuntimeImpl.getProActiveRuntime()
+                        .getJMXServerConnector();
 
-				// If the connector server is not active the connectorID can be
-				// null
-				if ((serverConnector != null) && serverConnector.getConnectorServer().isActive()) {
-					UniqueID connectorID = serverConnector.getUniqueID();
+                // If the connector server is not active the connectorID can be
+                // null
+                if ((serverConnector != null) && serverConnector.getConnectorServer().isActive()) {
+                    UniqueID connectorID = serverConnector.getUniqueID();
 
-					if (!connectorID.equals(destinationBody.getID())) {
-						String tagNotification = createTagNotification(tags);
+                    if (!connectorID.equals(destinationBody.getID())) {
+                        String tagNotification = createTagNotification(tags);
 
-						mbean.sendNotification(NotificationType.requestSent, new RequestNotificationData(
-								BodyImpl.this.bodyID, BodyImpl.this.getNodeURL(), destinationBody.getID(),
-								destinationBody.getNodeURL(), methodCall.getName(), -1, request
-								.getSequenceNumber(), tagNotification));
-					}
-				}
-			}
+                        mbean.sendNotification(NotificationType.requestSent, new RequestNotificationData(
+                            BodyImpl.this.bodyID, BodyImpl.this.getNodeURL(), destinationBody.getID(),
+                            destinationBody.getNodeURL(), methodCall.getName(), -1, request
+                                    .getSequenceNumber(), tagNotification));
+                    }
+                }
+            }
 
-			// END JMX Notification
+            // END JMX Notification
 
-			// FAULT TOLERANCE: the sendRequest operation needs to be wrapped to add exceptional clauses
-			if (BodyImpl.this.ftmanager != null) {
+            // FAULT TOLERANCE
+            if (BodyImpl.this.ftmanager != null) {
                 BodyImpl.this.ftmanager.sendRequest(request, destinationBody);
             } else {
-				this.getDecorator().onSendRequestBefore(request);
-				request.send(destinationBody);
-				this.getDecorator().onSendRequestAfter(request);
+            	
+            	// CALLBACK ON EVENTS
+            	if (BodyImpl.this.attachedCallback != null) {
+            		BodyImpl.this.attachedCallback.onSendRequestBefore(request);
+            	}
+            	
+                request.send(destinationBody);
+                
+                // CALLBACK ON EVENTS
+            	if (BodyImpl.this.attachedCallback != null) {
+            		BodyImpl.this.attachedCallback.onSendRequestAfter(request);
+            	}
             }
-		}
+        }
 
-		/**
-		 * Returns a unique identifier that can be used to tag a future, a request
-		 *
-		 * @return a unique identifier that can be used to tag a future, a request.
-		 */
-		public synchronized long getNextSequenceID() {
-			return BodyImpl.this.bodyID.hashCode() + ++this.absoluteSequenceID;
-		}
+        /**
+         * Returns a unique identifier that can be used to tag a future, a request
+         *
+         * @return a unique identifier that can be used to tag a future, a request.
+         */
+        public synchronized long getNextSequenceID() {
+            return BodyImpl.this.bodyID.hashCode() + ++this.absoluteSequenceID;
+        }
 
-		//
-		// -- PROTECTED METHODS -----------------------------------------------
-		//
+        //
+        // -- PROTECTED METHODS -----------------------------------------------
+        //
 
-		/**
-		 * Test if the MethodName of the request is "terminateAO" or "terminateAOImmediately". If
-		 * true, AbstractBody.terminate() is called
-		 *
-		 * @param request The request to serve
-		 * @return true if the name of the method is "terminateAO" or "terminateAOImmediately".
-		 */
-		private boolean isTerminateAORequest(Request request) {
-			boolean terminateRequest = (request.getMethodName()).startsWith("_terminateAO");
+        /**
+         * Test if the MethodName of the request is "terminateAO" or "terminateAOImmediately". If
+         * true, AbstractBody.terminate() is called
+         *
+         * @param request The request to serve
+         * @return true if the name of the method is "terminateAO" or "terminateAOImmediately".
+         */
+        private boolean isTerminateAORequest(Request request) {
+            boolean terminateRequest = (request.getMethodName()).startsWith("_terminateAO");
 
-			if (terminateRequest) {
-				terminate();
-			}
+            if (terminateRequest) {
+                terminate();
+            }
 
-			return terminateRequest;
-		}
+            return terminateRequest;
+        }
 
-		/**
-		 * Propagate all tags attached to the current served request.
-		 *
-		 * @return The MessageTags for the propagation
-		 */
-		private MessageTags applyTags(long sequenceID) {
-			// apply the code of all message TAGs from current context
-			Request currentreq = LocalBodyStore.getInstance().getContext().getCurrentRequest();
-			MessageTags currentMessagetags = null;
-			MessageTags nextTags = messageTagsFactory.newMessageTags();
+        /**
+         * Propagate all tags attached to the current served request.
+         *
+         * @return The MessageTags for the propagation
+         */
+        private MessageTags applyTags(long sequenceID) {
+            // apply the code of all message TAGs from current context
+            Request currentreq = LocalBodyStore.getInstance().getContext().getCurrentRequest();
+            MessageTags currentMessagetags = null;
+            MessageTags nextTags = messageTagsFactory.newMessageTags();
 
-			if (currentreq != null && (currentMessagetags = currentreq.getTags()) != null) {
-				// there is a request with a MessageTags object in the current context
-				for (Tag t : currentMessagetags.getTags()) {
-					Tag newTag = t.apply();
-					if (newTag != null)
-						nextTags.addTag(newTag);
-				}
-			}
-			// Check the presence of the DSI Tag if enabled
-			// Ohterwise add it
-			if (CentralPAPropertyRepository.PA_TAG_DSF.isTrue()) {
-				if (!nextTags.check(DsiTag.IDENTIFIER)) {
-					nextTags.addTag(new DsiTag(bodyID, sequenceID));
-				}
+            if (currentreq != null && (currentMessagetags = currentreq.getTags()) != null) {
+                // there is a request with a MessageTags object in the current context
+                for (Tag t : currentMessagetags.getTags()) {
+                    Tag newTag = t.apply();
+                    if (newTag != null)
+                        nextTags.addTag(newTag);
+                }
+            }
+            // Check the presence of the DSI Tag if enabled
+            // Ohterwise add it
+            if (CentralPAPropertyRepository.PA_TAG_DSF.isTrue()) {
+                if (!nextTags.check(DsiTag.IDENTIFIER)) {
+                    nextTags.addTag(new DsiTag(bodyID, sequenceID));
+                }
 			}
 			return nextTags;
-		}
-
-		@Override
-		public void setReifiedObject(ReifiedObjectDecorator decoratedObject) {
-			this.reifiedObject = decoratedObject;
-		}
-
-		@Override
-		public ReifiedObjectDecorator getDecorator() {
-	    	if (this.reifiedObject instanceof ReifiedObjectDecorator) {
-	    		return (ReifiedObjectDecorator) this.reifiedObject;
-	    	}
-	    	else {
-	    		return ReifiedObjectDecorator.emptyDecorator;
-	    	}
 		}
 	}
 
@@ -1008,16 +1006,6 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
 		 */
 		public long getNextSequenceID() {
 			return 0;
-		}
-
-		@Override
-		public void setReifiedObject(ReifiedObjectDecorator decoratedObject) {
-			throw new InactiveBodyException(BodyImpl.this);
-		}
-
-		@Override
-		public ReifiedObjectDecorator getDecorator() {
-			return ReifiedObjectDecorator.emptyDecorator;
 		}
 	}
 

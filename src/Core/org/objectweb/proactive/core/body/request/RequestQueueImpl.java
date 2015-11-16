@@ -198,6 +198,12 @@ public class RequestQueueImpl extends AbstractEventProducer implements java.io.S
 
     public synchronized int add(Request request) {
         //System.out.println("  --> RequestQueue.add m="+request.getMethodName());
+    	
+    	// CALLBACK ON EVENTS
+        if (this.body.getAttachedCallback() != null) {
+        	this.body.getAttachedCallback().onDeliverRequest(request);
+        }
+    	
         // FAULT-TOLERANCE  
         int ftres = FTManager.NON_FT;
         FTManager ftm = request.getFTManager();
@@ -207,9 +213,6 @@ public class RequestQueueImpl extends AbstractEventProducer implements java.io.S
             if (request.ignoreIt()) {
                 return ftres;
             }
-        }
-        else {
-        	this.body.getDecorator().onDeliverRequest(request);
         }
 
         //if the request is non functional and priority, a reference on it is added in a nonFunctionalRequestsQueue.

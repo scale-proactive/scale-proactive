@@ -10,7 +10,10 @@ import java.util.Map;
  * Created by pkhvoros on 4/15/15.
  */
 public class LoggerTechnicalService implements TechnicalService {
-    public static final String IS_ENABLED = "is_enabled";
+
+	private static final long serialVersionUID = 1L;
+	
+	public static final String IS_ENABLED = "is_enabled";
     public static final String URL_TO_LOG_FOLDER = "url_to_log_file";
     private boolean isEnabled;
     private String logUrl;

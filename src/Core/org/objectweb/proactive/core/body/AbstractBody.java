@@ -166,7 +166,10 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
     protected ProActiveSPMDGroupManager spmdManager;
 
     // FAULT TOLERANCE
-    protected FTManagerCIC ftmanager;
+    protected FTManager ftmanager;
+    
+    // CALLBACK ON MAIN EVENTS
+    protected AttachedCallback attachedCallback;
 
     // FORGET ON SEND
     protected boolean isSterileBody;
@@ -328,7 +331,7 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
     // -- implements UniversalBody -----------------------------------------------
     //
     public int receiveRequest(Request request) throws java.io.IOException, RenegotiateSessionException {
-        // System.out.println("" + this + " --> receiveRequest m="+request.getMethodName());
+        // System.out.println("" + this + " --> receiveRequest m="+request.getMethodName()); 	
         // NON_FT is returned if this object is not fault tolerant
         int ftres = FTManager.NON_FT;
         if (this.ftmanager != null) {
@@ -342,9 +345,7 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
                 }
             }
         }
-        else {
-			this.getDecorator().onReceiveRequest(request);
-		}
+
         try {
             this.enterInThreadStore();
             if (this.isDead) {
@@ -369,6 +370,12 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
                 }
             }
             this.registerIncomingFutures();
+            
+            // CALLBACK ON EVENTS
+        	if (this.attachedCallback != null) {
+        		this.attachedCallback.onReceiveRequest(request);
+        	}
+            
             ftres = this.internalReceiveRequest(request);
             if (GarbageCollector.dgcIsEnabled()) {
                 updateReferences(UniversalBodyProxy.getIncomingReferences());
@@ -396,9 +403,7 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
                 }
             }
         }
-        else {
-			this.getDecorator().onReceiveReply(reply);
-		}
+
         try {
             enterInThreadStore();
             if (this.isDead && (this.getFuturePool() == null)) {
@@ -417,6 +422,12 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
                 }
             }
             this.registerIncomingFutures();
+            
+            // CALLBACK ON EVENTS
+        	if (this.attachedCallback != null) {
+        		this.attachedCallback.onReceiveReply(reply);
+        	}
+            
             ftres = internalReceiveReply(reply);
             if (GarbageCollector.dgcIsEnabled()) {
                 updateReferences(UniversalBodyProxy.getIncomingReferences());
@@ -953,7 +964,18 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
                 this.ftmanager.onServeRequestAfter(request);
             }
         } else {
+        	
+        	// CALLBACK ON EVENTS
+        	if (this.attachedCallback != null) {
+        		this.attachedCallback.onServeRequestBefore(request);
+        	}
+        	
             this.localBodyStrategy.serve(request);
+            
+            // CALLBACK ON EVENTS
+        	if (this.attachedCallback != null) {
+        		this.attachedCallback.onServeRequestAfter(request);
+        	}
         }
 
         // Sterility control
@@ -981,7 +1003,18 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
             this.localBodyStrategy.serveWithException(request, exception);
             this.ftmanager.onServeRequestAfter(request);
         } else {
+        	
+        	// CALLBACK ON EVENTS
+        	if (this.attachedCallback != null) {
+        		this.attachedCallback.onServeRequestBefore(request);
+        	}
+        	
             this.localBodyStrategy.serveWithException(request, exception);
+            
+            // CALLBACK ON EVENTS
+        	if (this.attachedCallback != null) {
+        		this.attachedCallback.onServeRequestAfter(request);
+        	}
         }
 
         // Sterility control
@@ -1304,6 +1337,16 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
 
     public Debugger getDebugger() {
         return debugger;
+    }
+    
+    @Override
+    public void attach(AttachedCallback c) {
+    	this.attachedCallback = c;
+    }
+    
+    @Override
+    public AttachedCallback getAttachedCallback() {
+    	return this.attachedCallback;
     }
 
 }

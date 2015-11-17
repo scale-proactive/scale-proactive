@@ -34,42 +34,36 @@
  * ################################################################
  * $$PROACTIVE_INITIAL_DEV$$
  */
-package functionalTests.ft;
+package functionalTests.ft.multiactivity;
 
-import java.io.Serializable;
+import static junit.framework.Assert.assertTrue;
 
-import org.objectweb.proactive.api.PAActiveObject;
+import org.junit.Before;
 
 
-public class Collector implements Serializable {
+/**
+ * AO fails during the computation, and is restarted.
+ * Communications between passive object, non-ft active object and ft active object.
+ */
+public class TestMultiactiveCIC extends MultiactiveAbstractFTTezt {  
 
-	private static final long serialVersionUID = 1L;
-
-    private int result = 0;
-
-    
-    public Collector() {
+    public TestMultiactiveCIC() {
+        super(TestMultiactiveCIC.class.getResource("/functionalTests/ft/cic/testFT_CIC.xml"), 4, 1);
     }
 
-    public void go(Agent a, int max) {
-        a.startComputation(max);
+    @Before
+    public void before() {
+        //TestDisabler.waitingFeatureFix();
     }
 
-    public void finished(int res) {
-        this.result = res;
-        //System.out.println("Collector : " + res);
-    }
+    @org.junit.Test
+    public void action() throws Exception {
 
-    public ReInt getResult() {
-        if (this.result == 0) {
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            return ((Collector) PAActiveObject.getStubOnThis()).getResult();
-        } else {
-            return new ReInt(this.result);
-        }
+        this.startFTServer("cic");
+        int res = this.deployAndStartAgents();
+        this.stopFTServer();
+        System.out.println("Test CIC result: " + res + " VS expected result: "
+        		+ "" + MultiactiveAbstractFTTezt.AWAITED_RESULT);
+        assertTrue(res == MultiactiveAbstractFTTezt.AWAITED_RESULT);
     }
 }

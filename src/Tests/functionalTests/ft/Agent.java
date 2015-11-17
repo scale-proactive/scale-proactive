@@ -44,9 +44,8 @@ import java.io.Serializable;
  */
 public class Agent implements Serializable {
 
-    /**
-     *
-     */
+	private static final long serialVersionUID = 1L;
+
     private Agent neighbour;
     private int counter;
     private int iter;
@@ -70,7 +69,7 @@ public class Agent implements Serializable {
 
     public ReInt doStuff(ReInt param) {
         this.counter += param.getValue();
-        System.out.println("Counting");
+        System.out.println("Agent " + this.toString() + " counting");
         return new ReInt(this.counter);
     }
 

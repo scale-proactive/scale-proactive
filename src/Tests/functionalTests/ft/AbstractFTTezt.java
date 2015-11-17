@@ -40,9 +40,11 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 
+import org.objectweb.proactive.ActiveObjectCreationException;
 import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.node.Node;
+import org.objectweb.proactive.core.node.NodeException;
 import org.objectweb.proactive.core.process.JVMProcessImpl;
 import org.objectweb.proactive.gcmdeployment.GCMVirtualNode;
 
@@ -54,8 +56,10 @@ import functionalTests.GCMFunctionalTest;
  */
 public class AbstractFTTezt extends GCMFunctionalTest {
 
+	public static int AWAITED_RESULT = 1771014405;
+	
     protected JVMProcessImpl server;
-    public static int AWAITED_RESULT = 1771014405;
+    
 
     public AbstractFTTezt(URL gcma, int hostCapacity, int vmCapacity) {
         super(gcma);
@@ -101,8 +105,8 @@ public class AbstractFTTezt extends GCMFunctionalTest {
         nodes[0] = vnode.getANode();
         nodes[1] = vnode.getANode();
 
-        Agent a = PAActiveObject.newActive(Agent.class, new Object[0], nodes[0]);
-        Agent b = PAActiveObject.newActive(Agent.class, new Object[0], nodes[1]);
+        Agent a = this.createAgent(nodes[0]);
+        Agent b = this.createAgent(nodes[1]);
 
         // not ft !
         Collector c = PAActiveObject.newActive(Collector.class, new Object[0]);
@@ -129,6 +133,20 @@ public class AbstractFTTezt extends GCMFunctionalTest {
 
         ReInt r = c.getResult();
         return r.getValue();
+    }
+    
+    protected Agent createAgent(Node node) {
+    	Agent returnAgent = null;
+    	try {
+    		returnAgent = PAActiveObject.newActive(Agent.class, new Object[0], node);
+		} 
+    	catch (ActiveObjectCreationException e) {
+			e.printStackTrace();
+		}
+    	catch (NodeException e) {
+    		e.printStackTrace();
+    	}
+    	return returnAgent;
     }
 
 }

@@ -40,7 +40,6 @@ import static junit.framework.Assert.assertTrue;
 
 import org.junit.Before;
 
-import functionalTests.TestDisabler;
 import functionalTests.ft.AbstractFTTezt;
 
 
@@ -56,6 +55,7 @@ public class TestCIC extends AbstractFTTezt {
 
     @Before
     public void before() {
+    	// Feature is now fixed
         //TestDisabler.waitingFeatureFix();
     }
 

@@ -252,6 +252,7 @@ public class RequestImpl extends MessageImpl implements Request, java.io.Seriali
         Object result = null;
         Throwable exception = null;
         try {
+        	// If it is a checkpointing request, redirect the cqll to the fault tolerance manager
         	FTManager manager = ((AbstractBody) targetBody).getFTManager();
         	if (this.methodCall.getName().equals(FTManager.CHECKPOINT_METHOD_NAME) 
         			&& manager != null) {

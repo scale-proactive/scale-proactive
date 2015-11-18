@@ -480,7 +480,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 						// Fault tolerance: if the request is a checkpointing request,
 						// be sure that no other request execute at the same time.
 						if (current.getRequest().getMethodName().equals(FTManager.CHECKPOINT_METHOD_NAME)) {
-							System.out.println("****** FT : switching hard limit");
 							if (THREAD_LIMIT != 1) {
 								initialLimit = this.switchLimit(1);
 							}
@@ -774,10 +773,8 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 			// Fault tolerance: if the request is a checkpointing request,
 			// need to restore previous thread values
 			if (r.getRequest().getMethodName().equals(FTManager.CHECKPOINT_METHOD_NAME)) {
-				System.out.println("Restoring value after checkpoint");
 				this.switchHardLimit(false);
 				this.switchLimit(initialLimit);
-				System.out.println("Thread values are restored to: " + THREAD_LIMIT + " and " + LIMIT_TOTAL_THREADS);
 			}
 
 			this.notify();

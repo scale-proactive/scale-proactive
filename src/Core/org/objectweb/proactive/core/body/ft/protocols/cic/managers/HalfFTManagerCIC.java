@@ -211,11 +211,6 @@ public class HalfFTManagerCIC extends FTManager {
     }
 
 	@Override
-	public boolean haveToCheckpoint() {
-		return false;
-	}
-
-	@Override
 	public Checkpoint __checkpoint__(Request pendingRequest) {
 		return null;
 	}

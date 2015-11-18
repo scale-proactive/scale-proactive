@@ -680,8 +680,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 	/*
 	 * return true if this ao have to checkpoint
 	 */
-	@Override
-	public boolean haveToCheckpoint() {
+	private boolean haveToCheckpoint() {
 		int currentCheckpointIndex = this.checkpointIndex;
 		int currentNextMax = this.nextMax;
 

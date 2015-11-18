@@ -436,8 +436,6 @@ public abstract class FTManager implements java.io.Serializable {
     public void updateLocationAtServer(UniqueID ownerID, UniversalBody remoteBodyAdapter) {
     }
 
-	public abstract boolean haveToCheckpoint();
-
 	public abstract Checkpoint __checkpoint__(Request pendingRequest);
 	
 }

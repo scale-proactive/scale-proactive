@@ -35,6 +35,10 @@
 						<property name="ttc" value="5" />
 						<property name="protocol" value="cic" />
 					</class>
+                    <class name='org.objectweb.proactive.utils.loggingRequests.LoggerTechnicalService'>
+                        <property name='url_to_log_file' value='/tmp/ft-exec/' />
+                        <property name='is_enabled' value='true' />
+                    </class>
 				</technicalServices>
 			</virtualNode>
 

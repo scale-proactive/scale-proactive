@@ -12,11 +12,6 @@ import java.io.Serializable;
 @DefineGroups({
         @Group(name = "run", selfCompatible = true)
 })
-@DefinePriorities({
-        @PriorityHierarchy({
-                @PrioritySet({"run"})
-        })
-})
 @DefineThreadConfig(threadPoolSize = 10, hardLimit = false)
 public class LimitExample implements RunActive,Serializable {
 
@@ -29,6 +24,7 @@ public class LimitExample implements RunActive,Serializable {
             service.multiActiveServing();
         }
     }
+	
     @MemberOf("run")
     public int run(int n){
         try {

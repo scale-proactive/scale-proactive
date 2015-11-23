@@ -32,7 +32,7 @@ import java.util.List;
         @Compatible({"assign_work", "getters"}),
         @Compatible({"help_slave", "getters"})
 })
-@DefineThreadConfig(threadPoolSize = 10, hardLimit = true)
+@DefineThreadConfig(threadPoolSize = 2, hardLimit = true)
 
 //interface CompletionCallback{
 //    public void completionFinished(Slave slave);

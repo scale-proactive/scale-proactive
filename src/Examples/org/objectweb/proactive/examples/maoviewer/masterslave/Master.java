@@ -38,8 +38,8 @@ public class Master implements RunActive,Serializable{
 
 	private static final long serialVersionUID = 1L;
 	
-	private final int numberOfSlaves = 10;
-    private final int numberOfJobsForEachSlave = 1000;
+	private final int numberOfSlaves = 3;
+    private final int numberOfJobsForEachSlave = 500;
     private List<Slave> slaves = new ArrayList<Slave>();
     List<List<BooleanWrapper>> futures;
 

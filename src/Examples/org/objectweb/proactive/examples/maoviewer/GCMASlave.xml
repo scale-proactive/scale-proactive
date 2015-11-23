@@ -29,7 +29,7 @@
                     </class>
                 </technicalServices>
             </virtualNode>
-            <virtualNode id='Slave' capacity='10'>
+            <virtualNode id='Slave' capacity='3'>
                 <technicalServices>
                     <class name='org.objectweb.proactive.utils.loggingRequests.LoggerTechnicalService'>
                         <property name='url_to_log_file' value='/tmp/mao-logs/masterslave/' />

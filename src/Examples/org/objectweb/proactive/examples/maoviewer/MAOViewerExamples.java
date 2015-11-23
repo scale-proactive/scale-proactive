@@ -21,9 +21,9 @@ public class MAOViewerExamples {
     
     public static void main(String[] args) {
     	//runMasterSlaveExample();
+    	//runLimitExample();
         //runConcurrentReadWriteExample();
-        //runLimitExample();
-        runDeadlockExample();
+        //runDeadlockExample();
 	}
     
 	private static void runLimitExample(){

@@ -41,7 +41,7 @@ public class CompatibilityLogger {
             out.print(log);
             out.close();
         } catch (IOException e) {
-            //exception handling left as an exercise for the reader
+        	System.err.println("Could not write compatibility information.");
         }
     }
 }

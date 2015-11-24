@@ -14,16 +14,7 @@ import org.objectweb.proactive.multiactivity.MultiActiveService;
 import java.io.Serializable;
 
 
-@DefineGroups({
-        @Group(name = "first_run", selfCompatible = true)
-})
-@DefinePriorities({
-        @PriorityHierarchy({
-                @PrioritySet({"first_run"})
-        })
-})
-
-public class FirstActiveObject implements RunActive,Serializable {
+public class ActiveObject1 implements RunActive,Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
@@ -34,12 +25,11 @@ public class FirstActiveObject implements RunActive,Serializable {
             service.multiActiveServing();
         }
     }
-    @MemberOf("first_run")
+	
     public void start(GCMApplication gcmApplication){
         GCMVirtualNode vn = gcmApplication.getVirtualNode("SecondActiveObject");
-//        System.out.println("run start" + vn);
         try {
-            SecondActiveObject secondActiveObject = PAActiveObject.newActive(SecondActiveObject.class, null, vn.getANode());
+            ActiveObject2 secondActiveObject = PAActiveObject.newActive(ActiveObject2.class, null, vn.getANode());
             System.out.println(secondActiveObject.run(PAActiveObject.getStubOnThis()));
         } catch (ActiveObjectCreationException e) {
             e.printStackTrace();
@@ -47,7 +37,7 @@ public class FirstActiveObject implements RunActive,Serializable {
             e.printStackTrace();
         }
     }
-    @MemberOf("first_run")
+    
     public String run(StubObject second){
         System.out.println("run first object");
         return "needed result";

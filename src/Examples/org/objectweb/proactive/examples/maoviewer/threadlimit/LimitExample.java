@@ -12,7 +12,7 @@ import java.io.Serializable;
 @DefineGroups({
         @Group(name = "run", selfCompatible = true)
 })
-@DefineThreadConfig(threadPoolSize = 10, hardLimit = false)
+@DefineThreadConfig(threadPoolSize = 1, hardLimit = false)
 public class LimitExample implements RunActive,Serializable {
 
 	private static final long serialVersionUID = 1L;

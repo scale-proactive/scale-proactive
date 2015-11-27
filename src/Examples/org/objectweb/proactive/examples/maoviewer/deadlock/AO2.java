@@ -9,7 +9,7 @@ import org.objectweb.proactive.multiactivity.MultiActiveService;
 import java.io.Serializable;
 
 
-public class ActiveObject2 implements RunActive,Serializable { 
+public class AO2 implements RunActive,Serializable { 
 
 	private static final long serialVersionUID = 1L;
 	
@@ -22,7 +22,7 @@ public class ActiveObject2 implements RunActive,Serializable {
     }
 	
     public String run(StubObject first){
-        return ((ActiveObject1) first).run(PAActiveObject.getStubOnThis());
+        return ((AO1) first).run(PAActiveObject.getStubOnThis());
     }
     
 }

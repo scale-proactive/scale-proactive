@@ -32,8 +32,6 @@ import java.util.List;
         @Compatible({"assign_help", "collect_statistics"})
 })
 @DefineThreadConfig(threadPoolSize = 1, hardLimit = true)
-
-
 public class Master implements RunActive,Serializable{
 
 	private static final long serialVersionUID = 1L;
@@ -47,7 +45,6 @@ public class Master implements RunActive,Serializable{
     public void prepareAction(GCMApplication gcmApplication) {
         //for each slave and for each job we have a future variable
         try {
-//            System.out.println("gcm app =" + gcmApplication.getVirtualNode("Slave") + " " + gcmApplication.getVirtualNode("Slave").getANode());
             for (int i = 0; i < numberOfSlaves; i++) {
                 GCMVirtualNode vn = gcmApplication.getVirtualNode("Slave");
                 Slave slave = PAActiveObject.newActive(Slave.class, null, vn.getANode());

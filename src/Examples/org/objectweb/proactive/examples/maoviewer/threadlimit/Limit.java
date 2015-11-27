@@ -12,8 +12,8 @@ import java.io.Serializable;
 @DefineGroups({
         @Group(name = "run", selfCompatible = true)
 })
-@DefineThreadConfig(threadPoolSize = 1, hardLimit = false)
-public class LimitExample implements RunActive,Serializable {
+@DefineThreadConfig(threadPoolSize = 5, hardLimit = false)
+public class Limit implements RunActive,Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
@@ -32,6 +32,6 @@ public class LimitExample implements RunActive,Serializable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        return  n != 0 ? ((LimitExample)PAActiveObject.getStubOnThis()).run(n - 1) : 0;
+        return  n != 0 ? ((Limit)PAActiveObject.getStubOnThis()).run(n - 1) : 0;
     }
 }

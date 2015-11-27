@@ -33,10 +33,6 @@ import java.util.List;
         @Compatible({"help_slave", "getters"})
 })
 @DefineThreadConfig(threadPoolSize = 2, hardLimit = true)
-
-//interface CompletionCallback{
-//    public void completionFinished(Slave slave);
-//}
 public class Slave implements RunActive,Serializable{
 
 	private static final long serialVersionUID = 1L;

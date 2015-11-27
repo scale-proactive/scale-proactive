@@ -2,24 +2,17 @@
 <GCMApplication xmlns="urn:gcm:application:1.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="urn:gcm:application:1.0 http://proactive.inria.fr/schemas/gcm/1.0/ApplicationDescriptorSchema.xsd">
-    <!--<environment>-->
-        <!--<javaPropertyVariable name='proactive.home'/>-->
-        <!--<javaPropertyVariable name='java.home'/>-->
-        <!--<descriptorDefaultVariable name='deploymentDescriptor' value='../../_CONFIG/localhost/generic.xml' />-->
-        <!--<descriptorDefaultVariable name='jvmargDefinedByTest' value=' '/>-->
-    <!--</environment>-->
+
     <environment>
         <javaPropertyVariable name="proactive.home" />
-        <javaPropertyVariable name="application.home" />
     </environment>
 
     <application>
         <proactive base="root" relpath="${proactive.home}">
             <configuration>
                 <applicationClasspath>
-                    <pathElement base="root" relpath="${application.home}/out" />
-                    <pathElement base="root" relpath="${application.home}/dist/lib/ProActive_examples.jar" />
-                </applicationClasspath>
+					<pathElement base="root" relpath="${proactive.home}/classes/Examples" />                
+				</applicationClasspath>
             </configuration>
             <virtualNode id='Master' capacity='1'>
                 <technicalServices>
@@ -29,7 +22,7 @@
                     </class>
                 </technicalServices>
             </virtualNode>
-            <virtualNode id='Slave' capacity='10'>
+            <virtualNode id='Slave' capacity='3'>
                 <technicalServices>
                     <class name='org.objectweb.proactive.utils.loggingRequests.LoggerTechnicalService'>
                         <property name='url_to_log_file' value='/tmp/mao-logs/masterslave/' />

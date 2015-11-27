@@ -12,13 +12,8 @@ import java.io.Serializable;
 @DefineGroups({
         @Group(name = "start", selfCompatible = true)
 })
-@DefinePriorities({
-        @PriorityHierarchy({
-                @PrioritySet({"start"})
-        })
-})
 @DefineThreadConfig(threadPoolSize = 5, hardLimit = true)
-public class RaceExecutor implements RunActive,Serializable {
+public class RaceExec implements RunActive,Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
@@ -29,6 +24,7 @@ public class RaceExecutor implements RunActive,Serializable {
             service.multiActiveServing();
         }
     }
+	
     @MemberOf("start")
     public void start(DataHolder dataHolder, int value){
         int time = SpeedGenerator.generateRandomSpeed();
@@ -39,5 +35,5 @@ public class RaceExecutor implements RunActive,Serializable {
             e.printStackTrace();
         }
     }
-    public void someCall(){}
+    
 }

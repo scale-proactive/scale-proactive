@@ -6,10 +6,10 @@ import org.objectweb.proactive.ActiveObjectCreationException;
 import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.node.NodeException;
-import org.objectweb.proactive.examples.maoviewer.datarace.MainDataRace;
-import org.objectweb.proactive.examples.maoviewer.deadlock.FirstActiveObject;
+import org.objectweb.proactive.examples.maoviewer.datarace.DataRace;
+import org.objectweb.proactive.examples.maoviewer.deadlock.AO1;
 import org.objectweb.proactive.examples.maoviewer.masterslave.Master;
-import org.objectweb.proactive.examples.maoviewer.threadlimit.LimitExample;
+import org.objectweb.proactive.examples.maoviewer.threadlimit.Limit;
 import org.objectweb.proactive.extensions.gcmdeployment.PAGCMDeployment;
 import org.objectweb.proactive.gcmdeployment.GCMApplication;
 import org.objectweb.proactive.gcmdeployment.GCMVirtualNode;
@@ -21,9 +21,9 @@ public class MAOViewerExamples {
     
     public static void main(String[] args) {
     	//runMasterSlaveExample();
+    	//runLimitExample();
+    	runDeadlockExample();
         //runConcurrentReadWriteExample();
-        //runLimitExample();
-        runDeadlockExample();
 	}
     
 	private static void runLimitExample(){
@@ -78,10 +78,10 @@ public class MAOViewerExamples {
     }
     
     private static void deadlockExample(){
-        FirstActiveObject firstExample;
+        AO1 firstExample;
         try {
             GCMVirtualNode vn = gcmApplication.getVirtualNode("FirstActiveObject");
-            firstExample = PAActiveObject.newActive(FirstActiveObject.class, null, vn.getANode());
+            firstExample = PAActiveObject.newActive(AO1.class, null, vn.getANode());
             firstExample.start(gcmApplication);
         } catch (ActiveObjectCreationException e) {
             e.printStackTrace();
@@ -91,10 +91,10 @@ public class MAOViewerExamples {
     }
     
     private static void limitExample(){
-        LimitExample firstExample;
+        Limit firstExample;
         try {
             GCMVirtualNode vn = gcmApplication.getVirtualNode("LimitExample");
-            firstExample = PAActiveObject.newActive(LimitExample.class, null, vn.getANode());
+            firstExample = PAActiveObject.newActive(Limit.class, null, vn.getANode());
             firstExample.run(20);
         } catch (ActiveObjectCreationException e) {
             e.printStackTrace();
@@ -104,11 +104,11 @@ public class MAOViewerExamples {
     }
     
     private static void concurrencyExample(){
-        MainDataRace firstExample;
+        DataRace firstExample;
         try {
             GCMVirtualNode vn = gcmApplication.getVirtualNode("MainDataRace");
-            firstExample = PAActiveObject.newActive(MainDataRace.class, null, vn.getANode());
-            System.out.print("here = " +firstExample.run(gcmApplication));
+            firstExample = PAActiveObject.newActive(DataRace.class, null, vn.getANode());
+            System.out.println("here = " +firstExample.run(gcmApplication));
         } catch (ActiveObjectCreationException e) {
             e.printStackTrace();
         } catch (NodeException e) {

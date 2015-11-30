@@ -21,7 +21,7 @@
 		</hosts>
 
 		<groups>
-			<sshGroup id="sshLan" hostList="localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost" />
+			<sshGroup id="sshLan" hostList="localhost localhost localhost localhost" />
 		</groups>
 	</infrastructure>
 </GCMDeployment>

@@ -4,6 +4,7 @@ import org.objectweb.proactive.multiactivity.compatibility.CompatibilityMap;
 import org.objectweb.proactive.multiactivity.compatibility.MethodGroup;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -19,7 +20,6 @@ public class CompatibilityLogger {
         stringBuilder.append(activeObjectId + "\n");
         stringBuilder.append("compatibility\n");
         for (Map.Entry<String, MethodGroup> entry : compatibilityMap.getGroups().entrySet()){
-//            stringBuilder.append(entry.getValue().name + " " + ((entry.getValue().isSelfCompatible()) ? 1 : 0));
             stringBuilder.append(entry.getValue().name);
             for (MethodGroup methodGroup: entry.getValue().getCompatibleWith()){
                 stringBuilder.append(" " + methodGroup.name);
@@ -35,13 +35,18 @@ public class CompatibilityLogger {
             writeToFile(stringBuilder.toString() + " ", folderPath + "Compatibility_" + activeObjectId + ".txt");
         }
     }
+    
     private static void writeToFile(String log, String path){
+    	File f = new File(path);
         try {
+        	f.getParentFile().mkdirs();
+        	f.createNewFile();
             PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(path, true)));
             out.print(log);
             out.close();
         } catch (IOException e) {
-            //exception handling left as an exercise for the reader
+        	e.printStackTrace();
+        	System.err.println("Could not write compatibility information.");
         }
     }
 }

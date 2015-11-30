@@ -12,6 +12,7 @@ public class DataHolder implements RunActive,Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	private int value;
+	
     @Override
     public void runActivity(Body body) {
         MultiActiveService service = new MultiActiveService(body);
@@ -19,8 +20,12 @@ public class DataHolder implements RunActive,Serializable {
             service.multiActiveServing();
         }
     }
+    
     public void write(int value){
         this.value = value;
     }
-    public int read(){return value;}
+    
+    public int read(){
+    	return value;
+    }
 }

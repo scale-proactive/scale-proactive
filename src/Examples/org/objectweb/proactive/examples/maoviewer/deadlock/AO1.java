@@ -13,17 +13,14 @@ import org.objectweb.proactive.multiactivity.MultiActiveService;
 
 import java.io.Serializable;
 
-
 @DefineGroups({
-        @Group(name = "first_run", selfCompatible = true)
+	@Group(name="starter", selfCompatible=true),
+	@Group(name="runner", selfCompatible=true)
 })
-@DefinePriorities({
-        @PriorityHierarchy({
-                @PrioritySet({"first_run"})
-        })
+@DefineRules({
+	@Compatible({"starter", "runner"})
 })
-
-public class FirstActiveObject implements RunActive,Serializable {
+public class AO1 implements RunActive,Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
@@ -34,12 +31,12 @@ public class FirstActiveObject implements RunActive,Serializable {
             service.multiActiveServing();
         }
     }
-    @MemberOf("first_run")
+	
+	@MemberOf("starter")
     public void start(GCMApplication gcmApplication){
         GCMVirtualNode vn = gcmApplication.getVirtualNode("SecondActiveObject");
-//        System.out.println("run start" + vn);
         try {
-            SecondActiveObject secondActiveObject = PAActiveObject.newActive(SecondActiveObject.class, null, vn.getANode());
+            AO2 secondActiveObject = PAActiveObject.newActive(AO2.class, null, vn.getANode());
             System.out.println(secondActiveObject.run(PAActiveObject.getStubOnThis()));
         } catch (ActiveObjectCreationException e) {
             e.printStackTrace();
@@ -47,7 +44,8 @@ public class FirstActiveObject implements RunActive,Serializable {
             e.printStackTrace();
         }
     }
-    @MemberOf("first_run")
+    
+	@MemberOf("runner")
     public String run(StubObject second){
         System.out.println("run first object");
         return "needed result";

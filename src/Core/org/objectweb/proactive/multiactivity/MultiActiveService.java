@@ -39,7 +39,6 @@ package org.objectweb.proactive.multiactivity;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.Service;
 import org.objectweb.proactive.core.ProActiveException;
@@ -48,8 +47,6 @@ import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.node.NodeException;
 import org.objectweb.proactive.core.node.NodeFactory;
-import org.objectweb.proactive.core.util.log.Loggers;
-import org.objectweb.proactive.core.util.log.ProActiveLogger;
 import org.objectweb.proactive.multiactivity.compatibility.AnnotationProcessor;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityManager;
 import org.objectweb.proactive.multiactivity.compatibility.CompatibilityTracker;
@@ -61,8 +58,8 @@ import org.objectweb.proactive.multiactivity.priority.PriorityTracker;
 import org.objectweb.proactive.multiactivity.policy.DefaultServingPolicy;
 import org.objectweb.proactive.multiactivity.policy.ServingPolicy;
 import org.objectweb.proactive.utils.loggingRequests.ActiveObjectLoggerDecorator;
+import org.objectweb.proactive.utils.loggingRequests.CompatibilityLogger;
 import org.objectweb.proactive.utils.loggingRequests.LoggerTechnicalService;
-import org.objectweb.proactive.utils.loggingRequests.RequestLoggerDecorator;
 
 /**
  * This class extends the {@link Service} class and adds the capability of serving more methods in parallel. 
@@ -81,8 +78,6 @@ public class MultiActiveService extends Service {
 	public int activeServes = 0;
 	public LinkedList<Integer> serveHistory = new LinkedList<Integer>();
 	public LinkedList<Integer> serveTsts = new LinkedList<Integer>();
-
-	private static final Logger logger = ProActiveLogger.getLogger(Loggers.MULTIACTIVITY);
 
 	private boolean isConfiguredThroughAnnot = false;
 	private int totalReservedThreads;
@@ -130,10 +125,12 @@ public class MultiActiveService extends Service {
 		try {
 			node = NodeFactory.getNode(this.body.getNodeURL());
 			if("true".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))) {
+				CompatibilityLogger.logCompatibility(annotationProcessor.getCompatibilityMap(), node.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER), body.getID().toString());
 				executor = new ActiveObjectLoggerDecorator(body, compatibilityManager, priorityManager, threadManager, node.getProperty(LoggerTechnicalService.URL_TO_LOG_FOLDER));
 			}
 			else {
 				if (! "false".equals(node.getProperty(LoggerTechnicalService.IS_ENABLED))){
+					CompatibilityLogger.logCompatibility(annotationProcessor.getCompatibilityMap(), CentralPAPropertyRepository.PA_MULTIACTIVITY_DEFAULT_LOGGING.getValue(), body.getID().toString());
 					executor = new ActiveObjectLoggerDecorator(body, compatibilityManager, priorityManager, threadManager, CentralPAPropertyRepository.PA_MULTIACTIVITY_DEFAULT_LOGGING.getValue());
 				}
 				else {

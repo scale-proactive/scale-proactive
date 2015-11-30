@@ -700,7 +700,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 	 * Perform a checkpoint with index = current + 1
 	 */
 	@Override
-	public Checkpoint __checkpoint__(Request pendingRequest) {
+	public synchronized Checkpoint __checkpoint__(Request pendingRequest) {
 		//stop accepting communication
 		(owner).blockCommunication();
 		// synchronized on hisotry to avoid hisot commit during checkpoint

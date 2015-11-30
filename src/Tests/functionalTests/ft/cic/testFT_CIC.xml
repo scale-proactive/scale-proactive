@@ -50,6 +50,10 @@
 						<property name="protocol" value="cic" />
 						<property name="resource" value="rmi://localhost:1100/FTServer" />
 					</class>
+					<class name='org.objectweb.proactive.utils.loggingRequests.LoggerTechnicalService'>
+                        <property name='url_to_log_file' value='/tmp/ft-exec/' />
+                        <property name='is_enabled' value='true' />
+                    </class>
 				</technicalServices>
 			</virtualNode>
 

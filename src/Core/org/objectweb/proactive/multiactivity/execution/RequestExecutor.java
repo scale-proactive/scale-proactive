@@ -119,11 +119,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	private int THREAD_LIMIT = Integer.MAX_VALUE;
 
 	/**
-	 * Intended to save and restore the thread limit as it was configured.
-	 */
-	private int initialLimit;
-
-	/**
 	 * If set to true, then the THREAD_LIMIT refers to the total number of
 	 * serves. If false then it refers to actively executing serves, not the
 	 * waiting by necessity ones.
@@ -135,6 +130,14 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 * source. If false than all serves will be served on separate threads.
 	 */
 	private boolean SAME_THREAD_REENTRANT = false;
+	
+	/**
+	 * Intended to save and restore the thread limit as it was configured
+	 * at the launching of the MAO.
+	 */
+	private boolean limitChanged;
+	private int initialLimit;
+	private boolean initialHardLimit;
 
 	private Body body;
 
@@ -281,7 +284,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 		synchronized (this) {
 
 			THREAD_LIMIT = activeLimit;
-			LIMIT_TOTAL_THREADS = hardLimit;
+			LIMIT_TOTAL_THREADS = hardLimit;			
 
 			if (SAME_THREAD_REENTRANT != hostReentrant) {
 				if (hostReentrant == true) {
@@ -480,11 +483,10 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 						// Fault tolerance: if the request is a checkpointing request,
 						// be sure that no other request execute at the same time.
 						if (current.getRequest().getMethodName().equals(FTManager.CHECKPOINT_METHOD_NAME)) {
-							if (THREAD_LIMIT != 1) {
+							if (!limitChanged) {
 								initialLimit = this.switchLimit(1);
-							}
-							if (!LIMIT_TOTAL_THREADS) {
-								this.switchHardLimit(true);
+								initialHardLimit = this.switchHardLimit(true);
+								limitChanged = true;
 							}
 							if (canServeOne()) {
 								executeRequest(current);
@@ -773,8 +775,9 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 			// Fault tolerance: if the request is a checkpointing request,
 			// need to restore previous thread values
 			if (r.getRequest().getMethodName().equals(FTManager.CHECKPOINT_METHOD_NAME)) {
-				this.switchHardLimit(false);
+				this.switchHardLimit(initialHardLimit);
 				this.switchLimit(initialLimit);
+				limitChanged = false;
 			}
 
 			this.notify();
@@ -892,8 +895,10 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 * limit during execution in order to adapt the scheduling to events.
 	 * @param hardLimit
 	 */
-	public void switchHardLimit(boolean hardLimit) {
+	public boolean switchHardLimit(boolean hardLimit) {
+		boolean formerHardLimit = LIMIT_TOTAL_THREADS;
 		LIMIT_TOTAL_THREADS = hardLimit;
+		return formerHardLimit;
 	}
 
 	/**

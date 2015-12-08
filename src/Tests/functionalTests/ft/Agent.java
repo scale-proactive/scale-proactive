@@ -50,6 +50,7 @@ public class Agent implements Serializable {
     private int counter;
     private int iter;
     private Collector launcher;
+    private int nbProcessedRequests;
 
     public Agent() {
     }
@@ -57,6 +58,7 @@ public class Agent implements Serializable {
     public void initCounter(int value) {
         this.counter = value;
         this.iter = 0;
+        this.nbProcessedRequests = 0;
     }
 
     public void setNeighbour(Agent n) {
@@ -66,8 +68,13 @@ public class Agent implements Serializable {
     public void setLauncher(Collector l) {
         this.launcher = l;
     }
+    
+    public int getNbProcessedRequests() {
+    	return this.nbProcessedRequests;
+    }
 
     public ReInt doStuff(ReInt param) {
+    	this.nbProcessedRequests++;
         this.counter += param.getValue();
         System.out.println("Agent " + this.toString() + " counting");
         return new ReInt(this.counter);
@@ -78,6 +85,7 @@ public class Agent implements Serializable {
     }
 
     public void startComputation(int max) {
+    	this.nbProcessedRequests++;
         iter++;
         ReInt a = this.neighbour.doStuff(new ReInt(this.counter));
         ReInt b = this.neighbour.doStuff(new ReInt(this.counter));
@@ -91,6 +99,8 @@ public class Agent implements Serializable {
         if (iter < max) {
             neighbour.startComputation(max);
         } else {
+        	System.out.println("Agent has processed: " + this.nbProcessedRequests + " requests.");
+        	System.out.println("Neighbour has processed: " + this.neighbour.getNbProcessedRequests() + " requests.");
             this.launcher.finished(this.counter);
         }
     }

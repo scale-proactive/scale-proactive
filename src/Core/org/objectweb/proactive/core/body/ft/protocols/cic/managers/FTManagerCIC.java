@@ -44,7 +44,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.concurrent.AtomicInitializer;
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.UniqueID;
@@ -112,6 +114,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 	private int checkpointIndex; //index of the latest perfomred checkpoint
 	private long checkpointTimer;
 	private int nextMax;
+	private AtomicInteger nbEnqueuedCheckpoints;
 
 	// private int nextMin;
 	private int historyIndex; // index of the latest closed history
@@ -154,6 +157,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 		this.historyIndex = 0;
 		this.nextMax = 1;
 		//this.nextMin = 0;
+		this.nbEnqueuedCheckpoints = new AtomicInteger();
 		this.lastRecovery = 0;
 		this.checkpointTimer = System.currentTimeMillis();
 		this.requestToResend = new Hashtable<Integer, Vector<RequestLog>>();
@@ -509,7 +513,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 	}
 
 	@Override
-	public int onServeRequestBefore(Request request) {
+	public synchronized int onServeRequestBefore(Request request) {
 		if (multiactiveLogger.isDebugEnabled()) {
 			multiactiveLogger.debug("#onServeRequestBefore " + request.getMethodName());
 		}
@@ -517,28 +521,33 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 			boolean checkpoint = false;
 			// checkpoint if needed
 			if (this.haveToCheckpoint()) {
-				checkpoint = true;
-				// we will checkpoint, so current request service is postponed
-				this.owner.getRequestQueue().addToFront(request);
 				int gap = this.nextMax - this.checkpointIndex;
-				do {
-					// Request does not need to be specified since it is in queue already
-					try {
-						this.owner.getRequestQueue().addToFront(new RequestImpl(
-								new MethodCall(this.getClass().getDeclaredMethod(
-										FTManager.CHECKPOINT_METHOD_NAME, new Class<?>[]{Request.class}), 
-										null, new Object[]{null}), true));
-					} 
-					catch (NoSuchMethodException e) {
-						multiactiveLogger.error("FTManager does not have "
-								+ "" + FTManager.CHECKPOINT_METHOD_NAME + 
-								" request any more. Aborting.");
-					} 
-					catch (SecurityException e) {
-						e.printStackTrace();
+				if (nbEnqueuedCheckpoints.get() < gap || (gap < 1 && nbEnqueuedCheckpoints.get() < 1)) {
+					checkpoint = true;
+					// we will checkpoint, so current request service is postponed
+					synchronized (this.owner.getRequestQueue()) {
+						this.owner.getRequestQueue().addToFrontWithoutNotif(request);
+						do {
+							// Request does not need to be specified since it is in queue already
+							try {
+								this.owner.getRequestQueue().addToFront(new RequestImpl(
+										new MethodCall(this.getClass().getDeclaredMethod(
+												FTManager.CHECKPOINT_METHOD_NAME, new Class<?>[]{Request.class}), 
+												null, new Object[]{null}), true));
+								nbEnqueuedCheckpoints.incrementAndGet();
+							} 
+							catch (NoSuchMethodException e) {
+								multiactiveLogger.error("FTManager does not have "
+										+ "" + FTManager.CHECKPOINT_METHOD_NAME + 
+										" request any more. Aborting.");
+							} 
+							catch (SecurityException e) {
+								e.printStackTrace();
+							}
+							gap = gap -1;
+						} while (gap > 0);
 					}
-					gap = gap -1;
-				} while (gap > 0);
+				}
 			}
 			// update the last served request index only if needed
 			if (FTManagerCIC.isOCEnable) {
@@ -703,6 +712,7 @@ public class FTManagerCIC extends org.objectweb.proactive.core.body.ft.protocols
 	public Checkpoint __checkpoint__(Request pendingRequest) {
 		//stop accepting communication
 		(owner).blockCommunication();
+		nbEnqueuedCheckpoints.decrementAndGet();
 		// synchronized on hisotry to avoid hisot commit during checkpoint
 		synchronized (this.historyLock) {
 			Checkpoint c;

@@ -169,4 +169,10 @@ public interface BlockingRequestQueue extends RequestQueue {
      * Resumes the service of requests.
      */
     public void resume();
+    
+    /**
+     * Counterpart of addToFront(Request request) without thread notification.
+     * @param r
+     */
+    public void addToFrontWithoutNotif(Request r);
 }

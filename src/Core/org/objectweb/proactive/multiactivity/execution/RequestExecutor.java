@@ -501,7 +501,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 									LIMIT_TOTAL_THREADS ? THREAD_LIMIT - threadUsage.keySet().size() : THREAD_LIMIT - countActive());
 							// All conditions are satisfied to execute the request,
 							// update all tracking structures and execute the request.
-							if (groupHasThreads && !isThreadReserved) {
+							if (canServeOne() && groupHasThreads && !isThreadReserved) {
 								executeRequest(current);
 							}
 							else {

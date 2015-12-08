@@ -141,6 +141,11 @@ public class BlockingRequestQueueImpl extends RequestQueueImpl implements java.i
         this.notifyAll();
         return ftres;
     }
+    
+    @Override
+    public synchronized void addToFrontWithoutNotif(Request r) {
+    	super.addToFront(r);
+    }
 
     public synchronized Request blockingRemoveOldest(RequestFilter requestFilter) {
         return blockingRemove(requestFilter, true, 0);

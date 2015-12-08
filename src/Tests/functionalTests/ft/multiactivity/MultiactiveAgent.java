@@ -18,12 +18,10 @@ import functionalTests.ft.ReInt;
 		@Group(name="counting", selfCompatible=true)})
 @DefinePriorities({
 	@PriorityHierarchy({
-		@PrioritySet({
-			"counting"
-		})
+		@PrioritySet({"counting"})
 	})
 })
-@DefineThreadConfig(threadPoolSize=2, hardLimit=true)
+@DefineThreadConfig(threadPoolSize=2, hardLimit=false)
 public class MultiactiveAgent extends Agent implements RunActive {
 
 	private static final long serialVersionUID = 1L;

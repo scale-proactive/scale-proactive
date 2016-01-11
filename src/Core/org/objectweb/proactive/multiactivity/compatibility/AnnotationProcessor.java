@@ -297,8 +297,8 @@ public class AnnotationProcessor {
 					totalReservedThreads + ThreadManager.THREAD_POOL_MARGIN : threadConfig.threadPoolSize();
 			threadMap.configure(poolSize, threadConfig.hardLimit(),
 					threadConfig.hostReentrant());
-			if (logger.isInfoEnabled()) {
-				logger.info("Configuration of threads for MAO " + this.processedClass.getSimpleName() + 
+			if (logger.isDebugEnabled()) {
+				logger.debug("Configuration of threads for MAO " + this.processedClass.getSimpleName() + 
 						" is: thread pool size=" + poolSize + ", hard limit=" + 
 						threadConfig.hardLimit() + "" + ", host reentrant=" + threadConfig.hostReentrant());
 			}
@@ -316,8 +316,8 @@ public class AnnotationProcessor {
 		}
 		// A checkpoint has a super priority compared to other methods
 		priorityGraph.insertSuperPriority(faultToleranceGroup);
-		if (logger.isInfoEnabled()) {
-			logger.info("Priority graph for MAO " + this.processedClass.getSimpleName() + 
+		if (logger.isDebugEnabled()) {
+			logger.debug("Priority graph for MAO " + this.processedClass.getSimpleName() + 
 					" is:" + priorityGraph.toString());
 		}
 

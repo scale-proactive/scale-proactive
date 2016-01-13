@@ -15,7 +15,7 @@ import functionalTests.ft.Agent;
 import functionalTests.ft.ReInt;
 
 @DefineGroups({
-		@Group(name="counting", selfCompatible=true)})
+	@Group(name="counting", selfCompatible=true)})
 @DefinePriorities({
 	@PriorityHierarchy({
 		@PrioritySet({"counting"})
@@ -33,11 +33,13 @@ public class MultiactiveAgent extends Agent implements RunActive {
 			service.multiActiveServing();
 		}
 	}
-	
+
 	@Override
 	@MemberOf("counting")
 	public ReInt doStuff(ReInt param) {
-        return super.doStuff(param);
-    }
+		synchronized (this) {
+			return super.doStuff(param);
+		}
+	}
 
 }

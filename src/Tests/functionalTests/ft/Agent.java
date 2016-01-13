@@ -74,12 +74,10 @@ public class Agent implements Serializable {
 	}
 
 	public ReInt doStuff(ReInt param) {
-		synchronized (this) {
-			this.nbProcessedRequests++;
-			this.counter += param.getValue();
-			//System.out.println("Agent " + this.toString() + " counting");
-			return new ReInt(this.counter);
-		}
+		this.nbProcessedRequests++;
+		this.counter += param.getValue();
+		//System.out.println("Agent " + this.toString() + " counting");
+		return new ReInt(this.counter);
 	}
 
 	public ReInt getCounter() {

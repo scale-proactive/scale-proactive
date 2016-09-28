@@ -112,7 +112,7 @@ public class FaultToleranceTechnicalService implements TechnicalService {
 
     public void apply(Node node) {
         try {
-            if (!cancelled) {
+                 if (!cancelled) {
                 node.setProperty(FT_ENABLED, "true");
                 if (this.globalServerURL != null) {
                     node.setProperty(GLOBAL_SERVER, this.globalServerURL);

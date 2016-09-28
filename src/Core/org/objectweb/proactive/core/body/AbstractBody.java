@@ -62,6 +62,7 @@ import org.objectweb.proactive.core.body.exceptions.BodyTerminatedRequestExcepti
 import org.objectweb.proactive.core.body.ft.internalmsg.FTMessage;
 import org.objectweb.proactive.core.body.ft.internalmsg.Heartbeat;
 import org.objectweb.proactive.core.body.ft.protocols.FTManager;
+import org.objectweb.proactive.core.body.ft.protocols.cic.managers.FTManagerCIC;
 import org.objectweb.proactive.core.body.ft.servers.faultdetection.FaultDetector;
 import org.objectweb.proactive.core.body.future.Future;
 import org.objectweb.proactive.core.body.future.FuturePool;
@@ -137,10 +138,13 @@ import org.objectweb.proactive.core.util.profiling.TimerProvidable;
  * 
  */
 public abstract class AbstractBody extends AbstractUniversalBody implements Body, Serializable {
-    //
+
+	//
     // -- STATIC MEMBERS -----------------------------------------------
     //
     private static Logger logger = ProActiveLogger.getLogger(Loggers.BODY);
+    
+    private static final long serialVersionUID = 7753944707834970959L;
 
     //
     // -- PROTECTED MEMBERS -----------------------------------------------
@@ -341,6 +345,7 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
                 }
             }
         }
+
         try {
             this.enterInThreadStore();
             if (this.isDead) {
@@ -952,9 +957,12 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
 
         // Serve
         if (this.ftmanager != null) {
-            this.ftmanager.onServeRequestBefore(request);
-            this.localBodyStrategy.serve(request);
-            this.ftmanager.onServeRequestAfter(request);
+            int returnCode = this.ftmanager.onServeRequestBefore(request);
+            // If a checkpoint is needed, postpone current request
+            if (returnCode != FTManager.CHECKPOINT_CODE) {
+            	this.localBodyStrategy.serve(request);
+                this.ftmanager.onServeRequestAfter(request);
+            }
         } else {
         	
         	// CALLBACK ON EVENTS
@@ -1227,7 +1235,7 @@ public abstract class AbstractBody extends AbstractUniversalBody implements Body
      *            The ftm to set.
      */
     public void setFTManager(FTManager ftm) {
-        this.ftmanager = ftm;
+        this.ftmanager = (FTManagerCIC) ftm;
     }
 
     public GCResponse receiveGCMessage(GCMessage msg) {

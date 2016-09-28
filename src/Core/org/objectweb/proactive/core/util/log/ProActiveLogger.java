@@ -82,6 +82,8 @@ public class ProActiveLogger extends Logger {
                 InputStream in = PAProperties.class.getResourceAsStream("distributed-log4j");
                 try {
                     p.load(in);
+                    System.out.println("Loading logger collector properties in " + PAProperties.class.getResource(
+                    		"distributed-log4j").getPath());
                     success = true;
                 } catch (IOException e1) {
                     System.err.println("Failed to read the proactive-collector-log4j file: " +
@@ -96,7 +98,8 @@ public class ProActiveLogger extends Logger {
                     try {
                         InputStream in = new FileInputStream(f);
                         p.load(in);
-
+                        System.out.println("Loading logger collector properties in " + Constants.USER_CONFIG_DIR +
+                        		File.separator + ProActiveConfiguration.PROACTIVE_LOG_PROPERTIES_FILE);
                         success = true;
                     } catch (Exception e) {
                         System.err.println("the user's log4j configuration file (" + f.getAbsolutePath() +
@@ -108,6 +111,8 @@ public class ProActiveLogger extends Logger {
             if (!success) {
                 // Load the default proactive-log4j file embedded in the ProActive.jar
                 InputStream in = PAProperties.class.getResourceAsStream("proactive-log4j");
+                System.out.println("Loading logger properties in " + PAProperties.class.getResource(
+                		"proactive-log4j").getPath());
                 try {
                     p.load(in);
                 } catch (IOException e1) {
@@ -116,6 +121,9 @@ public class ProActiveLogger extends Logger {
             }
 
             PropertyConfigurator.configure(p);
+        }
+        else {
+        	System.out.println("Loading logger properties in " + configurationFile);
         }
 
         myFactory = new ProActiveLoggerFactory();

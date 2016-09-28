@@ -63,6 +63,7 @@ import org.objectweb.proactive.core.ProActiveRuntimeException;
 import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.body.exceptions.InactiveBodyException;
 import org.objectweb.proactive.core.body.ft.protocols.FTManager;
+import org.objectweb.proactive.core.body.ft.protocols.cic.managers.FTManagerCIC;
 import org.objectweb.proactive.core.body.ft.service.FaultToleranceTechnicalService;
 import org.objectweb.proactive.core.body.future.Future;
 import org.objectweb.proactive.core.body.future.FuturePool;
@@ -101,7 +102,6 @@ import org.objectweb.proactive.core.security.exceptions.CommunicationForbiddenEx
 import org.objectweb.proactive.core.security.exceptions.RenegotiateSessionException;
 import org.objectweb.proactive.core.util.profiling.Profiling;
 import org.objectweb.proactive.core.util.profiling.TimerWarehouse;
-import org.objectweb.proactive.multiactivity.MultiActiveService;
 import org.objectweb.proactive.multiactivity.execution.FutureWaiterRegistry;
 
 
@@ -143,8 +143,9 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
     //
     // -- PROTECTED MEMBERS -----------------------------------------------
     //
+	private static final long serialVersionUID = 1L;
 
-    /**
+	/**
      * The component in charge of receiving reply
      */
     protected ReplyReceiver replyReceiver;
@@ -939,75 +940,75 @@ public abstract class BodyImpl extends AbstractBody implements java.io.Serializa
                 if (!nextTags.check(DsiTag.IDENTIFIER)) {
                     nextTags.addTag(new DsiTag(bodyID, sequenceID));
                 }
-            }
-            return nextTags;
-        }
-    }
+			}
+			return nextTags;
+		}
+	}
 
-    // end inner class LocalBodyImpl
-    private class InactiveLocalBodyStrategy implements LocalBodyStrategy, java.io.Serializable {
-        // An inactive body strategy can have a futurepool if some ACs to do
-        // remain after the termination of the active object
-        private FuturePool futures;
+	// end inner class LocalBodyImpl
+	private class InactiveLocalBodyStrategy implements LocalBodyStrategy, java.io.Serializable {
+		// An inactive body strategy can have a futurepool if some ACs to do
+		// remain after the termination of the active object
+		private FuturePool futures;
 
-        //
-        // -- CONSTRUCTORS -----------------------------------------------
-        //
-        public InactiveLocalBodyStrategy() {
+		//
+		// -- CONSTRUCTORS -----------------------------------------------
+		//
+		public InactiveLocalBodyStrategy() {
 
-        }
+		}
 
-        public InactiveLocalBodyStrategy(FuturePool remainingsACs) {
-            this.futures = remainingsACs;
-        }
+		public InactiveLocalBodyStrategy(FuturePool remainingsACs) {
+			this.futures = remainingsACs;
+		}
 
-        //
-        // -- PUBLIC METHODS -----------------------------------------------
-        //
-        //
-        // -- implements LocalBody
-        // -----------------------------------------------
-        //
-        public FuturePool getFuturePool() {
-            return this.futures;
-        }
+		//
+		// -- PUBLIC METHODS -----------------------------------------------
+		//
+		//
+		// -- implements LocalBody
+		// -----------------------------------------------
+		//
+		public FuturePool getFuturePool() {
+			return this.futures;
+		}
 
-        public BlockingRequestQueue getRequestQueue() {
-            throw new InactiveBodyException(BodyImpl.this);
-        }
+		public BlockingRequestQueue getRequestQueue() {
+			throw new InactiveBodyException(BodyImpl.this);
+		}
 
-        public RequestQueue getHighPriorityRequestQueue() {
-            throw new InactiveBodyException(BodyImpl.this);
-        }
+		public RequestQueue getHighPriorityRequestQueue() {
+			throw new InactiveBodyException(BodyImpl.this);
+		}
 
-        public Object getReifiedObject() {
-            throw new InactiveBodyException(BodyImpl.this);
-        }
+		public Object getReifiedObject() {
+			throw new InactiveBodyException(BodyImpl.this);
+		}
 
-        public void serve(Request request) {
-            throw new InactiveBodyException(BodyImpl.this, (request != null) ? request.getMethodName()
-                    : "null request");
-        }
+		public void serve(Request request) {
+			throw new InactiveBodyException(BodyImpl.this, (request != null) ? request.getMethodName()
+					: "null request");
+		}
 
-        @Override
-        public void serveWithException(Request request, Throwable exception) {
-            throw new InactiveBodyException(BodyImpl.this, (request != null) ? request.getMethodName()
-                    : "null request");
-        }
+		@Override
+		public void serveWithException(Request request, Throwable exception) {
+			throw new InactiveBodyException(BodyImpl.this, (request != null) ? request.getMethodName()
+					: "null request");
+		}
 
-        public void sendRequest(MethodCall methodCall, Future future, UniversalBody destinationBody)
-                throws java.io.IOException {
-            throw new InactiveBodyException(BodyImpl.this, destinationBody.getNodeURL(), destinationBody
-                    .getID(), methodCall.getName());
-        }
+		public void sendRequest(MethodCall methodCall, Future future, UniversalBody destinationBody)
+				throws java.io.IOException {
+			throw new InactiveBodyException(BodyImpl.this, destinationBody.getNodeURL(), destinationBody
+					.getID(), methodCall.getName());
+		}
 
-        /*
-         * @see org.objectweb.proactive.core.body.LocalBodyStrategy#getNextSequenceID()
-         */
-        public long getNextSequenceID() {
-            return 0;
-        }
-    }
+		/*
+		 * @see org.objectweb.proactive.core.body.LocalBodyStrategy#getNextSequenceID()
+		 */
+		public long getNextSequenceID() {
+			return 0;
+		}
+	}
 
-    // end inner class InactiveBodyException
+	// end inner class InactiveBodyException
 }

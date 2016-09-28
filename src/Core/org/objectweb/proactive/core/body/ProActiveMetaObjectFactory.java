@@ -355,7 +355,7 @@ public class ProActiveMetaObjectFactory implements MetaObjectFactory, java.io.Se
         public BlockingRequestQueue newRequestQueue(Body body, UniqueID ownerID) {
             if ("true".equals(ProActiveMetaObjectFactory.this.parameters
                     .get(SYNCHRONOUS_COMPOSITE_COMPONENT_KEY))) {
-                return null;
+                return null; 
             }
 
             //if (componentFactoryInstance != null) {

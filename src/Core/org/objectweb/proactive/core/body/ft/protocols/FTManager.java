@@ -48,6 +48,7 @@ import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.body.AbstractBody;
 import org.objectweb.proactive.core.body.UniversalBody;
 import org.objectweb.proactive.core.body.exceptions.BodyTerminatedException;
+import org.objectweb.proactive.core.body.ft.checkpointing.Checkpoint;
 import org.objectweb.proactive.core.body.ft.checkpointing.CheckpointInfo;
 import org.objectweb.proactive.core.body.ft.internalmsg.FTMessage;
 import org.objectweb.proactive.core.body.ft.internalmsg.Heartbeat;
@@ -72,7 +73,9 @@ import org.objectweb.proactive.core.util.log.ProActiveLogger;
  * @since ProActive 2.2
  */
 public abstract class FTManager implements java.io.Serializable {
-    //logger
+   
+	private static final long serialVersionUID = 2476613432483925694L;
+
     final protected static Logger logger = ProActiveLogger.getLogger(Loggers.FAULT_TOLERANCE);
 
     /** This value is sent by an active object that is not fault tolerant*/
@@ -92,6 +95,12 @@ public abstract class FTManager implements java.io.Serializable {
 
     /** Error message when calling uncallable method on a halfbody */
     public static final String HALF_BODY_EXCEPTION_MESSAGE = "Cannot perform this call on a FTManager of a HalfBody";
+    
+    /** Name of request used to checkpoint */
+    public static final String CHECKPOINT_METHOD_NAME = "__checkpoint__";
+    
+    /** Code used to postpone a request service after checkpoint */
+    public static final int CHECKPOINT_CODE = -579;
 
     // true is this is a checkpoint
     private boolean isACheckpoint;
@@ -426,4 +435,7 @@ public abstract class FTManager implements java.io.Serializable {
      */
     public void updateLocationAtServer(UniqueID ownerID, UniversalBody remoteBodyAdapter) {
     }
+
+	public abstract Checkpoint __checkpoint__(Request pendingRequest);
+	
 }

@@ -44,54 +44,64 @@ import java.io.Serializable;
  */
 public class Agent implements Serializable {
 
-    /**
-     *
-     */
-    private Agent neighbour;
-    private int counter;
-    private int iter;
-    private Collector launcher;
+	private static final long serialVersionUID = 1L;
 
-    public Agent() {
-    }
+	private Agent neighbour;
+	private int counter;
+	private int iter;
+	private Collector launcher;
+	private int nbProcessedRequests;
 
-    public void initCounter(int value) {
-        this.counter = value;
-        this.iter = 0;
-    }
+	public Agent() {
+	}
 
-    public void setNeighbour(Agent n) {
-        this.neighbour = n;
-    }
+	public void initCounter(int value) {
+		this.counter = value;
+		this.iter = 0;
+		this.nbProcessedRequests = 0;
+	}
 
-    public void setLauncher(Collector l) {
-        this.launcher = l;
-    }
+	public void setNeighbour(Agent n) {
+		this.neighbour = n;
+	}
 
-    public ReInt doStuff(ReInt param) {
-        this.counter += param.getValue();
-        return new ReInt(this.counter);
-    }
+	public void setLauncher(Collector l) {
+		this.launcher = l;
+	}
 
-    public ReInt getCounter() {
-        return new ReInt(this.counter);
-    }
+	public int getNbProcessedRequests() {
+		return this.nbProcessedRequests;
+	}
 
-    public void startComputation(int max) {
-        iter++;
-        ReInt a = this.neighbour.doStuff(new ReInt(this.counter));
-        ReInt b = this.neighbour.doStuff(new ReInt(this.counter));
-        ReInt c = this.neighbour.doStuff(new ReInt(this.counter));
-        ReInt d = this.neighbour.doStuff(new ReInt(this.counter));
-        this.counter += a.getValue();
-        this.counter += b.getValue();
-        this.counter += c.getValue();
-        this.counter += d.getValue();
+	public ReInt doStuff(ReInt param) {
+		this.nbProcessedRequests++;
+		this.counter += param.getValue();
+		//System.out.println("Agent " + this.toString() + " counting");
+		return new ReInt(this.counter);
+	}
 
-        if (iter < max) {
-            neighbour.startComputation(max);
-        } else {
-            this.launcher.finished(this.counter);
-        }
-    }
+	public ReInt getCounter() {
+		return new ReInt(this.counter);
+	}
+
+	public void startComputation(int max) {
+		this.nbProcessedRequests++;
+		iter++;
+		ReInt a = this.neighbour.doStuff(new ReInt(this.counter));
+		ReInt b = this.neighbour.doStuff(new ReInt(this.counter));
+		ReInt c = this.neighbour.doStuff(new ReInt(this.counter));
+		ReInt d = this.neighbour.doStuff(new ReInt(this.counter));
+		this.counter += a.getValue();
+		this.counter += b.getValue();
+		this.counter += c.getValue();
+		this.counter += d.getValue();
+
+		if (iter < max) {
+			neighbour.startComputation(max);
+		} else {
+			System.out.println("Agent has processed: " + this.nbProcessedRequests + " requests.");
+			System.out.println("Neighbour has processed: " + this.neighbour.getNbProcessedRequests() + " requests.");
+			this.launcher.finished(this.counter);
+		}
+	}
 }

@@ -43,6 +43,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.objectweb.proactive.api.PAActiveObject;
+import org.objectweb.proactive.core.body.request.AwaitedRequest;
 import org.objectweb.proactive.core.body.request.Request;
 import org.springframework.util.ReflectionUtils;
 
@@ -611,6 +612,9 @@ public class MethodGroup {
      * @return
      */
     public static String getNameOf(Request r) {
+    	if (r instanceof AwaitedRequest) {
+    		return null;
+    	}
         String methodSignature = r.getMethodCall().getReifiedMethod().toString();
         return methodSignature.substring(methodSignature.indexOf(r.getMethodName()));
     }

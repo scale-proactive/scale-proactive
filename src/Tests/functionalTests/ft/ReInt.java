@@ -41,11 +41,11 @@ import java.io.Serializable;
 
 public class ReInt implements Serializable {
 
-    /**
-     *
-     */
-    private int value;
+	private static final long serialVersionUID = 1L;
 
+	private int value;
+
+	
     public ReInt() {
     }
 

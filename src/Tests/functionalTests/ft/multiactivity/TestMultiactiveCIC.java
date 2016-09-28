@@ -34,53 +34,36 @@
  * ################################################################
  * $$PROACTIVE_INITIAL_DEV$$
  */
-package org.objectweb.proactive.extra.multiactivecan;
+package functionalTests.ft.multiactivity;
 
-import java.io.Serializable;
+import static junit.framework.Assert.assertTrue;
+
+import org.junit.Before;
 
 
 /**
- * A class that represents the key. It maps to a unique coordinate in the CAN space.
- * @author The ProActive Team
- *
+ * AO fails during the computation, and is restarted.
+ * Communications between passive object, non-ft active object and ft active object.
  */
-public class Key implements Serializable { 
+public class TestMultiactiveCIC extends MultiactiveAbstractFTTezt {  
 
-    private int x, y;
-
-    public Key(int x, int y) {
-        super();
-        this.x = x;
-        this.y = y;
+    public TestMultiactiveCIC() {
+        super(TestMultiactiveCIC.class.getResource("/functionalTests/ft/cic/testFT_CIC.xml"), 4, 1);
     }
 
-    public int getCoordY() {
-        // TODO Auto-generated method stub
-        return y;
+    @Before
+    public void before() {
+        //TestDisabler.waitingFeatureFix();
     }
 
-    public int getCoordX() {
-        // TODO Auto-generated method stub
-        return x;
+    @org.junit.Test
+    public void action() throws Exception {
+
+        this.startFTServer("cic");
+        int res = this.deployAndStartAgents();
+        this.stopFTServer();
+        System.out.println("Test CIC result: " + res + " VS expected result: "
+        		+ "" + MultiactiveAbstractFTTezt.AWAITED_RESULT);
+        assertTrue(res == MultiactiveAbstractFTTezt.AWAITED_RESULT);
     }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Key) {
-            return x == ((Key) obj).x && y == ((Key) obj).y;
-        }
-
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        return x * y;
-    }
-
-    @Override
-    public String toString() {
-        return "Key (" + x + "," + y + ")";
-    }
-
 }

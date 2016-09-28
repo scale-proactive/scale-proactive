@@ -38,6 +38,7 @@ package org.objectweb.proactive.core.body.request;
 
 import java.io.IOException;
 import java.io.StreamCorruptedException;
+import java.util.Iterator;
 
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.Body;
@@ -46,6 +47,7 @@ import org.objectweb.proactive.core.ProActiveRuntimeException;
 import org.objectweb.proactive.core.body.AbstractBody;
 import org.objectweb.proactive.core.body.LocalBodyStore;
 import org.objectweb.proactive.core.body.UniversalBody;
+import org.objectweb.proactive.core.body.ft.protocols.FTManager;
 import org.objectweb.proactive.core.body.future.MethodCallResult;
 import org.objectweb.proactive.core.body.message.MessageImpl;
 import org.objectweb.proactive.core.body.reply.Reply;
@@ -250,7 +252,15 @@ public class RequestImpl extends MessageImpl implements Request, java.io.Seriali
         Object result = null;
         Throwable exception = null;
         try {
-            result = this.methodCall.execute(targetBody.getReifiedObject());
+        	// If it is a checkpointing request, redirect the cqll to the fault tolerance manager
+        	FTManager manager = ((AbstractBody) targetBody).getFTManager();
+        	if (this.methodCall.getName().equals(FTManager.CHECKPOINT_METHOD_NAME) 
+        			&& manager != null) {
+        		result = this.methodCall.execute(manager);
+        	}
+        	else {
+        		result = this.methodCall.execute(targetBody.getReifiedObject());
+        	}
         } catch (MethodCallExecutionFailedException e) {
             throw new ServeException("Error while serving", e);
         } catch (java.lang.reflect.InvocationTargetException e) {

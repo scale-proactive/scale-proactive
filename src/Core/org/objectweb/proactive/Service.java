@@ -36,11 +36,13 @@
  */
 package org.objectweb.proactive;
 
+
 import org.objectweb.proactive.annotation.PublicAPI;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.body.request.BlockingRequestQueue;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.body.request.RequestFilter;
+import org.objectweb.proactive.core.body.request.RequestImpl;
 import org.objectweb.proactive.core.body.request.RequestProcessor;
 import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.config.ProActiveConfiguration;

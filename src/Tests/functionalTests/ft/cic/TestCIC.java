@@ -40,7 +40,6 @@ import static junit.framework.Assert.assertTrue;
 
 import org.junit.Before;
 
-import functionalTests.TestDisabler;
 import functionalTests.ft.AbstractFTTezt;
 
 
@@ -48,7 +47,7 @@ import functionalTests.ft.AbstractFTTezt;
  * AO fails during the computation, and is restarted.
  * Communications between passive object, non-ft active object and ft active object.
  */
-public class TestCIC extends AbstractFTTezt {
+public class TestCIC extends AbstractFTTezt {  
 
     public TestCIC() {
         super(TestCIC.class.getResource("/functionalTests/ft/cic/testFT_CIC.xml"), 4, 1);
@@ -56,6 +55,7 @@ public class TestCIC extends AbstractFTTezt {
 
     @Before
     public void before() {
+    	// Feature is now fixed
         //TestDisabler.waitingFeatureFix();
     }
 
@@ -65,6 +65,8 @@ public class TestCIC extends AbstractFTTezt {
         this.startFTServer("cic");
         int res = this.deployAndStartAgents();
         this.stopFTServer();
+        System.out.println("Test CIC result: " + res + " VS expected result: "
+        		+ "" + AbstractFTTezt.AWAITED_RESULT);
         assertTrue(res == AbstractFTTezt.AWAITED_RESULT);
     }
 }

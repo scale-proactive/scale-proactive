@@ -61,7 +61,6 @@ import org.objectweb.proactive.utils.loggingRequests.ActiveObjectLoggerDecorator
 import org.objectweb.proactive.utils.loggingRequests.CompatibilityLogger;
 import org.objectweb.proactive.utils.loggingRequests.LoggerTechnicalService;
 
-
 /**
  * This class extends the {@link Service} class and adds the capability of serving more methods in parallel. 
  * <br> The decision of which methods can run in parallel is made based on annotations set by the user. 
@@ -262,5 +261,5 @@ public class MultiActiveService extends Service {
 	public RequestExecutor getRequestExecutor() {
 		return this.executor;
 	}
-
+	
 }

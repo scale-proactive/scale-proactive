@@ -54,6 +54,7 @@ import org.apache.log4j.Logger;
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.core.body.Context;
 import org.objectweb.proactive.core.body.LocalBodyStore;
+import org.objectweb.proactive.core.body.ft.protocols.FTManager;
 import org.objectweb.proactive.core.body.future.Future;
 import org.objectweb.proactive.core.body.future.FutureID;
 import org.objectweb.proactive.core.body.future.FutureProxy;
@@ -91,21 +92,21 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 		/**
 		 * {@inheritDoc}
 		 */
-		 @Override
-		 protected void beforeExecute(Thread thread, Runnable r) {
-			 thread.setName("MAOs Executor Thread(" + thread.getId() + ") for " + this.bodyID);
-			 super.beforeExecute(thread, r);
-		 }
+		@Override
+		protected void beforeExecute(Thread thread, Runnable r) {
+			thread.setName("MAOs Executor Thread(" + thread.getId() + ") for " + this.bodyID);
+			super.beforeExecute(thread, r);
+		}
 
-		 /**
-		  * {@inheritDoc}
-		  */
-		 @Override
-		 protected void afterExecute(Runnable r, Throwable t) {
-			 Thread thread = Thread.currentThread();
-			 thread.setName("IDLE MAOs Executor Thread(" + thread.getId() + ") for " + this.bodyID);
-			 super.afterExecute(r, t);
-		 }
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		protected void afterExecute(Runnable r, Throwable t) {
+			Thread thread = Thread.currentThread();
+			thread.setName("IDLE MAOs Executor Thread(" + thread.getId() + ") for " + this.bodyID);
+			super.afterExecute(r, t);
+		}
 
 	}
 
@@ -129,6 +130,14 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 * source. If false than all serves will be served on separate threads.
 	 */
 	private boolean SAME_THREAD_REENTRANT = false;
+	
+	/**
+	 * Intended to save and restore the thread limit as it was configured
+	 * at the launching of the MAO.
+	 */
+	private boolean limitChanged;
+	private int initialLimit;
+	private boolean initialHardLimit;
 
 	private Body body;
 
@@ -275,7 +284,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 		synchronized (this) {
 
 			THREAD_LIMIT = activeLimit;
-			LIMIT_TOTAL_THREADS = hardLimit;
+			LIMIT_TOTAL_THREADS = hardLimit;			
 
 			if (SAME_THREAD_REENTRANT != hostReentrant) {
 				if (hostReentrant == true) {
@@ -345,10 +354,6 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 
 		synchronized (requestQueue) {
 
-			// Used for microbenchmarks
-			/*long insertionTimeBefore;
-			long insertionTimeAfter;*/
-
 			while (body.isActive()) {
 
 				// get compatible ones from the queue
@@ -360,15 +365,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 						for (int i = 0; i < rc.size(); i++) {
 							RunnableRequest runnableRequest = wrapRequest(rc.get(i));
 
-							// Used only for microbenchmarks
-							/*if (PriorityUtils.LOG_ENABLED) {
-								insertionTimeBefore = System.nanoTime();
-							}*/
-
 							priorityManager.register(runnableRequest);
-
-							// Used only for microbenchmarks
-							//logTime(runnableRequest, MultiactivityUtils.INSERTION_TIME, insertionTimeBefore);
 						}
 
 						// if anything can be done, let the other thread know
@@ -401,7 +398,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 			int objectDescriptionPos;
 			String logString = "";
 			StringBuilder logStringBuilder;
-			
+
 			while (body.isActive()) {
 
 				if (SAME_THREAD_REENTRANT) {
@@ -480,25 +477,35 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 						log.trace("Requests served");
 					}
 
-					while (canServeOne() && i.hasNext()) {
-						RunnableRequest current = i.next();
-						groupHasThreads = threadManager.hasFreeThreads(current);
-						isThreadReserved = threadManager.isThreadReserved(current,
-								LIMIT_TOTAL_THREADS ? THREAD_LIMIT - threadUsage.keySet().size() : THREAD_LIMIT - countActive());
-
-						// All the condition are satisfied to execute the request,
-						// update all tracking structures and execute the request.
-						if (groupHasThreads && !isThreadReserved) {
-
-							priorityManager.unregister(current);
-							threadManager.increaseUsage(current);
-							active.add(current);
-							executorService.execute(current);
-
-							servingHistory.add(current.getRequest());
-
-							if (log.isTraceEnabled()) {
-								log.trace("  " + toString(current.getRequest()));
+					RunnableRequest current ;
+					while (canServeOne() && i.hasNext()) {	
+						current = i.next();
+						// Fault tolerance: if the request is a checkpointing request,
+						// be sure that no other request execute at the same time.
+						if (current.getRequest().getMethodName().equals(FTManager.CHECKPOINT_METHOD_NAME)) {
+							if (!limitChanged) {
+								initialLimit = this.switchLimit(1);
+								initialHardLimit = this.switchHardLimit(true);
+								limitChanged = true;
+							}
+							if (canServeOne()) {
+								executeRequest(current);
+							}
+							else {
+								break;
+							}
+						}
+						else {
+							groupHasThreads = threadManager.hasFreeThreads(current);
+							isThreadReserved = threadManager.isThreadReserved(current,
+									LIMIT_TOTAL_THREADS ? THREAD_LIMIT - threadUsage.keySet().size() : THREAD_LIMIT - countActive());
+							// All conditions are satisfied to execute the request,
+							// update all tracking structures and execute the request.
+							if (canServeOne() && groupHasThreads && !isThreadReserved) {
+								executeRequest(current);
+							}
+							else {
+								break;
 							}
 						}
 					}
@@ -533,6 +540,17 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 				}
 
 			}
+		}
+	}
+
+	private void executeRequest(RunnableRequest r) {
+		priorityManager.unregister(r);
+		threadManager.increaseUsage(r);
+		active.add(r);
+		executorService.execute(r);
+		servingHistory.add(r.getRequest());
+		if (log.isTraceEnabled()) {
+			log.trace("  " + toString(r.getRequest()));
 		}
 	}
 
@@ -754,6 +772,14 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 				}
 			}
 
+			// Fault tolerance: if the request is a checkpointing request,
+			// need to restore previous thread values
+			if (r.getRequest().getMethodName().equals(FTManager.CHECKPOINT_METHOD_NAME)) {
+				this.switchHardLimit(initialHardLimit);
+				this.switchLimit(initialLimit);
+				limitChanged = false;
+			}
+
 			this.notify();
 		}
 	}
@@ -869,8 +895,22 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	 * limit during execution in order to adapt the scheduling to events.
 	 * @param hardLimit
 	 */
-	public void switchHardLimit(boolean hardLimit) {
+	public boolean switchHardLimit(boolean hardLimit) {
+		boolean formerHardLimit = LIMIT_TOTAL_THREADS;
 		LIMIT_TOTAL_THREADS = hardLimit;
+		return formerHardLimit;
+	}
+
+	/**
+	 * Dynamically changes the number of thread allowed for this multi-active 
+	 * object.
+	 * @param newLimit The new number of threads allowed
+	 * @return The former number of threads allowed
+	 */
+	public int switchLimit(int newLimit) {
+		int formerLimit = THREAD_LIMIT;
+		THREAD_LIMIT = newLimit;
+		return formerLimit;
 	}
 
 	public void incrementExtraActiveRequestCount(int i) {
@@ -888,7 +928,7 @@ public class RequestExecutor implements FutureWaiter, ServingController {
 	public RequestQueue getRequestQueue() {
 		return this.requestQueue;
 	}
-	
+
 	protected String getBodyId(){
 		return body.getID().toString();
 	}

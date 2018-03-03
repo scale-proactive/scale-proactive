@@ -193,6 +193,7 @@
 			<echo>  [i] cp:   ${proactive.jar}</echo>
 
 			<javac
+                compiler="javac1.7"
 				srcdir="@{sourcepath}"
 				destdir="@{dest}"
 				deprecation="on"

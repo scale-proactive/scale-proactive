@@ -249,7 +249,7 @@ public class PADataSpaces {
      * <p>
      * As output data space minimal capabilities are checked locally, its content is expected to be
      * writable from any node of this application if it was defined correctly. It is intended to
-     * store globally any computation results. Writes synchronization is a developer’s
+     * store globally any computation results. Writes synchronization is a developer's
      * responsibility.
      *
      * @param path
@@ -497,7 +497,7 @@ public class PADataSpaces {
      * <p>
      * Output data space content is expected to be writable from any node of this application if it
      * was defined correctly. It is intended to store globally any computation results. Writes
-     * synchronization is a developer’s responsibility.
+     * synchronization is a developer's responsibility.
      *
      * @param name
      *            name of an output data space to resolve
@@ -731,7 +731,7 @@ public class PADataSpaces {
      * call (that locally precedes this call or precedes it in a global real-time), is also
      * returned.
      * <p>
-     * This method does not cause inputs to be mounted, i.e. it doesn’t cause local VFS view to be
+     * This method does not cause inputs to be mounted, i.e. it doesn't cause local VFS view to be
      * refreshed.
      *
      * @return set of all names of inputs defined for caller's application before the moment of this
@@ -753,7 +753,7 @@ public class PADataSpaces {
      * methods call (that locally precedes this call or precedes it in a global real-time), is also
      * returned.
      * <p>
-     * This method does not cause outputs to be mounted, i.e. it doesn’t cause local VFS view to be
+     * This method does not cause outputs to be mounted, i.e. it doesn't cause local VFS view to be
      * refreshed.
      *
      * @return set of all names of outputs defined for caller's application before the moment of
@@ -841,14 +841,14 @@ public class PADataSpaces {
 
     /**
      * Returns file handle pointed by any valid URI within an existing data space in the application
-     * (another AO’s scratch, input or output).
+     * (another AO's scratch, input or output).
      * <p>
      * Returned file handle can be directly used to perform operations on the file/directory,
      * regardless of the underlying protocol. Closing returned DataSpacesFileObject is a caller's
      * responsibility.
      * <p>
      * Returned file handle should be readable, but not necessarily writable. This kind of
-     * capabilities checking is caller’s responsibility or it can be implied from a calling objects
+     * capabilities checking is caller's responsibility or it can be implied from a calling objects
      * contract (e.g. data space type of a URI being passed is known). Minimal capabilities are
      * checked locally according to a type of space represented by provided URI. For input its
      * content is expected to be readable from any node of this application if it was defined

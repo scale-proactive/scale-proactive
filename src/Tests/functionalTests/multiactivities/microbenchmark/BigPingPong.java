@@ -51,7 +51,7 @@ import org.objectweb.proactive.multiactivity.MultiActiveService;
  * The Kilim implementation can be downloaded from:
  * http://www.malhar.net/sriram/kilim/
  * 
- * @author Jan Schäfer
+ * @author Jan Schafer
  *
  */
 

@@ -151,7 +151,7 @@
 		<replaceregexp file="${base.dir}/README.txt" match="\$Id.*\$" replace="${version}" byline="true" />
 
 
-		<javac srcdir="${src.proactive.dir}" destdir="${cl.proactive.dir}" deprecation="on" source="${source}" debug="${debug}">
+		<javac compiler="javac1.7" srcdir="${src.proactive.dir}" destdir="${cl.proactive.dir}" deprecation="on" source="${source}" debug="${debug}">
 			<classpath refid="project.with.ws.classpath" />
 			<include name="**/*.java" />
 
@@ -220,13 +220,13 @@
 			<echo message="Using java 1.5, excluding from tests execution:${annotations_tests_exec_exclude}" />
 		</if>
 
-		<javac srcdir="${src.test.dir}" destdir="${cl.test.dir}" includes="unitTests/**" deprecation="on" source="${source}" debug="${debug}">
+		<javac compiler="javac1.7" srcdir="${src.test.dir}" destdir="${cl.test.dir}" includes="unitTests/**" deprecation="on" source="${source}" debug="${debug}">
 			<classpath refid="project.with.ws.classpath" />
 		</javac>
-		<javac srcdir="${src.test.dir}" destdir="${cl.test.dir}" includes="functionalTests/**" excludes="functionalTests/annotations/*/inputs/**,${annotations_tests_exec_exclude}" deprecation="on" source="${source}" debug="${debug}">
+		<javac compiler="javac1.7" srcdir="${src.test.dir}" destdir="${cl.test.dir}" includes="functionalTests/**" excludes="functionalTests/annotations/*/inputs/**,${annotations_tests_exec_exclude}" deprecation="on" source="${source}" debug="${debug}">
 			<classpath refid="project.with.ws.classpath" />
 		</javac>
-		<javac srcdir="${src.test.dir}" destdir="${cl.test.dir}" includes="performanceTests/**" deprecation="on" source="${source}" debug="${debug}">
+		<javac compiler="javac1.7" srcdir="${src.test.dir}" destdir="${cl.test.dir}" includes="performanceTests/**" deprecation="on" source="${source}" debug="${debug}">
 			<classpath refid="project.with.ws.classpath" />
 		</javac>
 		<copy toDir="${cl.test.dir}">
@@ -238,7 +238,7 @@
 
 
 	<target name="compile.benchmarks" depends="compile.core, compile.extra" description="Compile the benchmarks">
-		<javac srcdir="${src.benchmarks.dir}" destdir="${cl.benchmarks.dir}" includes="**/*.java" deprecation="on" source="${source}" debug="${debug}">
+		<javac compiler="javac1.7" srcdir="${src.benchmarks.dir}" destdir="${cl.benchmarks.dir}" includes="**/*.java" deprecation="on" source="${source}" debug="${debug}">
 			<classpath refid="project.classpath" />
 		</javac>
 	</target>
@@ -247,7 +247,7 @@
 	<target name="compile.examples" depends="compile.core, compile.extensions, compile.extra, compile.util" description="Compile all examples classes">
 
 		<!-- XXX, MicroTimer should be in core or not used by examples-->
-		<javac srcdir="${src.examples.dir}" destdir="${cl.examples.dir}" includes="**/*.java" excludes="${proactive.path}/examples/nbody/common/NBody3DFrame.java" deprecation="on" source="${source}" debug="${debug}" encoding="UTF-8">
+		<javac compiler="javac1.7" srcdir="${src.examples.dir}" destdir="${cl.examples.dir}" includes="**/*.java" excludes="${proactive.path}/examples/nbody/common/NBody3DFrame.java" deprecation="on" source="${source}" debug="${debug}" encoding="UTF-8">
 			<classpath>
 				<path refid="project.with.ws.classpath" />
 			</classpath>
@@ -299,7 +299,7 @@
 		<available classname="com.sun.j3d.utils.behaviors.mouse.MouseWheelZoom" property="java3d_present" />
 		<if name="java3d_present">
 			<echo message="Info: Java3D installed." />
-			<javac srcdir="${src.examples.dir}" destdir="${cl.examples.dir}" includes="${proactive.path}/examples/nbody/common/NBody3DFrame.java" deprecation="on" source="${source}" debug="${debug}">
+			<javac compiler="javac1.7" srcdir="${src.examples.dir}" destdir="${cl.examples.dir}" includes="${proactive.path}/examples/nbody/common/NBody3DFrame.java" deprecation="on" source="${source}" debug="${debug}">
 				<classpath refid="project.with.ws.classpath" />
 			</javac>
 			<else>
@@ -311,7 +311,7 @@
 
 	<target name="compile.util" depends="-configurationCopy" description="Compile ProActive Utils classes">
 		<!-- XXX Timer is in core.util.Profiling -->
-		<javac srcdir="${src.utils.dir}" destdir="${cl.utils.dir}" includes="**" deprecation="on" source="${source}" debug="${debug}">
+		<javac compiler="javac1.7" srcdir="${src.utils.dir}" destdir="${cl.utils.dir}" includes="**" deprecation="on" source="${source}" debug="${debug}">
 			<classpath refid="project.classpath" />
 		</javac>
 
@@ -321,12 +321,12 @@
 
 
 	<target name="compile.trywithcatch" depends="-init" description="Compile ProActive Try With Catch classes">
-		<javac srcdir="${src.utils.dir}" destdir="${cl.utils.dir}" includes="trywithcatch/**" deprecation="on" source="${source}" debug="${debug}" />
+		<javac compiler="javac1.7" srcdir="${src.utils.dir}" destdir="${cl.utils.dir}" includes="trywithcatch/**" deprecation="on" source="${source}" debug="${debug}" />
 	</target>
 
 
 	<target name="compile.stubGenerator" depends="-init" description="Compile Stub Generator Classes">
-		<javac srcdir="${src.dir}" destdir="${classes.dir}" deprecation="on" source="${source}" debug="${debug}">
+		<javac compiler="javac1.7" srcdir="${src.dir}" destdir="${classes.dir}" deprecation="on" source="${source}" debug="${debug}">
 			<classpath refid="project.classpath" />
 			<include name="${proactive.path}/ext/util/StubGenerator.java" />
 		</javac>
@@ -980,7 +980,7 @@
 			<classpath refid="project.classpath" />
 			<arg value="org.objectweb.proactive.core.remoteobject.ibis.IbisRemoteObjectImpl" />
 		</java>
-		<javac srcdir="${cl.proactive.dir}" destdir="${cl.proactive.dir}" deprecation="on" source="${source}" debug="${debug}">
+		<javac compiler="javac1.7" srcdir="${cl.proactive.dir}" destdir="${cl.proactive.dir}" deprecation="on" source="${source}" debug="${debug}">
 			<include name="**/*.java" />
 			<classpath refid="project.classpath" />
 		</javac>

@@ -82,7 +82,7 @@ public class BaseScratchSpaceConfiguration implements Serializable {
      *            from remote node, and some additional information for protocol like path,
      *            sometimes user name and password. This URL may contain special variable
      *            {@value #HOSTNAME_VARIABLE_KEYWORD} that is later filled with actual host name for
-     *            caller, so scratch configuration definition may be more generic — sufficient to
+     *            caller, so scratch configuration definition may be more generic - sufficient to
      *            use in context of generic host configuration. May be <code>null</code> if remote
      *            access URL is not yet specified.
      * @param path
@@ -113,7 +113,7 @@ public class BaseScratchSpaceConfiguration implements Serializable {
      *            from remote node, and some additional information for protocol like path,
      *            sometimes user name and password. This URL may contain special variable
      *            {@value #HOSTNAME_VARIABLE_KEYWORD} that is later filled with actual host name for
-     *            caller, so scratch configuration definition may be more generic — sufficient to
+     *            caller, so scratch configuration definition may be more generic - sufficient to
      *            use in context of generic host configuration. Cannot be <code>null</code>.
      * @return an instance of BaseScratchSpaceConfiguration with defined remote access
      * @throws ConfigurationException

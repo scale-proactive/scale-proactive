@@ -27,6 +27,7 @@
 			<echo>  [i] cp:   ${proactive.jar}</echo>
 
 			<javac
+             compiler="javac1.7"
 			 srcdir="${src.extensions.dir}"
 			 destdir="${cl.extensions.dir}"
 			 deprecation="on"

@@ -23,7 +23,7 @@ import org.objectweb.proactive.multiactivity.MultiActiveService;
  * 
  * http://cedric.cnam.fr/PUBLIS/RC474.pdf
  * 
- * @author Jan Sch�fer
+ * @author Jan Schafer
  *
  */
 public class ChamenosRedux {
